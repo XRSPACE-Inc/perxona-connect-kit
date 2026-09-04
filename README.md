@@ -2,7 +2,7 @@
 
 Minimal sample apps for building with Perxona Connect.
 
-> All samples and tools in this repository use a Perxona Connect account. Sign up at <https://console.perxona.ai> — there is
+> All samples in this repository use a Perxona Connect account. Sign up at <https://console.perxona.ai> — there is
 > no sign-up API. See [`samples/express/README.md`](samples/express/README.md) for the full steps.
 
 ## Usage and Subscription
@@ -27,15 +27,10 @@ for sign-up steps), open the organization management page, review **Subscription
 - [`samples/express/`](samples/express/) — an Express-based starter that shows the basic Connect flow. See
   [`samples/express/README.md`](samples/express/README.md) for setup and usage.
 
-## Tools
-
-- [`tools/motion-browser/`](tools/motion-browser/) — a web UI for previewing and controlling Perxona avatars. See
-  [`tools/motion-browser/README.md`](tools/motion-browser/README.md) for setup and usage.
-
 ## Presenter SDK Integration FAQs
 
-Common questions when integrating the `<sv-presenter>` Presenter SDK, across any sample or tool in this repo. For
-setup/environment issues specific to one sample or tool, see its own README instead.
+Common questions when integrating the `<sv-presenter>` Presenter SDK, across any sample in this repo. For
+setup/environment issues specific to one sample, see its own README instead.
 
 **Why doesn't the avatar speak after `present()`?** `present()` resolves with a `PresentationResult` whose `success`
 is `false` — check the status message it surfaces (`code`/`message`) for why (e.g. no target resolved yet, or the
