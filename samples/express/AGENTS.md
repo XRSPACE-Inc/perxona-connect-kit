@@ -40,6 +40,9 @@ The server does two jobs:
 2. Catalog proxy — `GET /api/avatars`, `/api/scenes`, `/api/voices` (+ `:id`/`:id/motions` detail routes) stay server-proxied
    purely to populate the picker dropdowns; they normalize a couple of field names (`avatar_id`/`scene_id` → `id`) but otherwise
    pass upstream responses through unchanged.
+3. Credit usage proxy — `GET /api/credit` proxies the Connect API's credit-usage endpoint verbatim (no field translation).
+   Studio's Credit Usage panel polls it every 5 minutes and also offers a manual refresh icon button; a failed query is
+   isolated to that one panel and never blocks catalog, chatbot management, or chat.
 
 `/api/chat` is opt-in — it returns `501` until you set `LLM_API_KEY`. Use `LLM_PROVIDER=openai` for Chat Completions
 (including Ollama and other compatible endpoints), or `LLM_PROVIDER=anthropic` for Claude's Messages API — the base URL and
@@ -168,7 +171,8 @@ Required (the server exits at startup if any is missing — both keys are needed
   domains configured is refused on every call.
 - `PERXONA_CONNECT_PUBLISHABLE_KEY` — served to the browser on `GET /api/connect-key` and passed to the presenter. It can read
   the catalog, generate presentations and mint speech tokens (the last two bill the organization); it cannot reach the
-  chatbot routes or publish avatars. Note that this describes the _keys_, not this
+  chatbot routes, publish avatars, or read the organization's credit/billing usage (`GET /api/credit` is Secret-key only
+  upstream). Note that this describes the _keys_, not this
   server: the `/api/*` routes have no request-layer authorization, so anything the secret key can do is reachable by anyone
   who can reach this server. Put your own authorization in front of them before running it anywhere but `localhost`.
 

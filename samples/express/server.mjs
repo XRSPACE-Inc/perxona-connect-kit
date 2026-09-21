@@ -207,6 +207,11 @@ const connectApi = {
     return upstreamJson(r, "voices"); // Page[ConnectVoiceResponse] — items already have { id, name, … }
   },
 
+  async credit(credential) {
+    const r = await callUpstream("/api/v1/connect/credit", {}, credential);
+    return upstreamJson(r, "credit"); // ConnectCreditResponse — used verbatim, no field renaming
+  },
+
   // Normalize avatar list: backend uses avatar_id; frontend dropdowns expect id.
   async avatars(credential) {
     const r = await callUpstream(
@@ -640,6 +645,7 @@ app.get(
 // GET  /api/voices
 // GET  /api/avatars          GET  /api/avatars/:id    GET  /api/avatars/:id/motions
 // GET  /api/scenes           GET  /api/scenes/:id
+// GET  /api/credit
 // POST /api/chat             (disabled when LLM_API_KEY is unset → 501)
 //
 // All routes below send CONNECT_SECRET_KEY upstream. There is no per-request
@@ -648,7 +654,7 @@ app.get(
 // Catalog — read-only lists + single items used to populate UI dropdowns.
 //   GET /api/voices              → Page { items: [{ id, name, … }] }
 //   GET /api/avatars             → Page { items: [{ id, name, … }] }  (id normalized from avatar_id)
-//   GET /api/avatars/:id         → raw avatar detail (avatar_id, lod_urls, lipsync_configs, …)
+//   GET /api/avatars/:id         → raw avatar detail (avatar_id, lod_urls, lipsync_configs, lipsync_mode, …)
 //   GET /api/avatars/:id/motions → Page { items: [ … ] }
 //   GET /api/scenes              → Page { items: [{ id, name, … }] }  (id normalized from scene_id)
 //   GET /api/scenes/:id          → raw scene detail
@@ -656,6 +662,17 @@ app.get(
   "/api/voices",
   route(async (_req, res) => {
     res.json(await api.voices(CONNECT_SECRET_KEY));
+  }),
+);
+
+// Studio's Credit Usage panel polls this — see its own docstring in app.js for
+// the polling interval. Not a catalog resource, but proxied the same way.
+//   GET /api/credit → ConnectCreditResponse (used/total/remaining_credit_points,
+//                     is_quota_exceeded, period_start, period_end), verbatim.
+app.get(
+  "/api/credit",
+  route(async (_req, res) => {
+    res.json(await api.credit(CONNECT_SECRET_KEY));
   }),
 );
 

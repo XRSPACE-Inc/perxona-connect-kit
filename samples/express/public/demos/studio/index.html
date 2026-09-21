@@ -14,6 +14,28 @@
           <p class="brand">Perxona Connect Kit</p>
           <p class="demo-label">Studio Demo</p>
 
+          <!-- ── Credit usage ─────────────────────────────────────────── -->
+          <!-- First section on purpose: this is the sample's example of calling
+               GET /api/credit — a developer should see their remaining credit
+               before Presenter Setup, not discover it burned out mid-demo. -->
+          <section class="sidebar-section" id="credit-usage">
+            <div class="section-label-row">
+              <p class="section-label">Credit Usage</p>
+              <button
+                id="credit-refresh-btn"
+                type="button"
+                class="btn-icon btn-ghost"
+                title="Refresh credit usage"
+                aria-label="Refresh credit usage"
+              >
+                ↻
+              </button>
+            </div>
+            <p id="credit-numbers" class="credit-numbers">— loading —</p>
+            <p id="credit-updated-at" class="credit-updated-at"></p>
+            <p id="credit-status" class="status"></p>
+          </section>
+
           <!-- ── Presenter setup ──────────────────────────────────────── -->
           <section class="sidebar-section">
             <p class="section-label">Presenter Setup</p>
@@ -42,6 +64,7 @@
                   <option value="">— loading —</option>
                 </select>
               </label>
+              <p id="voice-languages" class="field-hint" hidden></p>
             </div>
             <button id="init-btn" disabled>Launch Presenter</button>
             <p id="status-msg" class="status"></p>
@@ -251,6 +274,13 @@
                     keep existing tools unchanged. Use
                     <code>[]</code> to clear all tools.
                   </p>
+                  <details id="bot-tools-current" class="tools-current" hidden>
+                    <summary>View current tools</summary>
+                    <pre
+                      id="bot-tools-current-json"
+                      class="tools-current-json"
+                    ></pre>
+                  </details>
                   <textarea
                     id="bot-tools"
                     class="tools-editor"

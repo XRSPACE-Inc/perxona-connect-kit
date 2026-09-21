@@ -59,7 +59,7 @@ That greeting is the one line in this demo that hand-writes **Motion Markup** �
 Two things to know before you copy the pattern:
 
 - **Markup is all-or-nothing per message.** A message containing _any_ motion mark skips automatic motion selection for the whole utterance — you cannot use a tag as a hint layered on top of the automatic choice.
-- **An id your account cannot see is dropped, not rejected.** The line still speaks; it just carries no gesture. Combined with the point above, the greeting shipped here is empty-handed on any account but the one its id came from. Replace it with an id from your own catalog — `tools/motion-browser` composes these strings for you.
+- **An id your account cannot see is dropped, not rejected.** The line still speaks; it just carries no gesture. Combined with the point above, the greeting shipped here is empty-handed on any account but the one its id came from. Replace it with an id from your own catalog.
 
 ### Step 2 — Choose Who Runs the Model
 

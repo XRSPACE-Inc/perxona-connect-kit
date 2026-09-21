@@ -56,9 +56,18 @@ let isLaunching = false;
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 
+// DOM id stays "credit-numbers" (unchanged, shared with style.css/tests);
+// the variable is named for what it now renders — the full usage summary
+// text, not bare numbers.
+const creditUsageSummary = document.getElementById("credit-numbers");
+const creditUpdatedAt = document.getElementById("credit-updated-at");
+const creditStatus = document.getElementById("credit-status");
+const creditRefreshBtn = document.getElementById("credit-refresh-btn");
+
 const avatarSelect = document.getElementById("avatar-select");
 const sceneSelect = document.getElementById("scene-select");
 const voiceSelect = document.getElementById("voice-select");
+const voiceLanguagesHint = document.getElementById("voice-languages");
 const avatarIcon = document.getElementById("avatar-icon");
 const sceneIcon = document.getElementById("scene-icon");
 const initBtn = document.getElementById("init-btn");
@@ -101,6 +110,8 @@ const botKnowledgePollResumeBtn = document.getElementById(
 const botToolsInput = document.getElementById("bot-tools");
 const botToolsCount = document.getElementById("bot-tools-count");
 const botToolsExampleBtn = document.getElementById("bot-tools-example-btn");
+const botToolsCurrent = document.getElementById("bot-tools-current");
+const botToolsCurrentJson = document.getElementById("bot-tools-current-json");
 const botIdRow = document.getElementById("bot-id-row");
 const botIdValue = document.getElementById("bot-id-value");
 const botIdCopy = document.getElementById("bot-id-copy");
@@ -135,8 +146,7 @@ const chatbotManager = document.getElementById("chatbot-manager");
 //   2. A motion id your Connect account cannot see is dropped, not rejected — the
 //      line still speaks, it just carries no gesture. Combined with (1) that
 //      means this greeting is silent-handed on any account but the one the id
-//      came from. Replace it with an id from your own catalog; `tools/motion-browser`
-//      composes these strings for you.
+//      came from. Replace it with an id from your own catalog.
 // The two ways the chat can be busy: a request is in flight, or a performance is
 // open. Both are read by syncChatControls() and written nowhere but the two
 // setters beside it — a third writer that knows only one of them is what this
@@ -219,6 +229,8 @@ let presenterReady = false;
 /** Catalog caches for thumbnail lookups. */
 let avatars = [];
 let scenes = [];
+/** Catalog cache for the selected voice's language hint. */
+let voices = [];
 
 // Knowledge-file status polling. Upload/embedding is asynchronous on the
 // backend (chunking + embedding via a queued job, can take from seconds to
@@ -275,6 +287,64 @@ async function request(path, { method = "GET", body } = {}) {
   if (res.status === 204) return null;
   return res.json();
 }
+
+// ── Credit usage ─────────────────────────────────────────────────────────
+//
+// This sample's example of calling GET /api/credit: polled every
+// CREDIT_POLL_INTERVAL_MS while this page stays open, plus a manual refresh
+// icon button for anyone who doesn't want to wait out the interval. A failed
+// query only ever touches creditUsageSummary/creditStatus — catalog browsing,
+// chatbot management, and chat all work whether or not this succeeds.
+//
+// Uses a setTimeout chain rather than setInterval, same reasoning as
+// startKnowledgePolling below: upstream recomputes usage on its own
+// ~10-minute background worker, and the call itself does two upstream
+// queries rather than a plain list read — so a slow response can overlap
+// the next tick, and two in-flight responses can land in either order and
+// let a stale one overwrite a fresher one on screen. isCreditRefreshing
+// guards the manual button the same way, so a click mid-poll can't start a
+// second overlapping request either.
+const CREDIT_POLL_INTERVAL_MS = 5 * 60_000;
+let creditPollTimer = null;
+let isCreditRefreshing = false;
+
+async function refreshCredit() {
+  if (isCreditRefreshing) return;
+  isCreditRefreshing = true;
+  if (creditPollTimer !== null) {
+    clearTimeout(creditPollTimer);
+    creditPollTimer = null;
+  }
+  creditRefreshBtn.disabled = true;
+  creditStatus.textContent = "Refreshing…";
+  try {
+    const credit = await request("/api/credit");
+    creditStatus.textContent = "";
+    creditUpdatedAt.textContent = `Last checked ${new Date().toLocaleTimeString()} (usage can lag up to ~10 min)`;
+    if (credit.is_quota_exceeded) {
+      creditUsageSummary.classList.add("exhausted");
+      creditUsageSummary.textContent = `${credit.used_credit_points} / ${credit.total_credit_points} used — quota exhausted`;
+      creditStatus.textContent = `Out of credit. Top up or upgrade at ${appConfig.subscriptionUrl}`;
+    } else {
+      creditUsageSummary.classList.remove("exhausted");
+      const periodEnd = new Date(credit.period_end).toLocaleString();
+      creditUsageSummary.textContent =
+        `${credit.used_credit_points} / ${credit.total_credit_points} used, ` +
+        `${credit.remaining_credit_points} remaining (period ends ${periodEnd})`;
+    }
+  } catch (err) {
+    creditStatus.textContent = `Couldn't load credit usage: ${err.message}`;
+    console.error(err);
+  } finally {
+    creditRefreshBtn.disabled = false;
+    isCreditRefreshing = false;
+    creditPollTimer = setTimeout(refreshCredit, CREDIT_POLL_INTERVAL_MS);
+  }
+}
+
+creditRefreshBtn.addEventListener("click", () => {
+  refreshCredit();
+});
 
 // ── Catalog ────────────────────────────────────────────────────────────────
 
@@ -333,7 +403,30 @@ sceneSelect.addEventListener("change", () => {
 });
 // voiceId is only read at initializeWithConnectKey() time, so switching
 // voice must re-enable Launch the same way avatar/scene changes do.
-voiceSelect.addEventListener("change", updateInitBtn);
+voiceSelect.addEventListener("change", () => {
+  updateInitBtn();
+  updateVoiceLanguages();
+});
+
+/**
+ * Shows which languages the selected voice supports, as the API's own short
+ * codes (`en`, `ja`, … — see the `languages` field on GET /api/voices), so a
+ * multilingual agent's builder can tell whether the voice covers every
+ * language the agent will speak. Hidden while no voice is selected; a voice
+ * without language data says so rather than leaving a stale or blank hint.
+ */
+function updateVoiceLanguages() {
+  const voice = voices.find(({ id }) => id === voiceSelect.value);
+  if (!voice) {
+    voiceLanguagesHint.hidden = true;
+    voiceLanguagesHint.textContent = "";
+    return;
+  }
+  voiceLanguagesHint.hidden = false;
+  voiceLanguagesHint.textContent = voice.languages?.length
+    ? `Supports: ${voice.languages.join(", ")}`
+    : "No language info for this voice.";
+}
 
 async function loadCatalog() {
   setStatus("Loading catalog…");
@@ -346,9 +439,11 @@ async function loadCatalog() {
       ]);
     avatars = avatarList;
     scenes = sceneList;
+    voices = voiceList;
     fillSelect(avatarSelect, avatarList, "— select avatar —");
     fillSelect(sceneSelect, sceneList, "— select scene —");
     fillSelect(voiceSelect, voiceList, "— no voice —");
+    updateVoiceLanguages();
     updateInitBtn();
     updateAssetIcon(avatarIcon, avatars, avatarSelect.value, "head");
     updateAssetIcon(sceneIcon, scenes, sceneSelect.value, "default");
@@ -676,7 +771,14 @@ async function loadChatbots() {
 
 // Prefill editor when the <details> opens for an existing bot.
 botEditor.addEventListener("toggle", async () => {
-  if (!botEditor.open || !activeBotId) return;
+  if (!botEditor.open) return;
+  if (!activeBotId) {
+    // Opened with nothing selected (e.g. the picker was just cleared) — no
+    // detail to prefill, and any tools JSON left over from a previously
+    // viewed bot must not linger on screen.
+    showCurrentTools(null);
+    return;
+  }
   try {
     const detail = await request(`/api/chatbots/${activeBotId}`);
     botNameInput.value = detail.name ?? "";
@@ -686,17 +788,14 @@ botEditor.addEventListener("toggle", async () => {
     showKnowledgeFor(activeBotId, detail.knowledge ?? null);
     // Show tools count but leave textarea empty — the user only fills it
     // when they intend to replace tools (empty = leave unchanged per API semantics)
-    const toolCount = detail.tools?.length ?? 0;
-    botToolsCount.textContent =
-      toolCount > 0
-        ? `${toolCount} tool${toolCount === 1 ? "" : "s"} configured`
-        : "";
+    showCurrentTools(detail.tools);
     botToolsInput.value = "";
     // Reset file picker
     botKnowledgeFileInput.value = "";
     botKnowledgeFilename.textContent = "";
   } catch (err) {
     setBotStatus(`Failed to load chatbot details: ${err.message}`);
+    showCurrentTools(null);
   }
 });
 
@@ -709,7 +808,7 @@ function openNewBotForm(focus = true) {
   botNameInput.value = NEW_BOT_DEFAULTS.name;
   botInstructionsInput.value = NEW_BOT_DEFAULTS.instructions;
   botToolsInput.value = "";
-  botToolsCount.textContent = "";
+  showCurrentTools(null);
   botKnowledgeFileInput.value = "";
   botKnowledgeFilename.textContent = "";
   renderKnowledgeBadges(null);
@@ -1374,6 +1473,58 @@ botKnowledgePollResumeBtn.addEventListener("click", () => {
 // ── Function tools helpers ────────────────────────────────────────────────
 
 /**
+ * Render the chatbot's tool count and the read-only, collapsed-by-default
+ * JSON viewer from one shared source of truth — kept separate from the
+ * editable textarea, which must stay empty (see the "leave unchanged"
+ * comment above).
+ * @param {unknown[] | null | undefined} tools
+ */
+function showCurrentTools(tools) {
+  const count = Array.isArray(tools) ? tools.length : 0;
+  botToolsCount.textContent =
+    count > 0 ? `${count} tool${count === 1 ? "" : "s"} configured` : "";
+  if (count > 0) {
+    botToolsCurrentJson.textContent = JSON.stringify(
+      redactToolHeaders(tools),
+      null,
+      2,
+    );
+    botToolsCurrent.hidden = false;
+  } else {
+    botToolsCurrentJson.textContent = "";
+    botToolsCurrent.hidden = true;
+    botToolsCurrent.open = false;
+  }
+}
+
+/**
+ * Replace each tool's settings.request.headers *values* with a placeholder,
+ * keeping the header names visible. The backend masks a tool's `auth`
+ * secret (MaskedOutboundSecret) but returns settings.request.headers
+ * unmasked — a credential placed in a fixed header instead of `auth` would
+ * otherwise render here in plaintext.
+ * @param {unknown[]} tools
+ */
+function redactToolHeaders(tools) {
+  return tools.map((tool) => {
+    const headers = tool?.settings?.request?.headers;
+    if (!headers || typeof headers !== "object") return tool;
+    return {
+      ...tool,
+      settings: {
+        ...tool.settings,
+        request: {
+          ...tool.settings.request,
+          headers: Object.fromEntries(
+            Object.keys(headers).map((key) => [key, "••••••"]),
+          ),
+        },
+      },
+    };
+  });
+}
+
+/**
  * A ready-to-use example tool: weather lookup via wttr.in (no API key needed).
  * Good for hackathon demos because it works immediately without any signup.
  */
@@ -1473,12 +1624,13 @@ botIdCopy.addEventListener("click", () => {
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 //
 // Runs last, once every handler above is attached, and swallows its own
-// failures. The three calls are independent; only the presenter engine's
+// failures. The four calls are independent; only the presenter engine's
 // absence is survivable, and Launch is disabled when it is.
 
 await Promise.all([
   loadCatalog(),
   loadChatbots(),
+  refreshCredit(),
   isPresenterLaunchDisabled
     ? Promise.resolve()
     : loadPresenterEngine(appConfig.presenterUrl).then(

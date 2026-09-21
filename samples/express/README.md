@@ -107,7 +107,7 @@ chat) fail with the same HTTP `400` and `code: 1003`, with a body like one of th
 apart. A third, separate case — **no subscription record for the org at all** — fails with HTTP `403` and
 `{"code": 14005, "details": "No active subscription found for org_id: ..."}` instead; both demos treat all three the same
 way. At that
-point, sign in to [Perxona Console](https://console.perxona.ai/asia) (use the region matching your account — `/asia` or `/eu`)
+point, sign in to [Perxona Console](https://console.perxona.ai/asia) (use the region matching your account)
 with your Connect account credentials (the same email and password you set during [sign-up](#getting-a-connect-account)), open
 the organization management page, review **Subscription**, then top up credits or upgrade the plan.
 
@@ -129,6 +129,7 @@ It needs **two**, because they sit on opposite sides of the trust boundary:
 | Generate presentations, mint speech tokens | ✅                           | ✅                                |
 | Talk to a chatbot, manage chatbots         | ✅                           | ❌                                |
 | Publish an avatar into your organization   | ✅                           | ❌                                |
+| Read organization credit/billing usage     | ✅                           | ❌                                |
 
 The server sends the secret key on every upstream call it makes. `GET /api/connect-key` hands the browser the **publishable**
 one, which it passes straight into `presenter.initializeWithConnectKey(connectKey, target)` (`target` is
@@ -146,8 +147,9 @@ rather than trying to renew anything.
 
 **What the two keys do and do not protect.** The table above describes the _keys_. It does not describe this server: the
 `/api/*` routes have **no request-layer authorization at all**, and every one of them sends the secret key upstream. Anyone
-who can reach this server can therefore create, edit, delete and talk to your chatbots — and publish avatars into your
-organization — through it, without ever holding the
+who can reach this server can therefore create, edit, delete and talk to your chatbots, publish avatars into your
+organization, and read your organization's credit/billing usage (`GET /api/credit`, Secret-key only upstream because it is
+billing information) — through it, without ever holding the
 secret key. Splitting the credential stops the key from leaking into a browser; it does not stop the _capability_ from being
 reachable through the proxy. That is the demo trade this sample makes — every browser hitting it shares one upstream
 identity — and it is why this is not a multi-tenant, production-grade design. Put your own authorization in front of these
@@ -271,9 +273,10 @@ the Connect API.
 | `GET /api/health`                                                    | Liveness + diagnostics (`upstream` reachability; reads `mock` in mock mode). Probes the backend on each call. |
 | `GET /api/config`                                                    | Static per-process flags (`mock`, `chat`, `presenterUrl`) plus demo defaults. No upstream probe.              |
 | `GET /api/connect-key`                                               | Hand the browser the publishable key — pass straight into `presenter.initializeWithConnectKey()`.             |
-| `GET /api/voices`                                                    | List voices.                                                                                                  |
+| `GET /api/voices`                                                    | List voices. Each item carries `languages` — the short codes (`en`, `ja`, …) the voice can speak.             |
 | `GET /api/avatars` · `/api/avatars/:id` · `/api/avatars/:id/motions` | List / detail / motions.                                                                                      |
 | `GET /api/scenes` · `/api/scenes/:id`                                | List / detail.                                                                                                |
+| `GET /api/credit`                                                    | Studio's Credit Usage panel: used/total/remaining credit points and the current period's end.                 |
 | `POST /api/chat`                                                     | Opt-in LLM chat. Used by Studio's own-LLM source. Returns `501` until `LLM_API_KEY` is set.                   |
 | `/api/chatbots*`                                                     | Chatbot CRUD, knowledge upload, and multi-turn chat.                                                          |
 

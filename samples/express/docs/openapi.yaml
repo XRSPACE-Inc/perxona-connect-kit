@@ -896,6 +896,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/credit:
+    get:
+      tags:
+        - connect
+      summary: Get the organization's credit usage
+      description: >-
+        Return the organization's subscription credit usage snapshot: used, total, and remaining credit points, whether
+        the quota is exceeded, and the usage period's start and end. Usage is refreshed by a background worker roughly
+        every 10 minutes, not computed live on each call — a request made seconds after a billable call may not yet
+        reflect it. SECRET keys only — this is billing information, and PUBLISHABLE keys are meant to ship in a browser.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __30 calls / 1 seconds__
+      operationId: get_v1_connect_get_credit
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectCreditResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AssetLOD:
@@ -906,44 +947,53 @@ components:
         - lod2
       title: AssetLOD
       description: The level of detail for the asset
-    AssetLodCdnUrl:
-      $defs:
-        AssetType:
-          description: The type of the asset
-          enum:
-            - avatar
-            - scene
-            - motion
-            - facial_motion
-          title: AssetType
-          type: string
-      description: The CDN URLs for each LOD level
+    AssetManifestEntry:
       properties:
         type:
           anyOf:
             - $ref: '#/components/schemas/AssetType'
             - type: 'null'
-          default: null
         lod0:
           anyOf:
             - type: string
             - type: 'null'
-          default: null
           title: Lod0
         lod1:
           anyOf:
             - type: string
             - type: 'null'
-          default: null
           title: Lod1
         lod2:
           anyOf:
             - type: string
             - type: 'null'
-          default: null
           title: Lod2
-      title: AssetLodCdnUrl
+        configs:
+          anyOf:
+            - $ref: '#/components/schemas/AssetRuntimeConfigs-Output'
+            - type: 'null'
       type: object
+      title: AssetManifestEntry
+      description: |-
+        The manifest entry for one asset: its type, CDN URLs for each LOD level, and runtime configs.
+
+        The REST asset lookup reads configs from the source asset. Conversation manifests pin
+        the first successfully resolved Geppetto URLs and configs together until conversation end.
+        Entries with no resolved LOD URL carry no configs and are not cached.
+    AssetRuntimeConfigs-Output:
+      properties:
+        avatar:
+          anyOf:
+            - $ref: '#/components/schemas/AvatarRuntimeConfig-Output'
+            - type: 'null'
+        motion:
+          anyOf:
+            - $ref: '#/components/schemas/MotionRuntimeConfig-Output'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: AssetRuntimeConfigs
+      description: Immutable runtime configuration overrides grouped by asset type.
     AssetSortEnum:
       type: string
       enum:
@@ -970,6 +1020,32 @@ components:
         - MULAW
         - ALAW
       title: AudioEncoding
+    AvatarRuntimeConfig-Output:
+      properties:
+        retargeting:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        morph_crossfade:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        talk_nod:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        look_at:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        timeline:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: AvatarRuntimeConfig
+      description: Runtime behavior overrides owned by an avatar asset.
     AvatarThumbnailType:
       type: string
       enum:
@@ -983,6 +1059,21 @@ components:
         - loading
       title: AvatarThumbnailType
       description: The type of thumbnail for the asset
+    BehaviorToggleConfig:
+      properties:
+        enabled:
+          anyOf:
+            - type: boolean
+            - type: 'null'
+          title: Enabled
+        settings:
+          anyOf:
+            - $ref: '#/components/schemas/SettingsEnvelope'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: BehaviorToggleConfig
+      description: Enable flag and opaque, versioned settings for one runtime behavior.
     Body_create_chat_bot_api_v1_connect_chatbots_post:
       properties:
         name:
@@ -1047,6 +1138,9 @@ components:
           type: string
           format: binary
           title: Vrm File
+        skeleton_type:
+          $ref: '#/components/schemas/ConnectVRMSkeletonType'
+          description: Motion style the uploaded avatar draws its gestures from.
         avatar_name:
           anyOf:
             - type: string
@@ -1058,9 +1152,18 @@ components:
           $ref: '#/components/schemas/AssetLOD'
           description: Target LOD for the uploaded avatar. Only lod0 is currently supported.
           default: lod0
+        lipsync_mode:
+          $ref: '#/components/schemas/LipSyncMode'
+          description: >-
+            Lip sync engine the avatar speaks with. Keep the default 'wlipsync' for a VRM of any origin; pick
+            'xrlipsync' when the model carries the full ARKit blendshape set. 'wlipsync' drives the VRM's own mouth
+            expression presets. 'xrlipsync' runs the ML model, which drives the VRM's ARKit blendshapes when all 52 of
+            them resolve and otherwise projects onto those same presets.
+          default: wlipsync
       type: object
       required:
         - vrm_file
+        - skeleton_type
       title: Body_upload_vrm_api_v1_connect_assets_vrm_upload_post
     ChatBotDetailResponse:
       properties:
@@ -1149,6 +1252,12 @@ components:
             $ref: '#/components/schemas/LipSyncMode'
           type: object
           title: Lipsync Configs
+        lipsync_mode:
+          $ref: '#/components/schemas/LipSyncMode'
+        configs:
+          anyOf:
+            - $ref: '#/components/schemas/ConnectAvatarRuntimeConfigs'
+            - type: 'null'
       type: object
       required:
         - avatar_id
@@ -1158,7 +1267,30 @@ components:
         - tags
         - lod_urls
         - lipsync_configs
+        - lipsync_mode
       title: ConnectAvatarDetailResponse
+    ConnectAvatarRuntimeConfigs:
+      properties:
+        avatar:
+          anyOf:
+            - $ref: '#/components/schemas/AvatarRuntimeConfig-Output'
+            - type: 'null'
+      type: object
+      title: ConnectAvatarRuntimeConfigs
+      description: |-
+        Runtime config surface for Connect avatar-facing endpoints.
+
+        Scoped to the `avatar` namespace only: every asset this endpoint serves is AVATAR-typed,
+        and `validate_asset_configs` forbids any other namespace from ever being set on one — so
+        exposing the full `AssetRuntimeConfigs` shape here would mean every future namespace (e.g.
+        `motion`) permanently answers `null` to a Connect partner that can never receive it.
+
+        This narrowing applies only to avatar-specific endpoints. `connect/presentation`'s
+        `performance_manifest` deliberately keeps the shared `AssetManifestEntry` instead — REST
+        `get_asset_lod_urls`, the Chat WebSocket manifest and Connect's performance manifest all
+        carry the same wire type, so `configs.avatar` sits permanently null on a motion entry there.
+        That is the cost of one wire type across every surface that emits a manifest entry rather
+        than a Connect-specific one.
     ConnectAzureVoice:
       properties:
         name:
@@ -1441,6 +1573,43 @@ components:
         - response
       title: ConnectChatBotToolSettingsDO
       description: HTTP API specification returned for a Connect-managed tool.
+    ConnectCreditResponse:
+      properties:
+        used_credit_points:
+          type: integer
+          title: Used Credit Points
+        total_credit_points:
+          type: integer
+          title: Total Credit Points
+        remaining_credit_points:
+          type: integer
+          title: Remaining Credit Points
+        is_quota_exceeded:
+          type: boolean
+          title: Is Quota Exceeded
+        period_start:
+          type: string
+          format: date-time
+          title: Period Start
+        period_end:
+          type: string
+          format: date-time
+          title: Period End
+      type: object
+      required:
+        - used_credit_points
+        - total_credit_points
+        - remaining_credit_points
+        - is_quota_exceeded
+        - period_start
+        - period_end
+      title: ConnectCreditResponse
+      description: |-
+        The organization's credit usage snapshot, stripped of internal billing detail.
+
+        Deliberately not a re-export of ``SubscriptionCreditResponse``: that schema also carries
+        ``rate``, the ``*_in_cent`` fields, and the coupon grant/used/remaining breakdown, none of
+        which is for an external Connect caller to see.
     ConnectGoogleAudioConfig:
       properties:
         audioEncoding:
@@ -1707,10 +1876,23 @@ components:
       properties:
         performance_manifest:
           additionalProperties:
-            $ref: '#/components/schemas/AssetLodCdnUrl'
+            $ref: '#/components/schemas/AssetManifestEntry'
           type: object
           title: Performance Manifest
           description: Motion assets selected for this presentation request.
+        dropped_motion_ids:
+          items:
+            type: string
+          type: array
+          title: Dropped Motion Ids
+          description: >-
+            Motion/facial ids from the request message's [MOTION ...] marks that were not accepted (the asset is
+            unknown, not shared with this organization, or lacks a required engine tag): their marks remain in the
+            returned text and performance_manifest carries no entry for them. This reports gate refusals only, not
+            playability — an accepted id whose asset has no uploaded LOD files is absent from this list yet its manifest
+            entry carries only null URLs. A drop is a persistent data condition — the same id keeps being dropped until
+            the asset's tags or sharing change; fix the asset rather than retrying. Always empty when the message
+            carried no marks (server-suggested motion).
         display_text:
           type: string
           title: Display Text
@@ -1750,13 +1932,14 @@ components:
             - $ref: '#/components/schemas/PostureStyle'
             - type: 'null'
           description: >-
-            Turn-level emotion posture style for the 3D avatar (GH-2718): the client applies a small persistent
-            rotation-only posture offset (spine/shoulder/head) on top of whatever gesture clip plays. ``null`` means no
-            posture styling for this performance; ``intensity=neutral`` is a medium gain, NOT 'no posture'. Connect
-            note: this is the EFFECTIVE style resolved against the org's emotion-posture flag — NOT an echo of the
-            request; null when the flag is off or the request carried no emotion.
+            Turn-level emotion posture style for the 3D avatar: the client applies a small persistent rotation-only
+            posture offset (spine/shoulder/head) on top of whatever gesture clip plays. ``null`` means no posture
+            styling for this performance; ``intensity=neutral`` is a medium gain, NOT 'no posture'. Connect note: this
+            is the EFFECTIVE style resolved against the org's emotion-posture flag — NOT an echo of the request; null
+            when the flag is off or the request carried no emotion.
       type: object
       required:
+        - dropped_motion_ids
         - display_text
         - presentation
         - speech_content
@@ -1861,6 +2044,24 @@ components:
         - region
         - token
       title: ConnectVoiceTextToSpeechTokenResponse
+    ConnectVRMSkeletonType:
+      type: string
+      enum:
+        - male
+        - female
+        - male_three_head
+        - female_three_head
+      title: ConnectVRMSkeletonType
+      description: |-
+        The motion style a VRM avatar draws its gestures from.
+
+        A style choice, not a technical constraint: a clip from any of these pools is retargeted
+        onto the uploaded VRM's own rig, so picking the wrong one yields gestures in the wrong
+        style rather than a playback failure.
+
+        The three-head values select the 3-head-tall proportions, authored as a separate motion
+        lineage. The plain male and female values select the 8-head-tall lineage, which is where
+        most of the pool lives.
     ConnectVRMUploadResponse:
       properties:
         avatar_id:
@@ -1901,6 +2102,12 @@ components:
         - realization
         - confusion
       title: EmotionCategory
+      description: |-
+        The 13-way agent-side vocabulary — what the AGENT expresses in a turn.
+
+        The values are wire and storage contracts: motion assets are tagged with them, stored
+        emotion mappings answer with them, and the Suggest request's ``turn_base_emotion``
+        carries one. Member order is the order the CMS lists them in.
     HTTPValidationError:
       properties:
         detail:
@@ -1917,6 +2124,7 @@ components:
         - neutral
         - high
       title: IntensityCategory
+      description: How strongly the agent expresses an ``EmotionCategory``.
     Language:
       type: string
       enum:
@@ -1997,6 +2205,16 @@ components:
         - xrlipsync
       title: LipSyncMode
       description: The lip sync mode
+    MotionRuntimeConfig-Output:
+      properties:
+        timeline:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: MotionRuntimeConfig
+      description: Runtime behavior overrides owned by a motion asset.
     Page_ChatBotSummaryResponse_:
       properties:
         items:
@@ -2155,6 +2373,12 @@ components:
     PostureStyle:
       $defs:
         EmotionCategory:
+          description: |-
+            The 13-way agent-side vocabulary — what the AGENT expresses in a turn.
+
+            The values are wire and storage contracts: motion assets are tagged with them, stored
+            emotion mappings answer with them, and the Suggest request's ``turn_base_emotion``
+            carries one. Member order is the order the CMS lists them in.
           enum:
             - joy
             - excitement
@@ -2172,6 +2396,7 @@ components:
           title: EmotionCategory
           type: string
         IntensityCategory:
+          description: How strongly the agent expresses an ``EmotionCategory``.
           enum:
             - low
             - neutral
@@ -2199,6 +2424,30 @@ components:
         - loading
       title: SceneThumbnailType
       description: The type of thumbnail for a scene asset
+    SettingsEnvelope:
+      properties:
+        version:
+          type: integer
+          maximum: 9007199254740991
+          exclusiveMinimum: 0
+          title: Version
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - payload
+      title: SettingsEnvelope
+      description: |-
+        A versioned, opaque settings payload owned entirely by the frontend.
+
+        The backend never interprets `payload` — it only validates the envelope shape here and
+        storage limits (depth/bytes/key-count) at the request layer (`_validate_runtime_settings`).
+        `version` must be a real positive integer: bool is rejected even though `bool` is an `int`
+        subtype, and so are str/float, because this field round-trips through frontend JS.
     SortDirection:
       type: string
       enum:

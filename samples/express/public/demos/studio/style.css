@@ -187,6 +187,21 @@ button:disabled {
   min-height: 1.1em;
 }
 
+.credit-numbers {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.credit-numbers.exhausted {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.credit-updated-at {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 /* ── App layout ────────────────────────────────────────────────────────── */
 
 #app {
@@ -255,6 +270,17 @@ button:disabled {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.section-label-row .section-label {
+  margin: 0;
 }
 
 .field-group {
@@ -503,6 +529,10 @@ details[open] summary::before {
   line-height: 1.5;
 }
 
+#voice-languages {
+  font-size: 0.82rem;
+}
+
 /* ── Model source switch ───────────────────────────────────────────────── */
 
 .source-option {
@@ -674,6 +704,33 @@ details[open] summary::before {
 .tools-count {
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+/* ── Current tools (read-only) ─────────────────────────────────────────── */
+
+.tools-current summary {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tools-current summary:hover {
+  color: var(--text);
+}
+
+.tools-current-json {
+  margin-top: 0.4rem;
+  padding: 0.5rem;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ── Tools JSON textarea ───────────────────────────────────────────────── */
