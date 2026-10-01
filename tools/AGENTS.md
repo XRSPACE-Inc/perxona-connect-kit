@@ -1,15 +1,15 @@
 # Perxona Connect Kit — Tools
 
-This directory contains standalone tool apps built on the **Perxona Connect API** and the `<sv-presenter>`
-avatar Web Component. Unlike `samples/`, these are full applications rather than minimal getting-started
-starters — use them as reference clients or as a starting point for your own tooling.
+This directory contains standalone tools built on the **Perxona Connect API**. Unlike `samples/`, these
+are finished tools rather than minimal getting-started starters — use them as they are, or as a starting
+point for your own tooling.
 
 ## Available Tools
 
-- [`motion-browser/`](motion-browser/) — a web UI for previewing and controlling Perxona avatars: pick an
-  avatar/scene/voice, browse and preview motions, and make the avatar speak and perform. See
-  [`motion-browser/README.md`](motion-browser/README.md) for setup and usage, and
-  [`motion-browser/AGENTS.md`](motion-browser/AGENTS.md) for its architecture and conventions.
+- [`vrm-uploader/`](vrm-uploader/) — `upload-vrm.sh`, a shell script that checks a `.vrm` file against
+  what the Connect API and the avatar runtime accept, then uploads it as an avatar in your organization.
+  See [`vrm-uploader/README.md`](vrm-uploader/README.md) for the checks it runs and how to read its
+  output, and [`vrm-uploader/AGENTS.md`](vrm-uploader/AGENTS.md) for its architecture and conventions.
 
 ## Working In This Directory
 

@@ -349,10 +349,17 @@ paths:
       tags:
         - connect
       summary: Upload and publish a Three.js VRM avatar
-      description: |-
-        Accepts, validates, and stores a VRM file, then publishes an active Three.js avatar.
+      description: >-
+        Accepts, validates, and stores a VRM file, then publishes an active Three.js avatar. The avatar is tagged for
+        Three.js only, and the asset endpoints serve the engine the organization is set to — so it is listed and
+        readable once that setting is Three.js (enable_connect_use_threejs_only). Uploading first and switching the
+        organization afterwards is supported; until the switch, the avatar exists but the catalog does not return it.
+        The setting is organization-wide, not per avatar: switching it also changes which scenes and motions Connect
+        serves the organization, so any scene or motion tagged for Cocos alone stops being returned at the same moment.
+
 
         ## Rate Limit 
+
         This endpoint is limit __5 calls / 60 seconds__
       operationId: post_v1_connect_upload_vrm
       security:

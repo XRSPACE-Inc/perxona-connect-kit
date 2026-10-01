@@ -18,7 +18,7 @@ chat) fail with the same HTTP `400` and `code: 1003`, with a body like one of th
 `{"code": 1003, "details": "Subscription status is not valid for org_id: ..."}` — the `details` field is what tells the two
 apart. A third, separate case — **no subscription record for the org at all** — fails with HTTP `403` and
 `{"code": 14005, "details": "No active subscription found for org_id: ..."}` instead. At that
-point, sign in to [Perxona Console](https://console.perxona.ai/asia) (use the region matching your account — `/asia` or `/eu`)
+point, sign in to [Perxona Console](https://console.perxona.ai/asia) (use the region matching your account)
 with your Connect account credentials (see [`samples/express/README.md`](samples/express/README.md#getting-a-connect-account)
 for sign-up steps), open the organization management page, review **Subscription**, then top up credits or upgrade the plan.
 
@@ -26,6 +26,12 @@ for sign-up steps), open the organization management page, review **Subscription
 
 - [`samples/express/`](samples/express/) — an Express-based starter that shows the basic Connect flow. See
   [`samples/express/README.md`](samples/express/README.md) for setup and usage.
+
+## Tools
+
+- [`tools/vrm-uploader/`](tools/vrm-uploader/) — a shell script that checks your own `.vrm` file and
+  uploads it as an avatar. See [`tools/vrm-uploader/README.md`](tools/vrm-uploader/README.md) for setup
+  and usage.
 
 ## Presenter SDK Integration FAQs
 

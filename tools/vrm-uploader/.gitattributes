@@ -1,0 +1,11 @@
+# tests/ is published on purpose: README.md and AGENTS.public.md both tell an
+# external reader how to run it. tests/internal/ stays behind, because those
+# assertions read files that exist only in the repository this tool is
+# developed in.
+tests/internal/ export-ignore
+
+# Internal agent context — kept out of the public mirror. The participant-facing
+# equivalents are AGENTS.public.md / CLAUDE.public.md, renamed on publish. The
+# split exists because the internal copy describes tests/internal/ and the CI
+# that runs this tool, neither of which a reader of the published copy has.
+/AGENTS.md export-ignore

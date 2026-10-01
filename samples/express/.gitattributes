@@ -4,11 +4,9 @@
 mocks/ export-ignore
 tests/ export-ignore
 
-# Internal agent context — kept out of the public mirror.
-# The participant-facing equivalents are AGENTS.public.md / CLAUDE.public.md,
-# which the mirror workflow renames to AGENTS.md / CLAUDE.md on publish.
+# Internal agent context — kept out of the public mirror. The participant-facing
+# equivalents are AGENTS.public.md / CLAUDE.public.md, renamed on publish.
 /AGENTS.md export-ignore
-/CLAUDE.md export-ignore
 
 # Internal developer README — kept out of the public mirror.
 # The participant-facing equivalent is README.public.md,
