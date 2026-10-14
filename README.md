@@ -1,26 +1,34 @@
-# Perxona Connect Samples
+# Perxona Connect Kit
 
-Minimal sample apps for building with Perxona Connect.
+**Add a talking 3D AI avatar to your web app.** Samples and tools for the Perxona Connect SDK: drop in the `<sv-presenter>` web component, pick an avatar, scene and voice, and it speaks with lip-sync.
 
-> All samples in this repository use a Perxona Connect account. Sign up at <https://console.perxona.ai> — there is
-> no sign-up API. See [`samples/express/README.md`](samples/express/README.md) for the full steps.
+<!-- Add a 5–10 second GIF of the avatar speaking here: ![Perxona avatar demo](docs/demo.gif) -->
 
-## Usage and Subscription
+📘 [Developer Handbook](https://connect.perxona.ai) · 💬 [Discord](https://discord.gg/dywx2nJRE) · 🎭 [Showcase](https://showcase.perxona.ai)
 
-> ⚠️ **Connect Kit is currently in Preview.** Through **2026/09/20** (subject to platform configuration), metered calls
-> (chatbot conversations) are not subject to usage-credit enforcement. Put less ceremoniously: the meter exists, but nobody
-> is sending you a bill yet.
+## Quick start (5–15 minutes)
 
-When credit enforcement starts, Connect Kit sign-ups are treated as Perxona Console **Free Plan** users by default. If that
-organization's credits are exhausted, **or its subscription itself is no longer active**, metered calls (such as chatbot
-chat) fail with the same HTTP `400` and `code: 1003`, with a body like one of these:
-`{"code": 1003, "details": "credit_points exhausted for org_id: ..."}` or
-`{"code": 1003, "details": "Subscription status is not valid for org_id: ..."}` — the `details` field is what tells the two
-apart. A third, separate case — **no subscription record for the org at all** — fails with HTTP `403` and
-`{"code": 14005, "details": "No active subscription found for org_id: ..."}` instead. At that
-point, sign in to [Perxona Console](https://console.perxona.ai/asia) (use the region matching your account)
-with your Connect account credentials (see [`samples/express/README.md`](samples/express/README.md#getting-a-connect-account)
-for sign-up steps), open the organization management page, review **Subscription**, then top up credits or upgrade the plan.
+Needs Node 22+ and a free Perxona Connect account ([sign up](https://console.perxona.ai)).
+
+```bash
+git clone https://github.com/XRSPACE-Inc/perxona-connect-kit.git
+cd perxona-connect-kit/samples/express
+cp .env.example .env   # add your API base URL + secret and publishable Connect API keys
+npm install
+npm run dev            # open http://localhost:8083
+```
+
+Create both keys in the console under **Organization → Integration → Connect API keys**. Full steps in [`samples/express/README.md`](samples/express/README.md).
+
+## What you can build
+
+- AI concierges and customer-service avatars on websites
+- Voice-driven product guides and onboarding hosts
+- VTuber-style characters from your own `.vrm` file ([VRM uploader](tools/vrm-uploader/))
+
+## Plans and billing
+
+Connect Kit sign-ups start on the Perxona Console **Free Plan**. See [pricing](https://perxona.ai/pricing). If a call returns `code: 1003` or `14005`, see [Billing errors](#billing-errors) below.
 
 ## Samples
 
@@ -47,3 +55,10 @@ in the target avatar's motion catalog (check `GET /api/v1/connect/assets/avatars
 supports); or the cue lands too close to the end of the speech — motion playback stops when its accompanying speech
 finishes, so a motion cued near the end of a sentence, or in a very short utterance, may not have enough time to
 play. To play a motion on its own, independent of the speech queue, call `presenter.playMotion(motionId)` instead.
+
+## Billing errors
+When credit enforcement starts, Connect Kit sign-ups are treated as Perxona Console **Free Plan** users by default. If that organization's credits are exhausted, **or its subscription itself is no longer active**, metered calls (such as chatbot chat) fail with the same HTTP `400` and `code: 1003`, with a body like one of these: `{"code": 1003, "details": "credit_points exhausted for org_id: ..."}` or
+`{"code": 1003, "details": "Subscription status is not valid for org_id: ..."}` — the `details` field is what tells the two apart. A third, separate case — **no subscription record for the org at all** — fails with HTTP `403` and `{"code": 14005, "details": "No active subscription found for org_id: ..."}` instead. At that
+point, sign in to [Perxona Console](https://console.perxona.ai/asia) (use the region matching your account)
+with your Connect account credentials (see [`samples/express/README.md`](samples/express/README.md#getting-a-connect-account)
+for sign-up steps), open the organization management page, review **Subscription**, then top up credits or upgrade the plan.
