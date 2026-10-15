@@ -7,14 +7,18 @@ avatar. It is the whole tool — there is no app, no build step and no runtime d
 
 ## Using it from an agent
 
-**Do not upload for now.** `<sv-presenter>` cannot display an uploaded VRM avatar yet — the
-renderer that draws VRM models has not been released — so an upload would only add an avatar that
-nothing can show. Until this paragraph is removed, run `--validate-only` and stop there. If the user
-asks for an upload, tell them it is on hold and why instead of running it. The script itself does
-not enforce this: the second command below still uploads.
+<!-- vrm-upload-hold -->
+
+**Do not upload for now.** An uploaded VRM becomes a Three.js avatar, and Connect is not serving
+those yet: by default the avatar catalog does not return it, and `<sv-presenter>`'s Three.js
+renderer has not been released. The upload itself succeeds, but nothing can list, select or display
+the result. Until this paragraph is removed, run `--validate-only` and stop there. If the user asks
+for an upload, tell them it is on hold and why instead of running it. The script itself does not
+enforce this: the upload command below still uploads.
 
 ```bash
 ./upload-vrm.sh --validate-only --json model.vrm     # decide whether to go on
+# On hold (vrm-upload-hold) — do not run the upload below until the paragraph above is removed.
 PERXONA_CONNECT_SECRET_KEY=... ./upload-vrm.sh --skeleton-type female --json model.vrm
 ```
 
