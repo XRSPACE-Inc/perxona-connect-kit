@@ -1,0 +1,14 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Perxona Connect Kit",
+  "description": "Add a talking 3D AI avatar to a web app with the Perxona Connect API and the <sv-presenter> Presenter SDK web component: avatars, scenes, voices, lip-sync, emotions and motions, with an Express sample and tools.",
+  "folders": [],
+  "excludeFolders": ["docs/zh-tw", "docs/ja", "node_modules", "samples/express/public/demos/*/vendor"],
+  "excludeFiles": [],
+  "rules": [
+    "Keep the secret Connect API key on the server; only the publishable key may reach the browser.",
+    "Load the Presenter module once from the PRESENTER_URL your server supplies, declare <sv-presenter> in the DOM, then call initializeWithConnectKey() before present().",
+    "Wait for the presenter to reach Ready before calling present(); check PresentationResult.success and its code/message on failure.",
+    "Pick avatar, scene and voice IDs from the catalog endpoints rather than hardcoding them in production."
+  ]
+}
