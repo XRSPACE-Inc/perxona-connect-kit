@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InterviewCoach | mock interviews with a face</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ICP-1 demo: a practice-product builder's app. Built on the Perxona
+         Connect Kit by scaffolding from demos/embed/ (see AGENTS.md). -->
+    <header class="site-header">
+      <a class="logo" href="#">◆ InterviewCoach</a>
+      <nav><a href="#">How it works</a><a href="#">For schools</a><a href="#">Pricing</a></nav>
+    </header>
+
+    <main class="page">
+      <section class="intro" id="intro">
+        <p class="eyebrow">Practice with a real face, not a text box</p>
+        <h1>Five questions. Honest feedback. Your interviewer looks you in the eye.</h1>
+        <p class="lede">
+          Pick a role and a language. Mia asks one question at a time, reacts to
+          your answer, scores it, and moves on. Five minutes, then a report.
+        </p>
+        <form id="setup" class="setup">
+          <label>Role
+            <select id="role">
+              <option value="Junior Marketing Specialist">Marketing (junior)</option>
+              <option value="Frontend Developer">Frontend developer</option>
+              <option value="Hotel Front Desk Agent">Hotel front desk</option>
+              <option value="Customer Support Representative">Customer support</option>
+            </select>
+          </label>
+          <label>Language
+            <select id="lang">
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+              <option value="zh">繁體中文</option>
+            </select>
+          </label>
+          <button id="start-btn" class="cta" type="submit" disabled>Loading interviewer…</button>
+        </form>
+      </section>
+
+      <section class="room" id="room" hidden>
+        <aside class="avatar-slot">
+          <div id="stage" class="stage">
+            <sv-presenter></sv-presenter>
+            <div id="stage-loading" class="stage-loading" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div id="stage-error" class="stage-error" hidden></div>
+            <div id="mood" class="mood" hidden></div>
+          </div>
+          <div class="progress"><div id="progress-bar"></div><span id="progress-text">Question 1 of 5</span></div>
+        </aside>
+
+        <div class="chat">
+          <ul id="chat-log" class="chat-log"></ul>
+          <form id="chat-form" class="chat-form">
+            <textarea id="chat-input" class="chat-input" rows="3" placeholder="Type your answer… (Enter to send, Shift+Enter for a new line)" aria-label="Your answer"></textarea>
+            <div class="chat-actions">
+              <button id="mic-btn" class="mic-btn" type="button" title="Answer by voice" hidden>🎙</button>
+              <button id="send-btn" class="send-btn" type="submit">Answer</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="report" id="report" hidden>
+        <h2>Your interview report</h2>
+        <p id="report-summary" class="report-summary"></p>
+        <ol id="report-list" class="report-list"></ol>
+        <div class="report-actions">
+          <button id="again-btn" class="cta" type="button">Practice again</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="devstats" id="devstats" hidden>
+      <strong>dev stats</strong>
+      <span id="stat-turns">turns 0</span>
+      <span id="stat-llm">LLM p50 – ms</span>
+      <span id="stat-voice">send→voice p50 – ms</span>
+      <span id="stat-credit">credits –</span>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

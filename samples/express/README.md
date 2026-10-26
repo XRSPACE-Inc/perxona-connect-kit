@@ -22,7 +22,7 @@ npm install
 npm run dev              # open the URL it prints (default http://localhost:8083)
 ```
 
-Create both keys in the Perxona console under **Organization → Integration → Connect API keys**.
+Create both keys in the Perxona console: open the avatar menu (top right), then **Management → Integration → Connect API keys**.
 They are not interchangeable — see ["Auth model"](#auth-model).
 
 Pick a demo, choose an avatar / scene / voice, click its launch button — the avatar speaks. The server authenticates with its
@@ -178,7 +178,7 @@ keys this sample runs on — the sample itself never uses your password.
 > `reset-password` endpoints were removed; accounts are created on the console. Password recovery
 > is on the console's sign-in page.
 
-Then open **Organization → Integration → Connect API keys** and create **two**:
+Then open the avatar menu (top right) → **Management → Integration → Connect API keys** and create **two**:
 
 | Create with type | Put it in                         | Allowed domains                                         |
 | ---------------- | --------------------------------- | ------------------------------------------------------- |
