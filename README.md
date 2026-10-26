@@ -2,9 +2,11 @@
 
 **Add a talking 3D AI avatar to your web app.** Samples and tools for the Perxona Connect SDK: drop in the `<sv-presenter>` web component, pick an avatar, scene and voice, and it speaks with lip-sync.
 
-<!-- Add a 5–10 second GIF of the avatar speaking here: ![Perxona avatar demo](docs/demo.gif) -->
+![A Perxona avatar speaking with lip-sync in the InterviewCoach demo](docs/demo.gif)
 
-📘 [Developer Handbook](https://connect.perxona.ai) · 💬 [Discord](https://discord.gg/dywx2nJRE) · 🎭 [Showcase](https://showcase.perxona.ai)
+*Mia, an interviewer built on this kit, asking her first question. Recorded from a stock clone of this repo. ([MP4](docs/demo.mp4))*
+
+📘 [Developer Handbook](https://connect.perxona.ai) · 💬 [Discussions](https://github.com/XRSPACE-Inc/perxona-connect-kit/discussions) · 🎭 [Showcase](https://showcase.perxona.ai)
 
 ## Quick start (5–15 minutes)
 
@@ -18,13 +20,18 @@ npm install
 npm run dev            # open http://localhost:8083
 ```
 
-Create both keys in the console under **Organization → Integration → Connect API keys**. Full steps in [`samples/express/README.md`](samples/express/README.md).
+Create both keys in the console: open the avatar menu (top right), then **Management → Integration → Connect API keys**. Full steps in [`samples/express/README.md`](samples/express/README.md).
 
 ## What you can build
 
-- AI concierges and customer-service avatars on websites
-- Voice-driven product guides and onboarding hosts
-- VTuber-style characters from your own `.vrm` file ([VRM uploader](tools/vrm-uploader/))
+Best fit: products where the avatar **is** the product, not a widget on the side.
+
+- **Practice and training**: mock interviews, customer-service drills, exam and language practice.
+- **Reception and concierge**: hotel check-in, clinic front desk, store greeter, answering from your own knowledge file in Japanese, English or 繁體中文.
+- **A face for your agent**: your chat endpoint in, `present()` out. Give an existing LLM agent a voice and a face in about thirty lines.
+- **Characters**: VTuber-style or companion characters from your own `.vrm` file ([VRM uploader](tools/vrm-uploader/)).
+
+Community builds live on the [Showcase](https://showcase.perxona.ai).
 
 ## Plans and billing
 
@@ -40,6 +47,17 @@ Connect Kit sign-ups start on the Perxona Console **Free Plan**. See [pricing](h
 - [`tools/vrm-uploader/`](tools/vrm-uploader/) — a shell script that checks your own `.vrm` file and
   uploads it as an avatar. See [`tools/vrm-uploader/README.md`](tools/vrm-uploader/README.md) for setup
   and usage.
+
+## Built with Perxona
+
+Shipped something on this kit? Add the badge to your README and post the link in
+[Discussions](https://github.com/XRSPACE-Inc/perxona-connect-kit/discussions) so it can be featured on the Showcase.
+
+[![Built with Perxona](https://img.shields.io/badge/Built%20with-Perxona-000095)](https://github.com/XRSPACE-Inc/perxona-connect-kit)
+
+```markdown
+[![Built with Perxona](https://img.shields.io/badge/Built%20with-Perxona-000095)](https://github.com/XRSPACE-Inc/perxona-connect-kit)
+```
 
 ## Presenter SDK Integration FAQs
 
