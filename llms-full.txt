@@ -1,0 +1,1788 @@
+# Perxona Connect Kit — full handbook (English)
+
+Source: https://connect.perxona.ai (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook2md.py.
+
+<!-- section: overview -->
+## What Can You Build?
+
+Connect Kit gets a talking 3D avatar on screen in under 15
+minutes — and gives you a full platform to extend it as far as
+you need. Here is what is available today and what is on the
+roadmap.
+
+1 — Out-of-the-Box
+
+Everything you need for a lifelike avatar experience — ready
+to deploy the moment you pick your configuration.
+
+🧑‍🎨
+
+#### Avatar Catalog
+
+Curated cast of realistic humans, cartoon characters, and
+VRM avatars. Pick one from the catalog and it's on-screen
+in minutes.
+
+🎙️
+
+#### Voice — Azure & Google TTS
+
+Rich, human-sounding voices from Azure and Google TTS.
+Speech automatically drives the avatar's lip-sync — no
+extra setup required.
+
+🤖
+
+#### Chatbot
+
+Upload a knowledge file, wire simple tool calls, and pair
+with the 3D Avatar for a fully voiced AI agent — no extra
+backend required.
+
+🌐
+
+#### Built to Run Everywhere
+
+Focus on building your product — we handle the rest. All
+features run reliably on Chrome, Safari, and Edge across
+desktop and mobile with no platform workarounds needed.
+
+2 — Integration with Your Own
+
+🧠
+
+#### Bring Your Own LLM
+
+Use any LLM. Embed motion cues inline via Markup Motion
+Language so the avatar's body language matches the
+conversation.
+
+🔊
+
+#### Bring Your Own Voice
+
+Pass your own audio (an `ArrayBuffer` from any
+TTS service or pre-recorded clip) directly via
+`presenter.presentWithAudio()`. The avatar
+lip-syncs to your audio and the Motion Director still
+drives gestures and expressions from the text — no Perxona
+TTS required.
+
+🪆
+
+#### Bring Your Own Avatar (VRM 1.0)
+
+Upload a VRM 1.0 character to match your brand or audience
+and make it speak.
+Uploading is on hold for now — see
+[VRM Uploader](https://connect.perxona.ai/#vrm-uploader).
+
+3 — Presentation Engine
+
+Real-time avatar performances that stream instantly — no large
+file downloads, no video buffering, no game-engine install.
+The avatar responds the moment you call
+`present()`.
+
+🎬
+
+#### In-house Motion Director
+
+The engine reads the text and selects matching body motion
+and facial expressions automatically — the avatar's face
+and body react to what it's saying.
+
+✏️
+
+#### Be your own Motion Director
+
+Override motion timing at the sentence level using Markup
+Motion Language — full creative control in plain text.
+
+```js
+// Presentation Engine — available now
+const presenter = document.querySelector("sv-presenter");
+
+button.addEventListener("click", async () => {
+  await presenter.resumeAudioPlayback();
+  await presenter.initializeWithConnectKey(connectKey, { avatarId, sceneId, voiceId });
+  presenter.present("Hello world! I'm Perxona agent and I can talk to you.");
+});
+```
+
+[→ Presenter Component](https://connect.perxona.ai/#sdk-reference)
+
+<!-- section: introduction -->
+Developer Handbook
+
+# Perxona Connect Kit
+
+Build a browser-native avatar experience.
+
+The public integration surface for the
+**Perxona Connect API** and the
+`<sv-presenter>` avatar Web Component. This
+handbook explains those contracts first; the Express sample
+appears later as one implementation path.
+
+## What is Perxona Connect Kit?
+
+Connect Kit is the public integration surface for placing a
+real-time 3D avatar in a web product. It separates the browser
+rendering contract from the server-facing Connect API, so you
+can use either with your own application architecture.
+
+It has two complementary parts:
+
+- **`<sv-presenter>`** — a browser
+  Web Component that renders the avatar, initializes a selected
+  avatar/scene/voice target, and runs speech, motion, and
+  lip-sync playback.
+- **Connect API** — authenticated HTTP endpoints
+  for catalog assets, voices, presentations, and chatbots.
+  Authenticate with a **Connect API key**, sent as
+  an `X-Connect-Key` header. Keys come in two types:
+  a **secret** key stays on your server, and a
+  **publishable** key is the one you hand to the
+  browser — it can read your catalog, generate presentations,
+  and mint speech tokens, and nothing beyond that.
+
+<!-- section: how-it-works -->
+## Integration Architecture
+
+A Connect integration has three responsibilities. Your backend
+owns credentials and access policy, the Connect API owns the
+avatar resources and presentation services, and
+`<sv-presenter>` owns browser-side rendering
+and playback.
+
+```
+Your backend                          Browser
+- stores Connect credentials          - renders your product UI
+- attaches its secret key             - receives the publishable key
+            |                         |
+            v                         v
+      Connect API  <----------------  <sv-presenter>
+      assets · voices · presentation  initializes · speaks · animates
+      chatbots                        handles lip-sync and playback
+```
+
+### Responsibility Boundary
+
+- **Your backend** holds the
+  **secret** Connect API key, applies your own user
+  authorization, and serves the browser the
+  **publishable** key — never the secret one.
+- **Connect API** exposes the catalog of avatars,
+  scenes, voices, and motions, plus presentation and chatbot
+  operations.
+- **`<sv-presenter>`** receives
+  the publishable key and selected asset IDs, then communicates
+  with Connect directly for the runtime services it needs.
+
+### Runtime Flow
+
+1. Your backend sends its **secret** key as an
+   `X-Connect-Key` header on every Connect request.
+   There is no login step and no token to refresh.
+2. Your application lists or selects an active avatar, scene, and
+   optional voice from the Connect API.
+3. In a direct user gesture, call
+   `presenter.resumeAudioPlayback()` to satisfy the
+   browser autoplay policy.
+4. Call
+   `presenter.initializeWithConnectKey(connectKey, { avatarId,
+   sceneId, voiceId })`.
+5. When the component reports `Ready`, call
+   `presenter.present(content)` or
+   `presenter.presentWithAudio(audio, content)`.
+
+⚠️
+
+**Only the publishable key may reach a browser.**
+Anyone who opens devtools on your page can read whatever you
+hand the presenter, so hand it the key that is meant to be
+read. A **publishable** key can read your assets
+and voices, generate presentations, and mint speech tokens —
+note that the last two *bill your organization*, so an
+unrestricted publishable key that someone copies off your page
+keeps spending your credits through any other page's script.
+Restrict its domains before you ship — that stops another
+page's script, since only a real browser sends a genuine
+`Origin` header. It does not stop someone who
+copies the raw key into their own script:
+`Origin` is just a header, and nothing outside a
+browser is bound to send a truthful one. If a key leaks,
+revoking it from the console is the actual stop. A
+**secret** key adds everything a server needs:
+writing assets, talking to your chatbots, and creating,
+editing and deleting them. Keep it on your server and never
+serve it on any route.
+
+⚠️
+
+**Putting the wrong one in the wrong variable is
+silent.**
+Both types share the `pxc_` prefix and the upstream
+accepts either, so a secret key in
+`PERXONA_CONNECT_PUBLISHABLE_KEY` does not fail —
+everything works, and every visitor is handed a key that can
+manage your chatbots. The console is the only place that tells
+you which type a key is.
+
+🌐
+
+**Leave the secret key's allowed domains empty.**
+A domain restriction is matched against the browser's
+`Origin` header, and a server-to-server request
+never sends one — so a secret key with domains configured is
+refused on every call — and the error says only that the
+origin is not allowed, never what it saw, because nothing was
+sent. Domain restrictions belong on the publishable key, which
+really is used by a browser.
+
+<!-- section: sdk-reference -->
+## Presenter Component Reference
+
+`<sv-presenter>` is the browser runtime for a
+Connect avatar. Load the approved Presenter module, add the
+element to the DOM, then interact with its JavaScript API. The
+component accepts a publishable Connect API key and selected
+asset IDs; your application backend owns how it supplies those
+values.
+
+### Load the Component
+
+Read `PRESENTER_URL` from trusted application
+configuration supplied by your server or Perxona, then inject it
+once as a module script. The URL is not a credential.
+
+index.html
+
+```html
+<!-- Declare the element before the Presenter module finishes loading -->
+<sv-presenter hidden></sv-presenter>
+```
+
+app.js
+
+```js
+// Read this from trusted application configuration; it is not a secret.
+const presenterUrl = getPresenterUrlFromAppConfig();
+
+// Load the Presenter module once before reading the custom element.
+await new Promise((resolve, reject) => {
+  const script = document.createElement('script');
+  script.type = 'module';
+  script.src = presenterUrl;
+  script.onload = resolve;
+  script.onerror = () => reject(new Error('Presenter engine failed to load'));
+  document.head.append(script);
+});
+
+const presenter = document.querySelector('sv-presenter');
+```
+
+### Full Initialization Flow
+
+```js
+// Your backend serves the publishable key. It never serves the secret one.
+const getConnectKeyFromYourBackend = async () => {
+  const response = await fetch('/your-backend/connect-key');
+  return response.json();
+};
+
+// Listen for state changes before launching the component.
+presenter.addEventListener('PRESENTER_STATUS', (e) => {
+  // e.detail.status: 'Uninitialized' | 'Initializing' | 'Ready'
+  console.log('Presenter status:', e.detail.status);
+});
+
+launchButton.addEventListener('click', async () => {
+  // Must run inside a direct user gesture to unlock autoplay.
+  await presenter.resumeAudioPlayback();
+
+  const { connectKey } = await getConnectKeyFromYourBackend();
+  await presenter.initializeWithConnectKey(connectKey, {
+    avatarId: selectedAvatarId,
+    sceneId: selectedSceneId,
+    voiceId: selectedVoiceId, // optional
+  });
+
+  // present() never rejects; inspect the returned result instead.
+  const result = await presenter.present('Hello from Perxona!');
+  if (!result.success) console.warn(result.code, result.message);
+});
+
+// A refused key has no refresh to fall back on: it is revoked, expired,
+// restricted to other domains, or was never granted the scope, and
+// presenting it again fails the same way.
+presenter.addEventListener('CONNECT_KEY_REJECTED', () => {
+  console.error('Connect key rejected — reissue it in the console, then launch again.');
+});
+
+// Stop current playback and clear the queue when your UI needs it.
+presenter.interruptPresentation();
+```
+
+### API Members
+
+| Member | Description |
+| --- | --- |
+| `initializeWithConnectKey(connectKey, target)` | Boot the presenter. Resolves `target` (avatarId/sceneId/voiceId) against the Connect API and mints a speech token. Returns a Promise — awaiting it means the presenter is ready. |
+| `resumeAudioPlayback()` | Unlock browser autoplay policy. **Must be called from a direct user gesture.** Returns a Promise. Call this before `initializeWithConnectKey()` in your click handler. |
+| `present(content)` | Synthesize `content` into speech and play it on the avatar. Returns `PresentationResult { success: boolean, code: string, message?: string }`. **Never rejects** — always check `result.success`. |
+| `presentWithAudio(audio, content)` | Play caller-supplied audio on the avatar, bypassing Perxona TTS. Pass an `ArrayBuffer` from any TTS service or pre-recorded clip. The Motion Director still runs — gestures and expressions are driven by `content`. Returns `PresentationResult`. **Never rejects.** |
+| `interruptPresentation()` | Stop the current performance and clear the queue immediately. |
+| event `PRESENTER_STATUS` | Fired as state changes. `e.detail.status`: `"Uninitialized"` → `"Initializing"` → `"Ready"`. |
+| event `CONNECT_KEY_REJECTED` | Fired when the Connect API refuses the key: revoked, expired, restricted to other domains, or never granted the scope. **There is nothing to retry** — the same key fails the same way. Reissue it in the console, then initialize again. |
+
+### Transparent Background
+
+When the scene you initialize with carries the
+`background:transparent` tag, the presenter renders
+the 3D view on a transparent canvas and your page shows through
+behind the avatar; a scene without the tag renders its own
+built-in background instead, and nothing shows through.
+
+The scene decides it: there is no method and no attribute that
+switches transparency on, so whether you get it follows from
+which `sceneId` you pass to
+`initializeWithConnectKey`. Both
+`/assets/scenes` and
+`/assets/scenes/{scene_id}` return each scene's
+`tags`, so your picker can tell which scenes are
+transparent. When you pick one of those, whatever should show
+behind the avatar belongs on the element's own container — the
+presenter paints no background of its own.
+
+<!-- section: api-reference -->
+## Connect API Reference
+
+Connect API is the server-facing half of the kit. Unless noted
+otherwise, the paths below are relative to your regional base
+URL, for example
+`https://console.perxona.ai/asia/api/v1/connect`.
+Authenticate protected calls with a Connect API key, sent as an
+`X-Connect-Key` header.
+
+🗺️
+
+**This is the real Connect API** — the one your
+own backend calls, at `console.perxona.ai`. The
+Express sample later in this handbook wraps some of these
+endpoints behind its own `/api/*` routes, on a
+second, separate server — see
+[Express Sample Adapter API](https://connect.perxona.ai/#sample-api-adapter)
+for those. If you are writing your own backend, call the
+endpoints on this page directly; you do not need the sample's
+routes.
+
+💡
+
+Send `X-Connect-Key: <your key>` on every
+protected call — see
+[Get Your API Credentials](https://connect.perxona.ai/#credentials) for how to
+create one.
+
+⚠️
+
+**Never send both headers on one request.** The
+API rejects `X-Connect-Key` and
+`Authorization: Bearer` together with
+`400`, whether you are migrating off the legacy
+header or testing both.
+
+### Usage and Subscription
+
+⚠️
+
+Connect Kit sign-ups are treated as Perxona Console
+`Free Plan` users by default. If that
+organization's credits are exhausted,
+**or its subscription itself is no longer active**, metered calls — currently
+`POST /api/chatbots/:id/chat` (chatbot
+conversations) — fail with the same HTTP
+`400` and `code: 1003`, with a body
+like one of these:
+
+```
+{"code": 1003, "details": "credit_points exhausted for org_id: ..."}
+```
+```
+{"code": 1003, "details": "Subscription status is not valid for org_id: ..."}
+```
+
+The `details` field is what tells the two apart.
+A third, separate case — no subscription record exists for
+the organization at all — fails with HTTP
+`403` and `code: 14005` instead:
+
+```
+{"code": 14005, "details": "No active subscription found for org_id: ..."}
+```
+
+Non-metered calls (catalog lookups, chatbot CRUD,
+presentation) are **not** affected.
+
+To check your current usage or top up credits, sign in to
+[Perxona Console → Subscription](https://console.perxona.ai/asia/organization/subscription/)
+(use the region matching your account). If you are building
+your own app on top of the Connect API, consider detecting
+`code: 1003` and `code: 14005` in the
+response and showing your users a friendly message — the
+sample demos in this kit show this pattern for
+`1003`; the same approach applies to
+`14005`.
+
+💡
+
+**Credit is your organization's shared usage meter, not
+scoped to Connect.**
+The metered calls described above (chatbot conversations)
+draw from the same org-wide pool as any other billable
+conversation traffic on your account. Check your
+organization's current usage with a
+**Secret** key:
+
+```bash
+curl -X GET "$CONNECT_API_BASE/credit" \
+  -H "X-Connect-Key: pxc_..."
+```
+```
+{
+  "used_credit_points": 42,
+  "total_credit_points": 100,
+  "remaining_credit_points": 58,
+  "is_quota_exceeded": false,
+  "period_start": "2026-08-01T00:00:00Z",
+  "period_end": "2026-09-01T00:00:00Z"
+}
+```
+
+These numbers refresh roughly every 10 minutes — a
+background worker recalculates usage rather than updating it
+on every metered call, so checking right after a
+conversation may not reflect it yet.
+
+This endpoint is **Secret-key only** — a
+Publishable key gets `403`, same as every other
+capability a browser-facing key doesn't hold (see the
+capability table in
+[Get Your API Credentials](https://connect.perxona.ai/#credentials)).
+
+⚠️
+
+**Authorization: Bearer authentication is deprecated, and
+Connect's self-service sign-up and password recovery are no
+longer supported.**
+Use a Connect API key instead, and create your account on the
+console — see
+[Get Your API Credentials](https://connect.perxona.ai/#credentials) for
+both.
+
+### Avatar and Scene Catalog
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/assets/avatars` | List active avatars available to the authenticated organization. |
+| GET | `/assets/avatars/{avatar_id}` | Read avatar detail, including its runtime configuration. |
+| GET | `/assets/avatars/{avatar_id}/motions` | List motions compatible with the avatar; filter by `pose_tag` or `motion_ids` when needed. |
+| GET | `/assets/scenes` `/assets/scenes/{scene_id}` | List active scenes or read one scene's detail. |
+| POST | `/assets/vrm/upload` | Upload a `.vrm` file as multipart form data and publish it as an active avatar. Requires a **secret** key. Fields: `vrm_file`, `skeleton_type`, and optionally `avatar_name` and `lipsync_mode`. Returns the new `avatar_id`. See [VRM Uploader](https://connect.perxona.ai/#vrm-uploader) for the script that checks a file before sending it. **Uploading is on hold for now** — that section explains why. |
+
+### Voices and Presentation
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/voices` `/voices/{voice_id}` | List custom voices or read a voice's public synthesis details. Each voice carries a `languages` array of the languages it speaks, as short codes (`en`, `ja`, … — never locales like `en-US`). The list supports `language` and `provider` filters; see the callout below this table. |
+| POST | `/voice-tokens/tts` | Issue a provider TTS token for JSON body `{ voice_id }`. Normal `<sv-presenter>` speech manages this runtime step for you. |
+| POST | `/presentation` | Generate a one-shot presentation payload. Send `avatar_id` and `message`; `voice_id`, `emotion`, and `intensity` are optional. |
+
+💡
+
+**Pick a voice by the languages it speaks.**
+A multilingual agent needs a voice whose
+`languages` cover every language it will speak.
+The field uses short language codes (`en`,
+`ja`, `zh`, …), never locales like
+`en-US`; the full list of valid codes is the
+`Language` enum in the generated OpenAPI spec. To
+narrow the list server-side, pass one of those codes as the
+`language` filter:
+
+```bash
+curl -X GET "$CONNECT_API_BASE/voices?language=ja" \
+  -H "X-Connect-Key: pxc_..."
+```
+```
+{
+  "items": [
+    {
+      "id": "8f14e45f-...",
+      "name": "Sakura",
+      "description": null,
+      "languages": ["ja"],
+      "provider": "azure"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "size": 50,
+  "pages": 1
+}
+```
+
+That body is one page, not the whole catalogue.
+`page` and `size` are query parameters
+(`size` defaults to 50, maximum 100), and
+`pages` tells you how many pages the filter
+matched — keep requesting pages until you have read them all
+before concluding that no voice speaks a language.
+
+A voice with no recorded language data returns an empty
+`languages` array — treat that as "unknown", not
+"supports nothing".
+
+### Chatbots
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET POST | `/chatbots` | List chatbots or create one. Creation uses `multipart/form-data`: `name`, optional `custom_instructions`, `knowledge_file`, and a JSON-string `tools` field. |
+| GET PATCH DELETE | `/chatbots/{chat_bot_id}` | Read, partially update, or soft-delete a chatbot. Updates use `multipart/form-data`; use `remove_knowledge` to remove its knowledge file. |
+| POST | `/chatbots/{chat_bot_id}/chat` | Send a JSON message history in the Connect parts format and receive `reply_text`, which can be passed to `presenter.present()`. |
+
+### Credit
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/credit` | Read the organization's current credit usage — used, total, remaining, and the current period's start/end. Secret-key only; see [Get Your API Credentials](https://connect.perxona.ai/#credentials) for the capability breakdown. |
+
+<!-- section: credentials -->
+## Get Your API Credentials
+
+Two things, in this order: a **Perxona account**,
+then the **two Connect API keys** you create from
+it. The keys are what your integration actually authenticates
+with — the account only exists so you can sign in to the console
+and issue them.
+
+🔑
+
+**Any sign-in method works.** Perxona Console and
+Connect Kit share one account system, and since your
+integration authenticates with keys rather than a password,
+**Google Sign-In is fine** — you never need a
+password for the sample. Motion Browser authenticates with a
+Connect API key instead (see its own section below).
+
+Sign up on the
+**[Perxona console](https://console.perxona.ai/asia/auth/sign-up)**
+and sign in. That account is what lets you create the two API
+keys — the integration itself never uses your password.
+
+⚠️
+
+**There is no sign-up API.** Connect's
+`signup`, `confirm-signup`,
+`forgot-password` and
+`reset-password` endpoints are deprecated and no
+longer supported. Create your account on the console instead;
+password recovery is on its sign-in page.
+
+### Create Your Two API Keys
+
+Sign in to the Perxona console with that account and open
+**[Organization → Integration → Connect API keys](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**. Create **two** keys — they are not
+interchangeable, and the form shows what each type can do before
+you create it — the same breakdown is below:
+
+| Create with type | Put it in | Allowed domains |
+| --- | --- | --- |
+| **Secret** | `PERXONA_CONNECT_SECRET_KEY` | **Leave empty.** See the warning below. |
+| **Publishable** | `PERXONA_CONNECT_PUBLISHABLE_KEY` | Set them once you know where the page is served from. |
+
+#### What Each Key Type Can Do
+
+| Capability | Secret | Publishable |
+| --- | --- | --- |
+| Read assets (avatars, scenes, motions) | ✓ | ✓ |
+| Read voices | ✓ | ✓ |
+| Generate presentation | ✓ | ✓ |
+| Generate TTS token | ✓ | ✓ |
+| Upload assets (VRM upload) | ✓ | — |
+| Chat with a bot | ✓ | — |
+| Manage chat bots (create, update, delete) | ✓ | — |
+| Read credit usage | ✓ | — |
+
+![Perxona Console: Organization → Integration → Connect API keys page](assets/images/integration-page.png)
+
+⚠️
+
+**Each key is displayed once and never again.**
+The console stores only a hash, so copy it into your
+`.env` before closing the dialog. Lost one? Revoke
+it and create another — there is no way to read it back.
+
+⚠️
+
+**Putting the wrong one in the wrong variable is
+silent.**
+Both keys share the same prefix and the upstream accepts
+either in either slot, so a secret key pasted into
+`PERXONA_CONNECT_PUBLISHABLE_KEY` runs without
+error — it just means every visitor is now served a key that
+can manage your chatbots. Check the type shown on the console,
+not the string shape.
+
+🌐
+
+**Leave the secret key's allowed-domain list empty.**
+A domain restriction is matched against the browser's
+`Origin` header, and a server-to-server request
+never sends one — so a secret key with domains configured is
+refused on *every* call — and the error says only that
+the origin is not allowed, never what it saw, because nothing
+was sent. Domain restrictions belong on the publishable key,
+which really is used by a browser. Enter a bare hostname — no
+`https://`, port, or path. A leading
+`*.` covers subdomains only, not the apex domain
+itself — list both separately if your page can be served from
+either (e.g. `example.com` and
+`*.example.com`).
+
+✓
+
+Done. Put both keys in `.env` and follow
+[Run the Express Sample](https://connect.perxona.ai/#quickstart), or go
+straight to the
+[Presenter component flow](https://connect.perxona.ai/#sdk-reference) to wire
+them into your own application.
+
+<!-- section: motion-browser -->
+## Motion Browser
+
+Motion Browser is a standalone developer tool for customizing
+avatar motion — a wave on a greeting, a bow on "thank you". It
+solves the part you cannot do by guessing: browse the full
+motion catalog, preview each one live on a 3D avatar, and
+compose a script that mixes free speech text with motion cues
+until it reads and looks right. Then you
+**export it** to an AI coding assistant, which
+wires the whole thing into your own project — Motion Browser's
+own code is never part of what you ship; see "Exporting to an AI
+Coding Assistant" below for how that handoff works.
+
+The **core idea**: the
+`<sv-presenter>` Web Component understands
+inline motion tags. Drop a `[MOTION id:1]` chip
+anywhere in your script, and the avatar performs that animation
+at exactly that point in the speech.
+
+```js
+// The avatar says "I love", performs the wave motion, then finishes the line
+await presenter.present("I love [MOTION wave:1] my avatar.");
+```
+
+💡
+
+The Script Composer has a **Play** button that
+previews the script live inside Motion Browser. Once it reads
+and looks right, use the **Export**
+button in the top header to hand your avatar, scene, voice,
+and script off to an AI coding assistant working on your own
+project.
+
+### Demo
+
+[](assets/videos/motion-browser-demo.mp4)
+[↗ Open the live Motion Browser](/motion-browser/)
+
+### Features
+
+- **Avatar Preview** — Full-screen 3D rendering;
+  switch characters instantly from the top selector.
+- **Motion Library** — Browse, search, and filter
+  every available motion. Click any card to preview it live on
+  the avatar.
+- **Script Composer** — Rich-text editor where you
+  mix free speech text with motion chips. Press
+  **Play** to preview it here.
+- **Export** — Header button that copies your
+  current avatar, scene, voice, and script to your clipboard as
+  one prompt, ready to hand to an AI coding assistant.
+- **Scene & Voice switching** — Bottom control
+  bar lets you swap scene and voice style without reloading.
+
+### Getting Started
+
+💡
+
+A hosted version of Motion Browser is live — no local setup
+needed. Grab a publishable key from the
+[Getting Credentials](https://connect.perxona.ai/#credentials) section above,
+then open it from the demo link above.
+
+### Composing a Script with Motion Tags
+
+1. #### Write your speech text
+
+   Type the words you want the avatar to say in the Script
+   Composer.
+2. #### Insert a motion chip
+
+   Find the motion in the Motion Library panel. Place your
+   cursor at the desired point in the text, then click
+   **+** to insert it as a chip.
+3. #### Press Play to preview
+
+   The avatar speaks the full script and performs each motion
+   at its marked position. The chip serializes to
+   `[MOTION <id>:1]` and is passed directly
+   to `presenter.present()` — this is Motion
+   Browser calling it for you, so you can hear and see the
+   result before it goes anywhere near your own code.
+4. #### Ready? Export it
+
+   Once it reads and looks right, use the
+   **Export** button in the header — see
+   "Exporting to an AI Coding Assistant" below for what it
+   copies and how to use it.
+
+### Exporting to an AI Coding Assistant
+
+The **Export** button, in the top header, is how
+you get your configuration out of Motion Browser and into your
+own project — Motion Browser's own code is never part of what
+you ship, so this is the handoff. Click it and Motion Browser
+copies one prompt to your clipboard — your current avatar,
+scene, and voice (name and id), plus the full script from the
+Script Composer — ready to paste into an AI coding assistant
+(Claude Code, Cursor, or similar) working on your own Perxona
+Connect sample project. The assistant reads your project's own
+code and decides where these values belong; Motion Browser
+doesn't know your project's structure, so it never guesses for
+you. The button is disabled until the Script Composer has some
+content — a script, a motion chip, or both.
+
+💡
+
+**Worked example** — say you've composed a
+greeting: `Hi there! [MOTION wave-1:1]`. Press
+Export, then paste the copied prompt into your assistant with
+something like: "Wire this into my chatbot's
+`custom_instructions` so it uses this greeting."
+The assistant can point your chatbot's own instructions at
+this exact line. Keep in mind that's still a chatbot
+generating a reply — it follows instructions, but it isn't
+guaranteed to reproduce the line verbatim, motion tag
+included, on every single turn. Try it and see how it reads
+before relying on it.
+
+<!-- section: vrm-uploader -->
+## VRM Uploader
+
+Perxona Connect Kit lets you add your own
+**VRM** characters to the avatar catalog yourself,
+with one script and no extra infrastructure. This is the fastest
+path from a `.vrm` file to a live, speaking avatar —
+whether it's a branded mascot, a digital presenter, or a
+personal project.
+
+⏸️
+
+**Uploading is on hold:** please do not upload a
+VRM yet. An uploaded VRM becomes a Three.js avatar, and
+Connect is not serving those yet: by default the avatar
+catalog does not return it, and
+`<sv-presenter>`'s Three.js renderer has not
+been released. The upload itself succeeds, but you cannot
+list, select or display the result. Until this notice is
+removed, run `upload-vrm.sh` with
+`--validate-only` only. The checks are unaffected,
+so you can still get your file ready. The rest of this section
+describes how uploading works once it opens again.
+
+🪆
+
+Uploaded avatars are scoped to your Perxona organization
+account. Any member of the same org can select them from the
+Connect Kit avatar dropdown immediately after upload — no
+redeploy needed.
+
+⚠️
+
+**Beta notice:** Connect Kit is currently in
+closed beta. VRM avatars uploaded today are expected to expire
+after one month and will no longer be maintained. Perxona
+reserves the right to remove them. We will maintain VRM files
+uploaded after a future Connect Kit release.
+
+### Uploading Your VRM
+
+`upload-vrm.sh` checks your file against everything
+on this page and uploads it when it passes. It needs
+`bash`, `jq` and `curl`, plus a
+Connect API key of type **secret** — see
+[Get Your API Credentials](https://connect.perxona.ai/#credentials). Only a
+secret key may upload an asset.
+
+1. #### Get the script
+
+   ```bash
+   curl -fsSLO https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/tools/vrm-uploader/upload-vrm.sh
+   chmod +x upload-vrm.sh
+   ```
+2. #### Check the file
+
+   ```bash
+   ./upload-vrm.sh --validate-only my-avatar.vrm
+   ```
+
+   Every check prints a line. Anything marked
+   `FAIL` stops the upload. The one check that can
+   only warn is about expression data, because a model
+   without it still loads and plays motions.
+3. #### Upload it
+
+   **On hold for now** — see the notice at the
+   top of this section. Do not run this step until that
+   notice is removed.
+
+   ```bash
+   export PERXONA_CONNECT_SECRET_KEY=pxc_...
+   ./upload-vrm.sh --skeleton-type female my-avatar.vrm
+   ```
+
+   The script talks to
+   `https://console.perxona.ai/asia` unless you
+   say otherwise. Outside that region, export
+   `PERXONA_API_BASE_URL` with your own base URL
+   first — a key issued in one region is not accepted in
+   another, and the refusal never mentions regions.
+
+   `--skeleton-type` picks the motion style your
+   avatar draws its gestures from: `male`,
+   `female`, `male_three_head` or
+   `female_three_head`. Clips are retargeted onto
+   your own rig, so the wrong choice gives you gestures in
+   the wrong style rather than a playback failure. Add
+   `--avatar-name "My Avatar"` to set the display
+   name; without it the file name is used.
+
+The script prints the new avatar's id, and the character appears
+in the avatar list returned by
+`GET /assets/avatars`, ready to use in your project.
+
+🤖
+
+**Working with an AI coding assistant?** Add
+`--json` to either command and the script prints
+one JSON object instead of the report, carrying a
+`pass`/`warn`/`fail` entry
+per check. Exit codes are fixed: `0` passed,
+`1` bad usage or a missing tool or key,
+`2` the checks failed, `3` the upload
+failed. Something like this is enough to hand over:
+*"Download upload-vrm.sh from the Connect Kit repo, run it
+with --validate-only --json on my .vrm, and tell me what to
+fix before I upload."*
+
+### Supported VRM Specification
+
+Check your file against this list — every item can be verified
+in common tools such as VRoid Studio or Blender. No Perxona
+tooling is needed.
+
+- **VRM 1.0 is what this list assumes.** A VRM 0.x
+  file uploads too — the uploader reports which version it found
+  rather than refusing one — but everything below is written
+  against 1.0, so export 1.0 when you have the choice (for
+  example from VRoid Studio).
+- **File size up to 50 MB.**
+- **Humanoid skeleton with all 15 required bones**:
+  `hips`, `spine`, `head`, plus
+  upper leg / lower leg / foot and upper arm / lower arm / hand
+  on both sides. Other humanoid bones (chest, neck, shoulders,
+  fingers, …) are optional, but once assigned they must follow
+  the VRM 1.0 bone hierarchy. Bone *names* are free — we
+  read the VRM humanoid mapping, not node names, so any DCC
+  export works.
+- **MToon materials recommended.** Non-MToon
+  materials still load, but fall back to basic unlit / PBR
+  shading, so the look may differ from your DCC preview. Avatars
+  are rendered with built-in lighting — light sources inside the
+  VRM file have no effect.
+
+🧹
+
+**Export only the character.** When exporting
+your VRM 1.0 file, include the character itself and nothing
+else. We try to strip scenes, backgrounds, props, cameras,
+light sources, and embedded animations automatically during
+conversion, but leftover extras can still fail the conversion
+validation and block the upload.
+
+💇
+
+**No swing physics yet.** Spring-bone settings
+(`VRMC_springBone`) are not simulated — hair,
+skirts, and accessories will not sway.
+
+### Lip-sync and Expressions
+
+A model without expression data still loads and moves, but it
+will not lip-sync or emote. Provide at least one of:
+
+- **VRM 1.0 expression presets** (VRoid Studio
+  exports these by default): mouth shapes `aa`,
+  `ih`, `ou`, `ee`,
+  `oh`; emotions `happy`,
+  `angry`, `sad`, `relaxed`,
+  `surprised`; plus `neutral`, blink and
+  look-at presets.
+- **ARKit-52 blendshapes**: morph targets named
+  with the standard ARKit names (such as `jawOpen`,
+  `eyeBlinkLeft`). Standard names are what to aim
+  for, but a decorated spelling such as
+  `Face.jawOpen` is recognised too — names are
+  matched without regard to case or surrounding whitespace, an
+  exact match first and a containing one second.
+
+🚧
+
+**Facial animation is not live yet.** The engine
+that renders Connect-uploaded models does not yet drive
+lip-sync or facial expressions. Prepare the expression data
+above so your model is ready the moment it ships; a model
+without it still loads and plays motions either way.
+
+Want the full picture of the format itself? See the official
+[VRM 1.0 documentation](https://vrm.dev/en/vrm1/)
+(a Chinese-language community guide is also available
+[here](https://docs.vrcd.org.cn/books/vrm-vrm/page/vrm-10#bkmrk-vrm-1.0-%E4%BB%8B%E7%BB%8D%E2%80%8B)).
+
+### Reference Model: ViviPod42
+
+Not sure what a qualifying file looks like? We verified
+**ViviPod42** — a free model by
+**softmind** (vTuber ホームセンター) — against our
+pipeline: VRM 1.0, complete humanoid skeleton, all 18 expression
+presets, and 19 of 20 materials in MToon. Download it from the
+author's page on
+[BOOTH](https://booth.pm/en/items/5447425)
+and compare it with your own file.
+
+©️
+
+**ViviPod42 is not a Perxona asset.** It is
+provided free of charge by its original author, for reference
+only. Per the license embedded in the file: redistribution and
+modification are prohibited, use is limited to personal
+non-commercial purposes, and credit is required. That is also
+why we link to the author's page instead of hosting the file
+ourselves. Use it for local spec comparison only — do not
+upload it to Connect or use it in your own project; either
+would count as redistribution.
+
+### Where to Find a VRM File
+
+- Browse
+  [BOOTH](https://booth.pm/en/)
+  for VRM models — many listings are still VRM 0.x, so confirm
+  the version and the license terms before downloading.
+- Or build your own with
+  [VRoid Studio](https://vroid.com/en/studio)
+  (free) and export it as VRM 1.0.
+
+### Questions or a Failed Upload?
+
+Not sure whether your file qualifies, or did an upload fail?
+Post the file details and the error message in our
+[Discord channel](https://discord.com/channels/1509062382432026624/1514521511028068374)
+and we will help you sort it out. Not on our Discord server yet?
+Join first via
+[this invite link](https://discord.gg/dywx2nJRE)
+— the channel link above only opens for members.
+
+<!-- section: quickstart -->
+## Run the Express Sample
+
+The sample app is a single Node/Express server that serves two
+runnable browser demos, both built on the same
+`<sv-presenter>` integration. They are split by
+**which side of the work you are looking at**. Both
+hold a conversation the avatar speaks aloud.
+**Embed** is what it looks like once it is live: a
+product page with an avatar answering questions on it, no
+controls and nothing on the page about its own configuration.
+**Studio** is the console you build that from:
+browse the catalog, create and edit chatbots, interrupt
+mid-sentence, and switch between a Perxona-hosted chatbot and
+your own API key without losing the conversation. Run the server
+once, then open either demo. The steps below get you from clone
+to a talking avatar.
+
+⚡
+
+Get from clone to a talking avatar in
+**5–15 minutes**. You need
+**Node `>=22`** and two Connect API
+keys — see
+[Get Your API Credentials](https://connect.perxona.ai/#credentials).
+
+1. #### Clone the sample
+
+   ```bash
+   git clone https://github.com/XRSPACE-Inc/perxona-connect-kit.git
+   cd perxona-connect-kit/samples/express
+   ```
+2. #### Create your local config
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Open `.env` and fill in the three required
+   values. The two keys are not interchangeable — the secret
+   one stays on the server, the publishable one is what the
+   browser is given:
+
+   ```bash
+   PERXONA_API_BASE_URL=https://console.perxona.ai/asia
+   PERXONA_CONNECT_SECRET_KEY=pxc_...
+   PERXONA_CONNECT_PUBLISHABLE_KEY=pxc_...
+   ```
+3. #### Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+   Requires Node `>=22`. If your Node is too old,
+   `npm install` refuses with a clear upgrade
+   message.
+4. #### Start the server
+
+   ```bash
+   npm run dev    # with live reload (node --watch)
+   # or
+   npm start      # without watch
+   ```
+
+   The terminal prints the local URL, e.g.
+   `http://localhost:8083`.
+5. #### Launch the avatar
+
+   Open the URL in your browser. The landing page offers two
+   demos. In **Studio**, pick an
+   **Avatar**, **Scene**, and
+   **Voice**, then click
+   **Launch Presenter**. In
+   **Embed** there is nothing to pick and
+   nothing to configure — the avatar and the chatbot are
+   resolved for you; just type a message. Either way the
+   first line needs a user gesture: browser autoplay policy
+   only lets audio start from one, so no avatar anywhere can
+   speak on page load. In Studio that gesture is the launch
+   click; in Embed it is the message you send.
+
+<!-- section: configuration -->
+## Sample Configuration
+
+All configuration lives in `.env`. Copy
+`.env.example` → `.env` and fill in your
+values. **Never commit `.env`** — it is
+in `.gitignore`.
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `PERXONA_API_BASE_URL` | ✅ | — | Region-specific Connect API base URL. Ask your Perxona contact. |
+| `PERXONA_CONNECT_SECRET_KEY` | ✅ | — | Secret Connect API key. Authenticates the server on every upstream call; never served to a browser. **Leave its allowed domains empty** — a server sends no `Origin`, so any domain restriction refuses every call. |
+| `PERXONA_CONNECT_PUBLISHABLE_KEY` | ✅ | — | Publishable Connect API key. Served to the browser on `GET /api/connect-key` and passed to the presenter. Reads the catalog, generates presentations, and mints speech tokens (the last two bill your organization); it cannot reach the chatbot routes. |
+| `PORT` | — | `8083` | Port the server listens on. |
+| `PRESENTER_URL` | — | `cdn.perxona.ai/…/presenter.js` | Presenter engine CDN URL. Override only if your Perxona contact provides a specific URL. |
+| `LLM_API_KEY` | — | — | Set to enable the chat panel. Any OpenAI-compatible key works, including local Ollama via `LLM_BASE_URL`. |
+| `LLM_BASE_URL` | — | `https://api.openai.com/v1` | LLM endpoint URL (override for Ollama or other providers). |
+| `LLM_MODEL` | — | `gpt-4o-mini` | LLM model name passed to the chat endpoint. |
+
+<!-- section: demo-walkthrough -->
+## Presenter
+
+Both demos build on the same `<sv-presenter>`
+integration — the essential pattern every Connect app needs, in
+vanilla JS. Two building blocks are shared by both:
+**presenter initialization** (fetch the publishable
+key from your server and hand it to
+`initializeWithConnectKey()`) and
+**driving speech** (send text to
+`present()`). A third —
+**catalog browsing** (fetch avatars, scenes, and
+voices) — belongs to Studio only; Embed reads its target from
+`.env` and never touches the catalog. Here is the
+shared lifecycle — each demo's own chapter below covers exactly
+when it triggers `initializeWithConnectKey()` and
+`resumeAudioPlayback()`:
+
+1. **Page load:** `app.js` calls
+   `GET /api/config`, dynamically injects the
+   presenter engine `<script>` from
+   `presenterUrl`. Studio then loads the catalog
+   (`/api/avatars`, `/api/scenes`,
+   `/api/voices`) to populate its dropdown selectors;
+   Embed skips this — its target came from
+   `fixedTarget` in the same
+   `/api/config` response.
+2. **Initialize:** After fetching
+   `GET /api/connect-key`, the demo calls
+   `presenter.initializeWithConnectKey(connectKey, { avatarId,
+   sceneId, voiceId })`. `presenter.resumeAudioPlayback()` must also run
+   from a direct user gesture to satisfy browser autoplay policy
+   — see each demo's chapter for exactly when.
+3. **Ready state:** The presenter fires
+   `PRESENTER_STATUS` with
+   `detail = "Ready"` — the UI reveals the performance
+   controls.
+4. **Playback:** Text is handed to
+   `presenter.present(text)`, which queues the speech
+   and the motion the Connect API selects for it.
+
+<!-- section: embed -->
+## Embed
+
+![Perxona Connect Kit: Embed demo example](assets/images/embed-sample.png)
+
+The `demos/embed/` demo is what the Connect Kit looks
+like once it is live: a product site with an avatar answering
+questions on it. There is no catalog, no picker, no settings
+panel — and, deliberately,
+**nothing anywhere on the page about its own
+configuration**. A real site does not explain its setup to visitors, so this
+one doesn't either: everything the widget needs arrives already
+resolved on `GET /api/config`, and when something is
+missing the widget is simply not rendered and the reason goes to
+the browser console. Open
+`http://localhost:8083/demos/embed/`. Here is the
+lifecycle:
+
+1. **Nothing to configure.**
+   `GET /api/config` reports a
+   `fixedTarget` (avatar, scene, voice) and a
+   `chatbotId`. Leave every
+   `DEMO_FIXED_*` blank and the server picks the first
+   of each in your account, so this runs on a fresh clone with no
+   setup at all; set them to pin your own, which is what a real
+   integration does. Which of the two happened is reported in the
+   server's startup log, never on the page. Live credentials are
+   required and the account needs at least one chatbot — mock
+   mode can supply neither.
+2. **Initialize on page load.**
+   `app.js` fetches that config and
+   `GET /api/connect-key`, then calls
+   `presenter.initializeWithConnectKey(key,
+   config.fixedTarget)`. No click and no catalog request are involved.
+3. **Open the chat on Ready.** When
+   `PRESENTER_STATUS` fires with `Ready`,
+   the message box appears. The listener is attached
+   *before* `initializeWithConnectKey()`: this
+   event is the only way to learn the presenter is ready —
+   nothing exposes a status to read back — so one fired while the
+   listener is still an `await` away is lost for good.
+4. **Send a message; the reply is spoken.** Each
+   message goes to `POST /api/chatbots/:id/chat` with
+   the last twenty turns, and the reply is passed to
+   `present()`.
+   **The first submit is what unlocks audio.**
+   `present()` resolves with
+   `AUDIO_CONTEXT_UNAVAILABLE` until
+   `resumeAudioPlayback()` has run, and browser
+   autoplay policy allows that only from a real user gesture — so
+   a live site cannot greet you on load, and does not need a
+   separate "enable audio" button either. The first thing you say
+   authorises the first thing it says back.
+
+<!-- section: studio -->
+## Studio
+
+![Perxona Connect Kit: Studio demo example](assets/images/studio-example.png)
+
+The `demos/studio/` demo is the other end of the
+range: you are building the application itself. On top of the
+shared integration above it adds catalog pickers, full chatbot
+**CRUD**, a persistent
+**multi-turn conversation**, and
+**knowledge files** plus
+**function tools**. Every assistant reply is piped
+into `presenter.present()`, so the avatar speaks each
+response in real time. A **source switch** chooses
+who runs the language model — a Perxona-hosted Connect chatbot,
+or your own `LLM_API_KEY` — and you can flip it
+mid-conversation: the history is kept provider-neutral as
+`{ role, text }` and converted at the call site, so
+the same conversation carries over to the other provider. Open
+`http://localhost:8083/demos/studio/`. Here is the
+lifecycle:
+
+1. **Launch the presenter.** Pick an Avatar, Scene,
+   and Voice, then click **Launch Presenter**. That
+   click is also what calls
+   `presenter.resumeAudioPlayback()` — browser
+   autoplay policy requires a direct user gesture before any
+   audio can start.
+2. **Choose who runs the model.** The source switch
+   offers **Connect chatbot** and
+   **Own LLM**. Own LLM stays disabled until
+   `LLM_API_KEY` is set — `GET /api/config`
+   reports whether it is available, never the key itself.
+3. **Create or select a chatbot.** With the Connect
+   source selected, click **+ New Chatbot**, enter a
+   name and optional system instructions, and click
+   **Save**. The chatbot is created via
+   `POST /api/chatbots` and immediately selected. To
+   edit or delete an existing chatbot, pick it from the dropdown.
+   The Own LLM source needs none of this — it has no server-side
+   object to manage.
+4. **Chat.** Type a message and press Send. The
+   avatar enters Thinking state while the model works —
+   `POST /api/chatbots/:id/chat` for the Connect
+   source, `POST /api/chat` for your own key. The
+   reply appears in the chat log and is spoken aloud via
+   `presenter.present(reply)`. If the presenter is not
+   yet launched, chat still works as text-only.
+5. **Optional — Knowledge file & function tools.**
+   Upload a `.txt`, `.pdf`,
+   `.doc`, `.docx`, or
+   `.csv` file in the chatbot editor to ground the
+   chatbot in your own content. Chunking and embedding happen
+   asynchronously and can take anywhere from a few seconds to a
+   few minutes — Studio polls the chatbot's status and updates
+   the badge live, no reload needed. Add a `tools`
+   array when creating or updating a chatbot to let it call
+   external HTTP APIs during a conversation. Both are
+   Connect-hosted features; switching to Own LLM leaves them
+   behind, which is the trade the switch exists to show.
+
+<!-- section: sample-architecture -->
+## Express Sample Architecture
+
+Both demos share the same three-layer foundation.
+`<sv-presenter>` is the innermost component —
+the CDN Web Component that handles all speech, motion, and
+lip-sync directly via the Connect API. The demos wrap it with
+different application layers depending on the use case.
+
+#### Shared Architecture
+
+Both demos are single-page avatar presenters. Each provides
+catalog UI and an input, then initializes
+`<sv-presenter>` with a Connect token — all
+rendering, synthesis, and playback happen inside the component.
+
+```
+┌─ Browser ─────────────────────────────────────────────────────┐
+│  ┌─ demos/<demo>/app.js ─────────────────────────────────┐    │
+│  │  Catalog pickers · Launch button · Prompt/chat input  │    │
+│  │                                                       │    │
+│  │  ┌─ <sv-presenter>  (Web Component, CDN) ──────────┐  │    │
+│  │  │  Audio synthesis  ·  Motion playback            │  │    │
+│  │  │  Lip-sync rendering  ·  Token auto-refresh      │  │    │
+│  │  └─────────────────────────────────────────────────┘  │    │
+│  └───────────────────────────────────────────────────────┘    │
+└───────────────────────────────────────────────────────────────┘
+       │  /api/*  (proxy)                   │  direct (publishable key)
+       ▼                                    ▼
+┌─ server.mjs ────────────┐     ┌─ Connect API ─────────────┐
+│  /api/config            │     │  /assets  (catalog)       │
+│  /api/connect-key       │────►│  /presentation            │
+│  /api/avatars           │     │  /voice-tokens/tts        │
+│  /api/scenes            │     └───────────────────────────┘
+│  /api/voices            │
+│  /api/chat  (opt-in)    │
+└─────────────────────────┘
+```
+```
+ Browser (app.js)        server.mjs                      Connect API
+       │                      │                               │
+  1.   ├─ GET /api/config ───►│                               │
+       │◄─ presenterUrl ──────┤                               │
+  2.   ├─ load <script> from presenterUrl (CDN)               │
+       │                      │                               │
+  3.   ├─ GET /api/avatars ──►│                               │
+       ├─ GET /api/scenes ───►│                               │
+       ├─ GET /api/voices ───►│                               │
+       │◄─ catalog items ─────┤                               │
+  4.   ├─ GET /api/connect-key ──────────────────────────────►│
+       │◄─ connect_key ───────────────────────────────────────┤
+  5.   ├─ initializeWithConnectKey(key, { avatarId, … }) ────►│
+       │◄─ PRESENTER_STATUS: Ready ───────────────────────────┤
+  6.   ├─ presenter.present("Hello!") ───────────────────────►│
+       │◄─ avatar speaks ─────────────────────────────────────┤
+```
+
+#### Studio Demo
+
+Adds the full client layer on top of the shared foundation
+above. A source switch chooses who runs the model; a Chatbot
+Manager handles bot CRUD, knowledge files, and function tools
+for the Connect source. The Chat Panel drives multi-turn
+conversations — each reply is piped straight into
+`<sv-presenter>` for live speech.
+
+```
+┌─ Browser ───────────────────────────────────────────────────────┐
+│  ┌─ demos/studio/app.js ────────────────────────────────────┐   │
+│  │  ┌─ Chatbot Manager ────┐  ┌─ Avatar Stage ─────────┐    │   │
+│  │  │  Bot picker (CRUD)   │  │  ┌─ <sv-presenter> ─┐  │    │   │
+│  │  │  Knowledge upload    │  │  │  (CDN Component) │  │    │   │
+│  │  │  Function tools      │  │  │  initialize()    │  │    │   │
+│  │  └──────────────────────┘  │  │  present(reply)  │  │    │   │
+│  │                            │  └──────────────────┘  │    │   │
+│  │  ┌─ Chat Panel ─────────┐  └────────────────────────┘    │   │
+│  │  │  Multi-turn history  │                                │   │
+│  │  │  User → AI reply     │                                │   │
+│  │  └──────────────────────┘                                │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+       │  /api/*  (proxy)                   │  direct (publishable key)
+       ▼                                    ▼
+┌─ server.mjs ───────────────────┐  ┌─ Connect API ──────────────┐
+│  /api/chatbots  (CRUD)         │  │  /chatbots                 │
+│  /api/chatbots/:id/chat        │─►│  /chatbots/:id/chat        │
+│  /api/chatbots/:id/knowledge   │  │  /assets · /presentation   │
+│  /api/connect-key              │  └────────────────────────────┘
+└────────────────────────────────┘
+```
+```
+ Browser (app.js)        server.mjs        Connect API
+       │                      │                 │
+  1-4. ├─ [config → catalog → connect-key → initializeWithConnectKey()]
+       │                      │                 │
+  5.   ├─ POST /api/chatbots ──────────────────►│ create bot
+       │◄─ { id, name, status } ────────────────┤
+  6.   ├─ POST /api/chatbots/:id/knowledge ────►│ upload file
+       │◄─ { knowledge: { status } } ───────────┤ (usually "processing" — chunking
+       │                                        │  + embedding run async)
+  6b.  ├─ GET /api/chatbots/:id ───────────────►│ poll until status
+       │◄─ { knowledge: { status } } ───────────┤ leaves "processing"
+       │                                        │  (repeated every few seconds, up to a timeout — see Studio's
+       │                                        │   startKnowledgePolling in public/demos/studio/app.js)
+  7.   ├─ POST /api/chatbots/:id/chat ─────────►│
+       │  { messages: [{ role, parts }] }       │ AI response
+       │◄─ { reply_text } ──────────────────────┤
+  8.   ├─ presenter.present(reply_text) ───────►│
+       │◄─ avatar speaks ───────────────────────┤
+```
+
+### Auth Model
+
+⚠️
+
+**Demo auth only.** Every browser visitor shares
+one upstream Connect identity (the two keys in
+`.env`), and the `/api/*` routes carry
+**no request-layer authorization at all** — so
+anyone who can reach this server can do everything the secret
+key can, without ever holding it. Splitting the credential
+stops the key from leaking into a browser; it does not stop
+the capability from being reachable through the proxy. Fine
+for demos and hackathons — not a production multi-tenant
+design.
+
+1. The server reads
+   `PERXONA_CONNECT_SECRET_KEY` and
+   `PERXONA_CONNECT_PUBLISHABLE_KEY` from
+   `.env`, and refuses to start unless both are set.
+2. Every upstream call carries the **secret** key as
+   an `X-Connect-Key` header. There is no login step.
+3. The browser calls `GET /api/connect-key` — the
+   server returns the **publishable** key. The
+   secret key is never served on any route.
+4. The browser passes it into
+   `presenter.initializeWithConnectKey(connectKey, { avatarId,
+   sceneId, voiceId })`.
+5. From that point, `<sv-presenter>` talks to
+   the Connect API directly — speech and motion are handled by
+   the component, not the server.
+6. **Nothing is retried.** A key is refused only
+   when it is revoked, expired, restricted to other domains, or
+   never granted the scope — so the upstream
+   `401`/`403` reaches the browser
+   unchanged instead of being flattened into a `502`.
+
+<!-- section: sample-api-adapter -->
+## Express Sample Adapter API
+
+The Express server exposes these routes. All
+`/api/*` endpoints return JSON. The server proxies
+catalog reads to the Connect API with its
+**secret** key, sent as an
+`X-Connect-Key` header — there is no login step, and
+no per-request browser auth either.
+
+🗺️
+
+**Every `/api/*` route below is this sample's own
+Express server**
+(`server.mjs`) — a second, separate HTTP server,
+not the Connect API itself. Your browser talks to it at
+`http://localhost:8083` (or wherever you deploy the
+sample); it is this server, not the browser, that then calls
+the real endpoints in
+[Connect API Reference](https://connect.perxona.ai/#api-reference) with the
+secret key. Writing your own backend means implementing your
+own version of these routes and calling
+[Connect API Reference](https://connect.perxona.ai/#api-reference) directly —
+not reusing this sample's paths. The one exception on this
+page is **Direct Connect API** right below, which
+calls Connect itself and bypasses this server entirely.
+
+### Direct Connect API
+
+POST/api/v1/connect/presentation
+
+Generate a one-shot presentation payload. Call the Connect
+API directly from your server with your
+**secret** key as an
+`X-Connect-Key` header; this route is not proxied
+by the Express sample server. Required fields:
+`avatar_id` and `message`. Optional
+fields: `voice_id`, `emotion`, and
+`intensity`.
+
+```bash
+curl -X POST "$CONNECT_API_BASE/presentation" \
+  -H "X-Connect-Key: pxc_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "avatar_id": "YOUR_AVATAR_ID",
+    "voice_id": "YOUR_VOICE_ID",
+    "message": "Welcome to our hackathon demo!",
+    "emotion": "excitement",
+    "intensity": "high"
+  }'
+```
+
+✨
+
+`emotion` sets the message's emotional tone and
+`intensity` sets its strength. Together, they guide
+facial-expression selection for suggested motions and act as
+soft ranking signals for motion candidates. Both are optional;
+when both are omitted, no facial expression is attached.
+Supported `emotion` values: `joy`,
+`excitement`, `admiration`,
+`caring`, `gratitude`,
+`sadness`, `disappointment`,
+`annoyance`, `embarrassment`,
+`curiosity`, `surprise`,
+`realization`, and `confusion`.
+Supported `intensity` values: `low`,
+`neutral`, and `high`.
+
+### Health & Config
+
+GET/api/health
+
+Liveness + upstream diagnostics. Always returns
+`200`. Response:
+`{ status: "ok", upstream: "reachable" | "unreachable"
+}`. Probes the upstream API on every call.
+
+GET/api/config
+
+Static per-process flags. Response:
+`{ mock: boolean, chat: boolean, presenterUrl: string
+}`. No upstream probe — cheap to call.
+`chat` reflects presence of
+`LLM_API_KEY` only, never the key itself.
+
+### Connect Key
+
+GET/api/connect-key
+
+Serve the browser the **publishable** key.
+Response: `{ connect_key: string }`. Pass it
+directly into
+`presenter.initializeWithConnectKey(connectKey, { avatarId,
+sceneId, voiceId })`. This is never `PERXONA_CONNECT_SECRET_KEY` —
+that one carries chat and chatbot management, which no browser
+should hold. `Cache-Control: no-store`. Returns
+`501` in mock mode, where there are no keys to
+serve.
+
+### Catalog
+
+GET/api/avatars
+
+List avatars. Response:
+`Page { items: [{ id, name, thumbnail_urls, … }] }`. (`id` is normalized from the upstream
+`avatar_id`.)
+
+GET/api/avatars/:id
+
+Avatar detail (raw, includes `lod_urls`,
+`lipsync_configs`, etc.).
+
+GET/api/avatars/:id/motions
+
+Motions for an avatar. Response:
+`Page { items: […] }`. Motions are a sub-resource
+of an avatar — there is no top-level motions collection.
+
+GET/api/scenes
+
+List scenes. Response:
+`Page { items: [{ id, name, … }] }`. (`id`
+normalized from `scene_id`.)
+
+GET/api/scenes/:id
+
+Scene detail.
+
+GET/api/voices
+
+List voices. Response:
+`Page { items: [{ id, name, … }] }`.
+
+### Chatbot
+
+GET/api/chatbots
+
+List chatbots. Response:
+`Page { items: [{ id, name, status }] }`.
+
+POST/api/chatbots
+
+Create a chatbot. Body:
+`{ name: string (required), custom_instructions?: string,
+tools?: Array }`. Response:
+`ChatBotDetailResponse { id, name, status,
+custom_instructions, tools }`.
+
+GET/api/chatbots/:id
+
+Chatbot detail. Response:
+`ChatBotDetailResponse` (includes `id`,
+`name`, `custom_instructions`,
+`status`, `tools`).
+
+PATCH/api/chatbots/:id
+
+Update a chatbot. Body: partial
+`{ name?, custom_instructions?, tools? }`.
+Response: updated `ChatBotDetailResponse`.
+
+DELETE/api/chatbots/:id
+
+Delete a chatbot. Returns `204 No Content`.
+
+POST/api/chatbots/:id/knowledge
+
+Upload a knowledge file. Body:
+`{ filename: string, content_base64: string, mime_type?:
+string }`. Accepted types: `.txt`, `.pdf`,
+`.doc`, `.docx`, `.csv` (max
+1 MB). The server decodes the base64 payload and forwards it
+to the upstream API as multipart. Chunking and embedding run
+asynchronously after this responds — the response's
+`knowledge.status` is typically still
+`"processing"`; poll
+`GET /api/chatbots/:id` until it becomes
+`"ready"` or `"error"`.
+
+DELETE/api/chatbots/:id/knowledge
+
+Remove the knowledge file from a chatbot.
+
+POST/api/chatbots/:id/chat
+
+Send a message to the chatbot. Body:
+`{ messages: Array }` — Connect parts format:
+`[{ role: "user", parts: [{ type: "text", text: "…" }]
+}]`. Response: `{ id, status, reply_text }`. Pass
+`reply_text` to `presenter.present()` to
+have the avatar speak it.
+
+### Chat
+
+POST/api/chat
+
+Opt-in LLM chat. Request:
+`{ messages: Array }` (OpenAI message format).
+Returns `501` until `LLM_API_KEY` is
+set. Returns `400` if `messages` is
+empty or absent.
+
+📄
+
+**Full contract:** The endpoints above are the
+Express demo's proxy API. For the exact field shapes and
+schemas of the underlying Connect API, see the OpenAPI spec at
+`docs/openapi.yaml` inside the sample directory.
+For TypeScript presenter types, install
+`@perxona/presenter-types@latest`.
+
+<!-- section: limitations -->
+## Known Limitations
+
+- **Sample, not production.** Demonstrates the
+  happy path — not hardened, scaled, or feature-complete
+  compared to the full API.
+- **Shared credential model.** All browser visitors
+  share one Connect identity (the two keys in
+  `.env`). Fine for demos; not a multi-tenant
+  production design.
+- **A refused key is reported, not recovered — at startup, in
+  Embed's case.**
+  Studio listens for `CONNECT_KEY_REJECTED` for the
+  whole session and says so on the page. Embed only catches a
+  rejection during its own startup — logged to console, no
+  widget rendered — and never registers the listener, so a key
+  revoked mid-session goes unnoticed: the widget stays on
+  screen, silent. Neither retries a rejection it does catch,
+  because a key that was revoked, expired, restricted to other
+  domains, or never granted the scope fails the same way every
+  time — reissue it in the console and launch again.
+- **Chat is opt-in.**
+  `POST /api/chat` returns `501` until
+  `LLM_API_KEY` is set in `.env`.
+- **Minimal UI.** Intentionally framework-free
+  vanilla JS — designed for readability, not production polish.
+
+<!-- section: troubleshooting -->
+## Troubleshooting
+
+Server exits immediately:
+*"PERXONA\_API\_BASE\_URL is required"*, or a message
+naming one of the two Connect API keys
+
+You haven't created `.env` or left a required
+value blank. **Both keys are required** — one is
+not enough, and the message names the one you left out. Run
+`cp .env.example .env` and fill in the API base URL
+and the two keys you created in the console. If your
+`.env` still holds
+`PERXONA_CONNECT_EMAIL`/`PERXONA_CONNECT_PASSWORD`, the message will say
+so: that mode was removed, and this sample now authenticates
+with API keys only.
+
+Catalog fails to load — status shows `401` or
+`403`
+
+Three things do this, in rough order of likelihood. The
+secret key was **revoked or has expired**. It has
+an **allowed-domain list** configured — a
+server-to-server request sends no `Origin`, so
+every call is refused, and the error says only that the origin
+is not allowed — it never names one, so do not go looking for
+a hostname in it; leave that list empty on the secret key. Or
+`PERXONA_API_BASE_URL` points at the wrong region.
+The wrong key *type* is not one of them by itself:
+reading the catalog needs only permissions both types carry,
+so a publishable key in
+`PERXONA_CONNECT_SECRET_KEY` usually still loads
+the catalog fine — unless that publishable key also has an
+allowed-domain list set, which this handbook tells you to do
+before shipping. In that case the swap lands a
+domain-restricted key where a server-to-server call never
+sends an `Origin`, and every call fails with the
+exact reason above. Check the two variables were not swapped
+before you touch either key's domain list — emptying it would
+make the symptom disappear while leaving an unrestricted
+secret key in the browser. Check
+`GET /api/health` — the `upstream` field
+shows reachability.
+
+Avatar doesn't appear after clicking Launch
+
+Check the browser console for errors. Common causes: the
+presenter engine failed to load (CORS error — verify
+`PRESENTER_URL` with your Perxona contact), or
+`initializeWithConnectKey()` rejected because the
+selected avatar/scene IDs don't exist in your account.
+
+Avatar appears but doesn't speak
+
+Ensure `resumeAudioPlayback()` is called inside
+the Launch button's click handler — not in a timer or after an
+`await` that yields control back to the browser.
+Browsers block autoplay triggered outside a synchronous user
+gesture.
+
+`npm install` fails with a Node version
+error
+
+This kit requires **Node `>=22`**. Run `node --version`. If using nvm, run
+`nvm use` (reads `.nvmrc`) or
+`nvm install 22`.
+
+Chat panel doesn't appear
+
+Set `LLM_API_KEY` in `.env` and restart
+the server. The panel is hidden until the key is present —
+`GET /api/config` will return
+`chat: true` once it's set.
+
+Chat suddenly fails with `400` (`code: 1003`) or `403` (`code: 14005`)
+
+Error code `1003` means your organization's
+credits have been exhausted, **or** its
+subscription itself is no longer active (check the
+`details` field to tell which) — it is
+**not** a bad credential or a server error. Only
+metered calls (chatbot conversations via
+`POST /api/chatbots/:id/chat`) are affected;
+catalog lookups, chatbot CRUD, and presentation calls continue
+to work. Sign in to
+[Perxona Console → Subscription](https://console.perxona.ai/asia/organization/subscription/)
+(use the region matching your account) to review your usage
+and top up credits, or your plan status. A
+`403` (not `400`) from this same chat
+endpoint is a different error —
+`SUBSCRIPTION_NOT_ACTIVE` (`code: 14005`), meaning the organization has no subscription context at
+all — not a bad credential either, despite the status code;
+the fix is the same sign-in and Subscription check
+above.
+
+<!-- section: next-steps -->
+## Next Steps
+
+Once either demo is running, here are natural paths forward:
+
+- **Bring your own UI.** Replace the vanilla JS
+  frontend with React, Vue, or any framework — the server API
+  (`/api/*`) stays unchanged.
+- **Handle a refused key.** Listen for
+  `CONNECT_KEY_REJECTED` and tell whoever operates
+  the integration. There is nothing to refresh — the fix is to
+  reissue the key in the console, so the useful thing your code
+  can do is say so clearly.
+- **Bring your own model.** Set
+  `LLM_API_KEY` (and optionally
+  `LLM_PROVIDER`, `LLM_BASE_URL`,
+  `LLM_MODEL`) in `.env` to unlock
+  `POST /api/chat`, which enables Studio's
+  **Own LLM** source. Note that the route is
+  unauthenticated and spends whatever the key pays for — keep it
+  on `localhost`.
+- **Explore the full API contract.** See the
+  OpenAPI spec for the underlying Connect API at
+  `docs/openapi.yaml` inside the sample directory,
+  and install `@perxona/presenter-types@latest` for
+  presenter type declarations.
+- **Build from Embed, not from Studio.**
+  `demos/embed/` is the template — 170 lines of
+  `app.js` and an `index.html` that is
+  mostly filler copy. Copy it, replace the layout, keep the
+  widget. Studio is a tool rather than a starting point: 1 200
+  lines of catalog pickers, chatbot CRUD and a debug timeline
+  you would spend your first hour deleting. Use it to browse the
+  catalog and create a chatbot, pin what you chose with
+  `DEMO_FIXED_*`, then build from Embed.
+- **Follow updates and contribute.** Star and watch
+  the repository below to track new features and bugfixes.
+
+[### XRSPACE-Inc / perxona-connect-kit
+
+Clone the sample, open issues, and follow updates on
+GitHub.](https://github.com/XRSPACE-Inc/perxona-connect-kit)
