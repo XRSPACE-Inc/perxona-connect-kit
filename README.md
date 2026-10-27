@@ -4,7 +4,7 @@
 
 ![A Perxona avatar speaking with lip-sync in the InterviewCoach demo](docs/demo.gif)
 
-*Mia, an interviewer built on this kit, asking her first question. Recorded from a stock clone of this repo. ([MP4](docs/demo.mp4))*
+*Mia, the interviewer in the [InterviewCoach demo](samples/express/public/demos/interview/), asking her first question. Recorded from a stock clone of this repo. ([MP4](docs/demo.mp4))*
 
 📘 [Developer Handbook](https://connect.perxona.ai) · 💬 [Discussions](https://github.com/XRSPACE-Inc/perxona-connect-kit/discussions) · 🎭 [Showcase](https://showcase.perxona.ai)
 
@@ -26,7 +26,7 @@ Create both keys in the console: open the avatar menu (top right), then **Manage
 
 Best fit: products where the avatar **is** the product, not a widget on the side.
 
-- **Practice and training**: mock interviews, customer-service drills, exam and language practice.
+- **Practice and training**: mock interviews, customer-service drills, exam and language practice. See [InterviewCoach](samples/express/public/demos/interview/), built on this kit.
 - **Reception and concierge**: hotel check-in, clinic front desk, store greeter, answering from your own knowledge file in Japanese, English or 繁體中文.
 - **A face for your agent**: your chat endpoint in, `present()` out. Give an existing LLM agent a voice and a face in about thirty lines.
 - **Characters**: VTuber-style or companion characters from your own `.vrm` file ([VRM uploader](tools/vrm-uploader/)).
@@ -41,6 +41,9 @@ Connect Kit sign-ups start on the Perxona Console **Free Plan**. See [pricing](h
 
 - [`samples/express/`](samples/express/) — an Express-based starter that shows the basic Connect flow. See
   [`samples/express/README.md`](samples/express/README.md) for setup and usage.
+- [`samples/express/public/demos/interview/`](samples/express/public/demos/interview/) — **InterviewCoach**, a
+  mock-interview practice app built on the starter: app-driven emotions, a purpose-built chatbot created from
+  code, three languages with per-language voices. Built in about 18 minutes from this repo and the handbook.
 
 ## Tools
 
