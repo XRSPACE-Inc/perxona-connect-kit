@@ -61,7 +61,7 @@ Result: PASSED (not uploaded)
 
 ```bash
 export PERXONA_CONNECT_SECRET_KEY=pxc_...
-./upload-vrm.sh --skeleton-type female my-avatar.vrm
+./upload-vrm.sh --gender female --heads-tall 8 my-avatar.vrm
 ```
 
 The checks run first; nothing is uploaded unless they all pass. On success the script prints the
@@ -69,18 +69,18 @@ new avatar's id.
 
 ### Options
 
-| Option                   | Meaning                                                                                                                        |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `--skeleton-type <type>` | Motion style the avatar draws its gestures from: `male`, `female`, `male_three_head`, `female_three_head`. Required to upload. |
-| `--avatar-name <name>`   | Display name, up to 256 characters. Defaults to the file name.                                                                 |
-| `--validate-only`        | Run the checks and stop.                                                                                                       |
-| `--json`                 | Print one JSON object on stdout instead of the report.                                                                         |
-| `-h`, `--help`           | Usage.                                                                                                                         |
+| Option                 | Meaning                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `--gender <gender>`    | Gender of the body the avatar's motions are drawn for: `male`, `female`. Required to upload. |
+| `--heads-tall <n>`     | Body proportion in heads: `3` (stylized), `6`, `8` (realistic). Required to upload.          |
+| `--avatar-name <name>` | Display name, up to 256 characters. Defaults to the file name.                               |
+| `--validate-only`      | Run the checks and stop.                                                                     |
+| `--json`               | Print one JSON object on stdout instead of the report.                                       |
+| `-h`, `--help`         | Usage.                                                                                       |
 
-`--skeleton-type` is a style choice, not a technical constraint. Motion clips are retargeted onto
-your model's own rig, so the wrong choice gives you gestures in the wrong style rather than a
-playback failure. The `three_head` values are for 3-head-tall proportions; the plain `male` and
-`female` values cover the 8-head-tall range, where most of the motion library lives.
+`--gender` and `--heads-tall` together pick the motion set, and they are a style choice, not a
+technical constraint. Motion clips are retargeted onto your model's own rig, so the wrong choice
+gives you gestures in the wrong style rather than a playback failure.
 
 ### Environment variables
 

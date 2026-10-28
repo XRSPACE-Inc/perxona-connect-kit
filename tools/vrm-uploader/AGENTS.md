@@ -19,15 +19,15 @@ enforce this: the upload command below still uploads.
 ```bash
 ./upload-vrm.sh --validate-only --json model.vrm     # decide whether to go on
 # On hold (vrm-upload-hold) — do not run the upload below until the paragraph above is removed.
-PERXONA_CONNECT_SECRET_KEY=... ./upload-vrm.sh --skeleton-type female --json model.vrm
+PERXONA_CONNECT_SECRET_KEY=... ./upload-vrm.sh --gender female --heads-tall 8 --json model.vrm
 ```
 
 With `--json`, stdout carries one JSON object and nothing else; the human report is suppressed
 rather than interleaved. Read `valid` and `checks[]`, not the text. Exit codes: `0` passed, `1`
 usage / missing tool / missing key, `2` the file failed the checks, `3` the upload failed.
 
-`--skeleton-type` is the only judgement call the script cannot make: it picks the motion style,
-and its four values (`male`, `female`, `male_three_head`, `female_three_head`) all play, so a wrong
+`--gender` (`male`, `female`) and `--heads-tall` (`3`, `6`, `8`) are the only judgement calls the
+script cannot make: together they pick the motion set, and every combination plays, so a wrong
 choice looks wrong rather than failing. Ask rather than guess.
 
 `--avatar-name` is held to the API's 256-character limit before anything else runs, and the count

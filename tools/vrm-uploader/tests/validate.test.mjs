@@ -307,7 +307,8 @@ describe("usage", () => {
     const { code, stdout } = await runScript(["--help"]);
 
     expect(code).toBe(EXIT_OK);
-    expect(stdout).toContain("--skeleton-type");
+    expect(stdout).toContain("--gender");
+    expect(stdout).toContain("--heads-tall");
     expect(stdout).toContain("PERXONA_CONNECT_SECRET_KEY");
   });
 
@@ -318,30 +319,57 @@ describe("usage", () => {
     expect(stderr).toContain("unknown option");
   });
 
-  it("requires --skeleton-type unless --validate-only is given", async () => {
-    const file = await writeFixture(
-      "needs-skeleton.vrm",
-      buildGlb(vrm1Document()),
-    );
-    const { code, stderr } = await runScript([file]);
+  it.each([
+    ["--gender", ["--heads-tall", "8"]],
+    ["--heads-tall", ["--gender", "female"]],
+  ])("requires %s unless --validate-only is given", async (missing, given) => {
+    const file = await writeFixture("needs-body.vrm", buildGlb(vrm1Document()));
+    const { code, stderr } = await runScript([file, ...given]);
 
     expect(code).toBe(EXIT_USAGE);
-    expect(stderr).toContain("--skeleton-type");
+    expect(stderr).toContain(`${missing} is required`);
   });
 
-  it("rejects an unknown skeleton type", async () => {
+  it("rejects an unknown gender", async () => {
+    const file = await writeFixture("bad-gender.vrm", buildGlb(vrm1Document()));
+    const { code, stderr } = await runScript([
+      file,
+      "--gender",
+      "robot",
+      "--heads-tall",
+      "8",
+    ]);
+
+    expect(code).toBe(EXIT_USAGE);
+    expect(stderr).toContain("unknown --gender");
+  });
+
+  it("rejects an unsupported heads-tall", async () => {
     const file = await writeFixture(
-      "bad-skeleton.vrm",
+      "bad-heads-tall.vrm",
       buildGlb(vrm1Document()),
     );
     const { code, stderr } = await runScript([
       file,
-      "--skeleton-type",
-      "robot",
+      "--gender",
+      "female",
+      "--heads-tall",
+      "5",
     ]);
 
     expect(code).toBe(EXIT_USAGE);
-    expect(stderr).toContain("unknown --skeleton-type");
+    expect(stderr).toContain("unsupported --heads-tall");
+  });
+
+  it.each([
+    ["--gender=robot", "unknown --gender"],
+    ["--heads-tall=5", "unsupported --heads-tall"],
+  ])("checks %s given in the --flag=value form", async (flag, message) => {
+    const file = await writeFixture("bad-equals.vrm", buildGlb(vrm1Document()));
+    const { code, stderr } = await runScript([file, "--validate-only", flag]);
+
+    expect(code).toBe(EXIT_USAGE);
+    expect(stderr).toContain(message);
   });
 
   // The API caps an asset name at 256 characters, so a longer one is worth
@@ -391,8 +419,10 @@ describe("usage", () => {
     const file = await writeFixture("nokey.vrm", buildGlb(vrm1Document()));
     const { code, stderr } = await runScript([
       file,
-      "--skeleton-type",
+      "--gender",
       "female",
+      "--heads-tall",
+      "8",
     ]);
 
     expect(code).toBe(EXIT_USAGE);
@@ -402,7 +432,7 @@ describe("usage", () => {
   it("reports a usage error as JSON when --json is given", async () => {
     const { code, stdout } = await runScript([
       "--json",
-      "--skeleton-type",
+      "--gender",
       "robot",
       "x.vrm",
     ]);

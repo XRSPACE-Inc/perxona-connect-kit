@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="2.0.0"
 
 # The Connect API refuses anything larger (its own MAX_VRM_FILE_SIZE_MB).
 MAX_FILE_SIZE_MB=50
@@ -65,7 +65,8 @@ EXIT_INVALID=2
 EXIT_UPLOAD_FAILED=3
 
 VRM_FILE=""
-SKELETON_TYPE=""
+GENDER=""
+HEADS_TALL=""
 AVATAR_NAME=""
 VALIDATE_ONLY=false
 JSON_MODE=false
@@ -90,8 +91,10 @@ Usage:
   upload-vrm.sh [options] <file.vrm>
 
 Options:
-  --skeleton-type <type>   Motion style the avatar draws its gestures from.
-                           One of: male, female, male_three_head, female_three_head.
+  --gender <gender>        Gender of the body the avatar's motions are drawn for.
+                           One of: male, female.
+                           Required unless --validate-only is given.
+  --heads-tall <n>         Body proportion in heads. One of: 3, 6, 8.
                            Required unless --validate-only is given.
   --avatar-name <name>     Display name, up to ${AVATAR_NAME_MAX_LENGTH} characters.
                            Defaults to the file name.
@@ -258,13 +261,22 @@ read_ascii4() {
 parse_args() {
   while [ $# -gt 0 ]; do
     case "$1" in
-      --skeleton-type)
-        [ $# -ge 2 ] || fail_usage "--skeleton-type needs a value"
-        SKELETON_TYPE=$2
+      --gender)
+        [ $# -ge 2 ] || fail_usage "--gender needs a value"
+        GENDER=$2
         shift 2
         ;;
-      --skeleton-type=*)
-        SKELETON_TYPE=${1#*=}
+      --gender=*)
+        GENDER=${1#*=}
+        shift
+        ;;
+      --heads-tall)
+        [ $# -ge 2 ] || fail_usage "--heads-tall needs a value"
+        HEADS_TALL=$2
+        shift 2
+        ;;
+      --heads-tall=*)
+        HEADS_TALL=${1#*=}
         shift
         ;;
       --avatar-name)
@@ -311,17 +323,25 @@ parse_args() {
 
   [ -n "$VRM_FILE" ] || fail_usage "no file given; run with --help for usage"
 
-  if [ -n "$SKELETON_TYPE" ]; then
-    case "$SKELETON_TYPE" in
-      male | female | male_three_head | female_three_head) ;;
-      *) fail_usage "unknown --skeleton-type '$SKELETON_TYPE'; expected male, female, male_three_head or female_three_head" ;;
+  if [ -n "$GENDER" ]; then
+    case "$GENDER" in
+      male | female) ;;
+      *) fail_usage "unknown --gender '$GENDER'; expected male or female" ;;
     esac
   fi
 
-  # Both are needed before any work starts, so an upload never fails on a
+  if [ -n "$HEADS_TALL" ]; then
+    case "$HEADS_TALL" in
+      3 | 6 | 8) ;;
+      *) fail_usage "unsupported --heads-tall '$HEADS_TALL'; expected 3, 6 or 8" ;;
+    esac
+  fi
+
+  # All are needed before any work starts, so an upload never fails on a
   # missing key only after the checks have already run.
   if [ "$VALIDATE_ONLY" = false ]; then
-    [ -n "$SKELETON_TYPE" ] || fail_usage "--skeleton-type is required to upload (or use --validate-only)"
+    [ -n "$GENDER" ] || fail_usage "--gender is required to upload (or use --validate-only)"
+    [ -n "$HEADS_TALL" ] || fail_usage "--heads-tall is required to upload (or use --validate-only)"
     [ -n "${PERXONA_CONNECT_SECRET_KEY:-}" ] ||
       fail_usage "PERXONA_CONNECT_SECRET_KEY is not set; a Connect API key of type 'secret' is needed to upload"
   fi
@@ -657,7 +677,8 @@ upload() {
   # start of a parameter, and a path holding either fails before the request is
   # ever made.
   curl_args+=(--form "vrm_file=@\"$(curl_quote "${VRM_FILE}")\";type=model/gltf-binary")
-  curl_args+=(--form-string "skeleton_type=${SKELETON_TYPE}")
+  curl_args+=(--form-string "gender=${GENDER}")
+  curl_args+=(--form-string "heads_tall=${HEADS_TALL}")
   curl_args+=(--form-string "lipsync_mode=${LIPSYNC_MODE}")
   if [ -n "$AVATAR_NAME" ]; then
     curl_args+=(--form-string "avatar_name=${AVATAR_NAME}")
@@ -665,8 +686,9 @@ upload() {
 
   say ""
   say "Uploading to $url"
-  say "  skeleton_type: $SKELETON_TYPE"
-  say "  lipsync_mode:  $LIPSYNC_MODE"
+  say "  gender:       $GENDER"
+  say "  heads_tall:   $HEADS_TALL"
+  say "  lipsync_mode: $LIPSYNC_MODE"
 
   # The key goes in on stdin, never in argv: on Linux any user on the machine
   # can read another process's /proc/<pid>/cmdline. Nothing is written to disk

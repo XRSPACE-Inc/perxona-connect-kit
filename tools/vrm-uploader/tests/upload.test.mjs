@@ -65,7 +65,9 @@ async function recordingCurl() {
 
   await writeFile(
     shim,
-    `#!/bin/sh\nprintf '%s\\n' "$@" > ${JSON.stringify(argvLog)}\nexec ${JSON.stringify(realCurl)} "$@"\n`,
+    `#!/bin/sh\nprintf '%s\\n' "$@" > ${JSON.stringify(
+      argvLog,
+    )}\nexec ${JSON.stringify(realCurl)} "$@"\n`,
   );
   await chmod(shim, 0o755);
   return { binDir, argvLog };
@@ -97,7 +99,15 @@ describe("a successful upload", () => {
     const file = await writeFixture("upload-ok.vrm", buildGlb(vrm1Document()));
 
     const { code, json } = await runJson(
-      [file, "--skeleton-type", "female", "--avatar-name", "My Avatar"],
+      [
+        file,
+        "--gender",
+        "female",
+        "--heads-tall",
+        "8",
+        "--avatar-name",
+        "My Avatar",
+      ],
       { PERXONA_CONNECT_SECRET_KEY: SECRET_KEY, PERXONA_API_BASE_URL: baseUrl },
     );
 
@@ -114,10 +124,31 @@ describe("a successful upload", () => {
     expect(request.url).toBe("/api/v1/connect/assets/vrm/upload");
     expect(request.headers["x-connect-key"]).toBe(SECRET_KEY);
     expect(request.headers.authorization).toBeUndefined();
-    expect(formValue(request.body, "skeleton_type")).toBe("female");
+    expect(formValue(request.body, "gender")).toBe("female");
+    expect(formValue(request.body, "heads_tall")).toBe("8");
+    expect(request.body).not.toContain('name="skeleton_type"');
     expect(formValue(request.body, "avatar_name")).toBe("My Avatar");
     expect(request.body).toContain('name="vrm_file"');
     expect(request.body).toContain("glTF");
+  });
+
+  it("sends the body given in the --flag=value form", async () => {
+    const baseUrl = await startStub(
+      respondJson(200, { avatar_id: "01JTESTAVATAR" }),
+    );
+    const file = await writeFixture(
+      "upload-equals.vrm",
+      buildGlb(vrm1Document()),
+    );
+
+    const { code } = await runJson([file, "--gender=male", "--heads-tall=6"], {
+      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+      PERXONA_API_BASE_URL: baseUrl,
+    });
+
+    expect(code).toBe(EXIT_OK);
+    expect(formValue(received[0].body, "gender")).toBe("male");
+    expect(formValue(received[0].body, "heads_tall")).toBe("6");
   });
 
   // The key reaches curl on stdin, never in its argv, where any user on a Linux
@@ -133,11 +164,14 @@ describe("a successful upload", () => {
     const file = await writeFixture("upload-key.vrm", buildGlb(vrm1Document()));
     const { binDir, argvLog } = await recordingCurl();
 
-    const { code } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: awkwardKey,
-      PERXONA_API_BASE_URL: baseUrl,
-      PATH: `${binDir}:${process.env.PATH}`,
-    });
+    const { code } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: awkwardKey,
+        PERXONA_API_BASE_URL: baseUrl,
+        PATH: `${binDir}:${process.env.PATH}`,
+      },
+    );
 
     expect(code).toBe(EXIT_OK);
     expect(received[0].headers["x-connect-key"]).toBe(awkwardKey);
@@ -157,7 +191,7 @@ describe("a successful upload", () => {
       buildGlb(vrm1Document()),
     );
 
-    await runJson([file, "--skeleton-type", "male"], {
+    await runJson([file, "--gender", "male", "--heads-tall", "3"], {
       PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
       PERXONA_API_BASE_URL: baseUrl,
     });
@@ -185,7 +219,15 @@ describe("a successful upload", () => {
       );
 
       const { code } = await runJson(
-        [file, "--skeleton-type", "female", "--avatar-name", avatarName],
+        [
+          file,
+          "--gender",
+          "female",
+          "--heads-tall",
+          "8",
+          "--avatar-name",
+          avatarName,
+        ],
         {
           PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
           PERXONA_API_BASE_URL: baseUrl,
@@ -209,10 +251,13 @@ describe("a successful upload", () => {
     const baseUrl = await startStub(respondJson(200, { avatar_id: "01JPATH" }));
     const file = await writeFixture(fileName, buildGlb(vrm1Document()));
 
-    const { code, json } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: baseUrl,
-    });
+    const { code, json } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: baseUrl,
+      },
+    );
 
     expect(code).toBe(EXIT_OK);
     expect(json.upload.status).toBe("ok");
@@ -236,10 +281,13 @@ describe("a successful upload", () => {
       PERXONA_API_BASE_URL: baseUrl,
     };
 
-    await runJson([withArkit, "--skeleton-type", "female"], env);
+    await runJson([withArkit, "--gender", "female", "--heads-tall", "8"], env);
     expect(formValue(received[0].body, "lipsync_mode")).toBe("xrlipsync");
 
-    await runJson([withoutArkit, "--skeleton-type", "female"], env);
+    await runJson(
+      [withoutArkit, "--gender", "female", "--heads-tall", "8"],
+      env,
+    );
     expect(formValue(received[1].body, "lipsync_mode")).toBe("wlipsync");
   });
 
@@ -252,10 +300,13 @@ describe("a successful upload", () => {
       buildGlb(vrm1Document()),
     );
 
-    const { code } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: `${baseUrl}/`,
-    });
+    const { code } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: `${baseUrl}/`,
+      },
+    );
 
     expect(code).toBe(EXIT_OK);
     expect(received[0].url).toBe("/api/v1/connect/assets/vrm/upload");
@@ -272,10 +323,13 @@ describe("a rejected upload", () => {
     );
     const file = await writeFixture("upload-422.vrm", buildGlb(vrm1Document()));
 
-    const { code, json } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: baseUrl,
-    });
+    const { code, json } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: baseUrl,
+      },
+    );
 
     expect(code).toBe(EXIT_UPLOAD_FAILED);
     expect(json.valid).toBe(true);
@@ -290,7 +344,7 @@ describe("a rejected upload", () => {
       respondJson(422, {
         detail: [
           {
-            loc: ["body", "skeleton_type"],
+            loc: ["body", "heads_tall"],
             msg: "unexpected value",
             type: "enum",
           },
@@ -302,13 +356,16 @@ describe("a rejected upload", () => {
       buildGlb(vrm1Document()),
     );
 
-    const { code, json } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: baseUrl,
-    });
+    const { code, json } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: baseUrl,
+      },
+    );
 
     expect(code).toBe(EXIT_UPLOAD_FAILED);
-    expect(json.upload.error.detail[0].loc).toEqual(["body", "skeleton_type"]);
+    expect(json.upload.error.detail[0].loc).toEqual(["body", "heads_tall"]);
   });
 
   it("prints the error on the human report too", async () => {
@@ -321,7 +378,7 @@ describe("a rejected upload", () => {
     const file = await writeFixture("upload-413.vrm", buildGlb(vrm1Document()));
 
     const { code, stdout, stderr } = await runScript(
-      [file, "--skeleton-type", "female"],
+      [file, "--gender", "female", "--heads-tall", "8"],
       {
         PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
         PERXONA_API_BASE_URL: baseUrl,
@@ -340,10 +397,13 @@ describe("a rejected upload", () => {
     });
     const file = await writeFixture("upload-502.vrm", buildGlb(vrm1Document()));
 
-    const { code, json } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: baseUrl,
-    });
+    const { code, json } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: baseUrl,
+      },
+    );
 
     expect(code).toBe(EXIT_UPLOAD_FAILED);
     expect(json.upload.error.raw).toContain("502 Bad Gateway");
@@ -355,10 +415,13 @@ describe("a rejected upload", () => {
       buildGlb(vrm1Document()),
     );
 
-    const { code, json } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: "http://127.0.0.1:1",
-    });
+    const { code, json } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: "http://127.0.0.1:1",
+      },
+    );
 
     expect(code).toBe(EXIT_UPLOAD_FAILED);
     expect(json.upload.status).toBe("failed");
@@ -376,10 +439,13 @@ describe("a file that fails the checks", () => {
       buildGlb(vrm1Document({ skinnedNode: false })),
     );
 
-    const { code, json } = await runJson([file, "--skeleton-type", "female"], {
-      PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
-      PERXONA_API_BASE_URL: baseUrl,
-    });
+    const { code, json } = await runJson(
+      [file, "--gender", "female", "--heads-tall", "8"],
+      {
+        PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
+        PERXONA_API_BASE_URL: baseUrl,
+      },
+    );
 
     expect(code).toBe(2);
     expect(json.upload.status).toBe("skipped");
