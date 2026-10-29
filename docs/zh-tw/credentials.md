@@ -30,7 +30,7 @@ console 登入頁的重設流程。
 ### 建立你的兩把 API 金鑰
 
 以該帳號登入 Perxona console，開啟
-**[Organization → Integration → Connect API keys](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**。
+**[Management → Integration → Connect API keys (open the avatar menu, top right)](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**。
 建立**兩把**金鑰——它們不可互換，而且建立前表單就會列出各自能做什麼，下面這張表是同樣的內容：
 
 | 建立時選的類型 | 填進哪個變數 | 允許網域 |
@@ -51,7 +51,7 @@ console 登入頁的重設流程。
 | 管理 chatbot（建立、更新、刪除） | ✓ | — |
 | 查詢 credit 用量 | ✓ | — |
 
-![Perxona Console：Organization → Integration → Connect API keys 頁面](assets/images/integration-page.png)
+![Perxona Console：Management → Integration → Connect API keys (open the avatar menu, top right) 頁面](assets/images/integration-page.png)
 
 ⚠️
 

@@ -593,7 +593,7 @@ password recovery is on its sign-in page.
 ### Create Your Two API Keys
 
 Sign in to the Perxona console with that account and open
-**[Organization → Integration → Connect API keys](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**. Create **two** keys — they are not
+**[Management → Integration → Connect API keys (open the avatar menu, top right)](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**. Create **two** keys — they are not
 interchangeable, and the form shows what each type can do before
 you create it — the same breakdown is below:
 
@@ -615,7 +615,7 @@ you create it — the same breakdown is below:
 | Manage chat bots (create, update, delete) | ✓ | — |
 | Read credit usage | ✓ | — |
 
-![Perxona Console: Organization → Integration → Connect API keys page](assets/images/integration-page.png)
+![Perxona Console: Management → Integration → Connect API keys (open the avatar menu, top right) page](assets/images/integration-page.png)
 
 ⚠️
 
