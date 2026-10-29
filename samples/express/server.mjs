@@ -1,9 +1,16 @@
 import express from "express";
+import { fileURLToPath } from "node:url";
 
 // ── Config ──────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 8083;
-const PERXONA_API_BASE_URL = process.env.PERXONA_API_BASE_URL;
+// On Vercel the Deploy Button only asks for the two keys, so default the
+// region there; locally the explicit .env value (and its missing-value error
+// below) still apply unchanged.
+const ON_VERCEL = Boolean(process.env.VERCEL);
+const PERXONA_API_BASE_URL =
+  process.env.PERXONA_API_BASE_URL ||
+  (ON_VERCEL ? "https://console.perxona.ai/asia" : undefined);
 // Only the /asia or /eu region segment is read out of PERXONA_API_BASE_URL —
 // the host is always the public console, never whatever host
 // PERXONA_API_BASE_URL itself points at. GET /api/config is unauthenticated
@@ -24,9 +31,14 @@ if (PERXONA_API_BASE_URL && !CONSOLE_REGION_MATCH) {
   );
 }
 const USE_MOCK = process.env.USE_MOCK === "true";
+// The engine must sit in the same region as the account (see .env.example).
+// On Vercel nothing sets PRESENTER_URL, so derive it from the API region
+// there; the local fallback stays the region-neutral engine as before.
 const PRESENTER_URL =
   process.env.PRESENTER_URL ||
-  "https://cdn.perxona.ai/prod/latest/widget/entry/presenter.js";
+  (ON_VERCEL
+    ? `https://cdn.perxona.ai/${CONSOLE_REGION}/prod/latest/widget/entry/presenter.js`
+    : "https://cdn.perxona.ai/prod/latest/widget/entry/presenter.js");
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || "openai").toLowerCase();
 const LLM_API_KEY = process.env.LLM_API_KEY;
 const PRESENTER_TARGET = {
@@ -524,6 +536,14 @@ const IS_DEV = process.env.NODE_ENV !== "production";
 // ── Middleware ─────────────────────────────────────────────────────────────
 
 app.use(express.static("public", { etag: !IS_DEV }));
+
+// Vercel serves public/** from its CDN and skips express.static, but routes
+// the bare "/" to this function, so hand it the index page explicitly. The
+// `new URL(..., import.meta.url)` form is what Vercel's file tracer follows
+// to bundle the file; locally express.static above answers first.
+app.get("/", (_req, res) => {
+  res.sendFile(fileURLToPath(new URL("./public/index.html", import.meta.url)));
+});
 
 // The knowledge upload route needs a larger JSON body than the 100 KB default,
 // and body-parser is a no-op once a body has already been parsed, so its parser
@@ -1105,7 +1125,12 @@ app.post("/api/chat", async (req, res) => {
 
 const CHECK_ICONS = { reachable: "✓", unreachable: "✗", mock: "–" };
 
-app.listen(PORT, () => {
+// Vercel imports this module and runs `app` as one serverless function
+// (static files in public/ are served by its CDN, not express.static), so
+// the port listener and the startup probes only run for a local `npm start`.
+export default app;
+
+if (!ON_VERCEL) app.listen(PORT, () => {
   console.log(`\nPerxona Connect Kit`);
   console.log(`  URL  : http://localhost:${PORT}`);
   console.log(`  Mode : ${USE_MOCK ? "MOCK (no real API calls)" : "live"}`);

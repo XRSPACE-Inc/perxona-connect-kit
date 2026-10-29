@@ -22,6 +22,10 @@ npm run dev            # open http://localhost:8083
 
 Create both keys in the console: open the avatar menu (top right), then **Management → Integration → Connect API keys**. Full steps in [`samples/express/README.md`](samples/express/README.md).
 
+**No laptop setup?** Deploy the same sample to Vercel. It asks for the two keys and gives you a public URL in about a minute.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
+
 ## What you can build
 
 Best fit: products where the avatar **is** the product, not a widget on the side.

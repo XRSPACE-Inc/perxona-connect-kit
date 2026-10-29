@@ -25,6 +25,10 @@ npm run dev              # open the URL it prints (default http://localhost:8083
 Create both keys in the Perxona console: open the avatar menu (top right), then **Management → Integration → Connect API keys**.
 They are not interchangeable — see ["Auth model"](#auth-model).
 
+Or skip the laptop and deploy this sample to Vercel (see [Deploy to Vercel](#deploy-to-vercel)):
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
+
 Pick a demo, choose an avatar / scene / voice, click its launch button — the avatar speaks. The server authenticates with its
 own key; there's no login screen.
 
@@ -43,6 +47,7 @@ own key; there's no login screen.
     - [Getting a Connect account](#getting-a-connect-account)
     - [Steps](#steps)
   - [3. Running](#3-running)
+    - [Deploy to Vercel](#deploy-to-vercel)
   - [4. API \& SDK integration](#4-api--sdk-integration)
     - [Backend API routes](#backend-api-routes)
     - [Direct Connect presentation API](#direct-connect-presentation-api)
@@ -257,6 +262,28 @@ Studio asks you to choose an avatar / scene / voice and click **Launch Presenter
 avatar and chatbot to use, so you just type a message. Either way the first
 line needs a user gesture before audio can start — browser autoplay policy, not a design choice — and in Embed that gesture
 is the message you send. Mock mode supports catalog browsing only; it can drive neither demo's avatar.
+
+### Deploy to Vercel
+
+The sample runs unchanged as one Vercel Function: Vercel detects Express in `server.mjs` (which exports the app), serves
+`public/` from its CDN, and injects the environment variables you give it, so there is no `.env` file to manage.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
+
+The button clones this repository into your Git account with `samples/express` as the project root, asks for the two
+Connect API keys, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and `PRESENTER_URL` to the engine of that
+region; set `PERXONA_API_BASE_URL` in the project's environment variables if your account is in another region. Every other optional value from `.env.example`
+(`DEMO_FIXED_*`, `LLM_*`, `PRESENTER_URL`) can be added there too; redeploy after changing any of them.
+
+Two things that differ from running locally:
+
+- **The publishable key's domain list.** Leave it empty for the first deploy, open the site, then restrict the key to the
+  `*.vercel.app` address Vercel gave you (and any custom domain). The secret key's list stays empty, as always.
+- **The URL is public and the publishable key is visible to anyone who opens it**, by design, so it spends your
+  organization's credits. Watch usage in the console, or take the deployment down when you are done with it.
+
+Already have the Vercel CLI? From this directory, `vercel deploy --temporary --env PERXONA_CONNECT_SECRET_KEY=... --env PERXONA_CONNECT_PUBLISHABLE_KEY=...`
+gives a throwaway deployment that lasts an hour, no account needed.
 
 ---
 
