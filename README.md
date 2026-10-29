@@ -6,7 +6,7 @@
 
 *Mia, the interviewer in the [InterviewCoach demo](samples/express/public/demos/interview/), asking her first question. Recorded from a stock clone of this repo. ([MP4](docs/demo.mp4))*
 
-📘 [Developer Handbook](https://connect.perxona.ai) · 💬 [Discussions](https://github.com/XRSPACE-Inc/perxona-connect-kit/discussions) · 🎭 [Showcase](https://showcase.perxona.ai)
+📘 [Developer Handbook](https://connect.perxona.ai) ([Markdown mirror](docs/en/) · [llms.txt](llms.txt)) · 💬 [Discussions](https://github.com/XRSPACE-Inc/perxona-connect-kit/discussions) · 🎭 [Showcase](https://showcase.perxona.ai)
 
 ## Quick start (5–15 minutes)
 

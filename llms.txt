@@ -1,0 +1,45 @@
+# Perxona Connect Kit
+
+> Add a talking 3D AI avatar to any web app. The Perxona Connect API (REST) plus the `<sv-presenter>` avatar Web Component (Presenter SDK): pick an avatar, scene and voice, call `present(text)`, and it speaks with lip-sync and emotion. Samples and tools live in this repo; the full handbook is at https://connect.perxona.ai.
+
+Key facts for agents:
+
+- The Presenter SDK is loaded once as a module script from a `PRESENTER_URL` your server supplies (not a secret) and registers the `<sv-presenter>` custom element. There is no bundled npm SDK yet; `@perxona/presenter-types` on npm provides TypeScript types only.
+- Two keys: a **secret** Connect API key (server side only) and a **publishable** key (browser). Create both in the Perxona Console under the organization management page, Integration, Connect API keys.
+- Fastest path: `git clone` this repo, `cd samples/express`, copy `.env.example` to `.env`, `npm install`, `npm run dev`, open http://localhost:8083.
+- Usage is metered in organization credits (`GET /credit`); when they run out, metered calls fail with HTTP 400 and `code: 1003`.
+
+## Handbook (English)
+
+- [What Can You Build?](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/overview.md): https://connect.perxona.ai/#overview
+- [Perxona Connect Kit](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/introduction.md): https://connect.perxona.ai/#introduction
+- [Integration Architecture](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/how-it-works.md): https://connect.perxona.ai/#how-it-works
+- [Presenter Component Reference](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/sdk-reference.md): https://connect.perxona.ai/#sdk-reference
+- [Connect API Reference](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/api-reference.md): https://connect.perxona.ai/#api-reference
+- [Get Your API Credentials](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/credentials.md): https://connect.perxona.ai/#credentials
+- [Motion Browser](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/motion-browser.md): https://connect.perxona.ai/#motion-browser
+- [VRM Uploader](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/vrm-uploader.md): https://connect.perxona.ai/#vrm-uploader
+- [Run the Express Sample](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/quickstart.md): https://connect.perxona.ai/#quickstart
+- [Sample Configuration](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/configuration.md): https://connect.perxona.ai/#configuration
+- [Demo Walkthrough: Presenter basics](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/demo-walkthrough.md): https://connect.perxona.ai/#demo-walkthrough
+- [Embed](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/embed.md): https://connect.perxona.ai/#embed
+- [Studio](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/studio.md): https://connect.perxona.ai/#studio
+- [Express Sample Architecture](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/sample-architecture.md): https://connect.perxona.ai/#sample-architecture
+- [Express Sample Adapter API](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/sample-api-adapter.md): https://connect.perxona.ai/#sample-api-adapter
+- [Known Limitations](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/limitations.md): https://connect.perxona.ai/#limitations
+- [Troubleshooting](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/troubleshooting.md): https://connect.perxona.ai/#troubleshooting
+- [Next Steps](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/next-steps.md): https://connect.perxona.ai/#next-steps
+
+## Samples and tools
+
+- [Express sample README](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/samples/express/README.md): setup, auth model, backend adapter routes, troubleshooting
+- [Agent notes for the Express sample](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/samples/express/AGENTS.md): how to scaffold a new demo from the existing ones
+- [InterviewCoach demo](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/samples/express/public/demos/interview/README.md): a practice app where the avatar is the product
+- [VRM uploader](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/tools/vrm-uploader/README.md): check and upload your own .vrm avatar
+
+## Optional
+
+- [Handbook in Traditional Chinese](https://github.com/XRSPACE-Inc/perxona-connect-kit/tree/main/docs/zh-tw)
+- [Handbook in Japanese](https://github.com/XRSPACE-Inc/perxona-connect-kit/tree/main/docs/ja)
+- [Showcase](https://showcase.perxona.ai): live demos built by the community
+- [Pricing](https://perxona.ai/pricing)
