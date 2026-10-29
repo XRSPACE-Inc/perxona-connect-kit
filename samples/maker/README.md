@@ -1,43 +1,32 @@
-# Maker: a live 3D AI matchmaker for community events
+# Maker: who should you meet tonight?
 
-[![Built with Perxona](https://img.shields.io/badge/Built%20with-Perxona-000095)](https://github.com/XRSPACE-Inc/perxona-connect-kit)
+A live 3D AI matchmaker for community events, built on the Perxona Connect Kit by
+Angie Chen, Perxona's marketing director, as her own event companion.
 
-**Try it on your phone right now:** [perxona-maker.onrender.com](https://perxona-maker.onrender.com)
+**[Try it live](https://perxona-maker.onrender.com)** (a made-up event, no sign-up)
+· **[Code](https://github.com/angiechen-create/maker-perxona-connect-kit)** (MIT)
 
-**Code:** [github.com/angiechen-create/maker-perxona-connect-kit](https://github.com/angiechen-create/maker-perxona-connect-kit) (MIT)
+![Maker, the yellow FUN DAY avatar](https://raw.githubusercontent.com/angiechen-create/maker-perxona-connect-kit/main/events/demo/og-en.png)
 
-Maker is a live 3D AI host for community events, built on this kit by Angie Chen. Guests scan a QR code at the door, check in on their own phone, and ask Maker questions by voice or by typing, in 中文, English or 日本語. It also runs as a kiosk at the entrance.
+## What it does
 
-- **"What's on, and where?"** Answers only from the event's own info, and says "ask the staff" instead of guessing.
-- **"Which topic table should I join?"** Suggests one or two and says why.
-- **"Who should I meet?"** Recommends up to three attendees *who opted in*, with their LinkedIn as a QR code on screen.
+- Guests scan a QR at the door and Maker runs on their own phone: check-in, the agenda,
+  "where's the bathroom?", and above all who to meet tonight, and why.
+- Introduces only people who said yes, from what they wrote when they registered.
+- English, 中文 and 日本語, switched on the phone; names and cards follow the language.
+- Voice by ElevenLabs (optional), 3D look, gestures and lip-sync by Perxona.
+- A demo mode with made-up guests, so anyone can try it.
+- First used at AI Tinkerers Taipei, October 2026.
 
-First used at **AI Tinkerers Taipei, Kickoff**, 2026-10-08, with Maker, the yellow FUN DAY avatar.
+## Connect Kit features it uses
 
-## How it uses the kit
+- `<sv-presenter>` with `initializeWithConnectKey` and the publishable key
+- `present()` and `presentWithAudio()` (its own ElevenLabs audio, lip-synced by the avatar)
+- `playMotion()` and the avatar's motion list for gestures, `muteAudio()` for a muted start
+- `PRESENTER_STATUS` / `ALL_PERFORMANCE_FINISHED` events
+- Server-side Connect API: avatars, scenes, voices, credit
 
-- The avatar, its expressions, gestures and lip-sync are the `<sv-presenter>` web component, loaded from Perxona when the page opens. Nothing to download.
-- The browser only ever receives the Perxona **publishable** key. The **secret** key stays on a small Node server that loads the event config, enforces per-phone and per-day question caps, and makes the server-side Connect calls.
-- One LLM call per question, with replies capped at about 320 characters so speech stays short. `present()` results are checked rather than assumed.
-- If the network drops, the kiosk turns into the schedule and QR codes until it comes back.
-- Privacy by default: the AI only sees attendees who opted in, no emails or phones are ever stored, and nothing visitors say is kept.
+## Run your own
 
-## Run it yourself (demo mode, about 2 minutes)
-
-Needs Node 22+, a Perxona Connect account ([free trial](https://console.perxona.ai)) and an Anthropic API key.
-
-```bash
-git clone https://github.com/angiechen-create/maker-perxona-connect-kit.git
-cd maker-perxona-connect-kit
-npm install
-cp .env.example .env      # EVENT_SLUG=demo; add your Perxona Connect keys + ANTHROPIC_API_KEY
-npm start                 # open http://localhost:8090/m/
-```
-
-`events/demo/` is **Builders Night**, a made-up meetup. Pick a made-up guest and try Maker as them. Without keys the check-in, program and buttons still work, and Maker says he can't connect.
-
-Create the two Connect keys in the console: open the avatar menu (top right), then **Management → Integration → Connect API keys**. Leave the secret key's domain restriction empty; restrict the publishable key to your domain once deployed.
-
-To run it for your own event (about 30 minutes: event folder, persona, opt-in form, rehearsal script, Render deploy), follow the [full README in the Maker repo](https://github.com/angiechen-create/maker-perxona-connect-kit#set-it-up-for-your-own-event-about-30-minutes).
-
-Built by Angie Chen, Perxona's marketing director, as her own event companion.
+Clone the repo and follow its README: about 30 minutes for your own event, or two
+minutes for the demo.
