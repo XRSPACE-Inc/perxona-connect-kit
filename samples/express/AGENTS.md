@@ -24,6 +24,14 @@ app you are actually building. When you need chatbot CRUD or knowledge files, co
 Studio's extra surface exists to demonstrate the API, not because an integration needs it. A production page that talks to
 an avatar looks like Embed.
 
+### A chatbot your app creates for its own use
+
+If the app creates a Connect chatbot whose replies are not meant to be spoken as-is — InterviewCoach's interviewer answers
+only in JSON — name it with the prefix `GET /api/config` reports as `appManagedChatbotPrefix` (`"[app] "`, trailing
+space included; prepend that value rather than typing it). Embed's auto-pick skips such chatbots, and Studio lists them
+marked `(app-managed)`. Without the prefix, a fresh account that opens your app first hands Embed your chatbot, and its
+avatar reads the raw replies aloud.
+
 ## Architecture
 
 A minimal full-stack sample: a thin Express proxy plus a zero-dependency browser UI that drives the Perxona `<sv-presenter>`
@@ -100,6 +108,10 @@ timeline — a tool for browsing the catalog and creating a chatbot, not a start
   (`POST /api/chatbots/:id/chat`) or your own key (`POST /api/chat`). The history is kept provider-neutral as
   `{ role, text }` and converted at the call site, which is why you can flip the switch mid-conversation and carry the same
   history over. The own-LLM source stays disabled until `GET /api/config` reports `chat: true`.
+- `demos/interview/` — **InterviewCoach**, a product built on the kit rather than a demo of it: a mock job interview where
+  the app picks the avatar's emotion from each answer's score, creates its own Connect chatbot from code on the first
+  Start (`POST /api/chatbots`), and picks a voice per language. Scaffolded from Embed — read it as proof of the instruction at
+  the top of this file, not as a third starting point. Its own README explains the rest.
 
 Three presenter details worth knowing:
 
@@ -137,8 +149,8 @@ your IDE at that package for autocomplete and JSDoc on presenter methods.
 
 - `server.mjs` — Express backend. Serves the publishable key (`GET /api/connect-key`) and proxies catalog reads; it no
   longer builds presenter-ready payloads (`<sv-presenter>` resolves those itself against the Connect API using that key).
-- `public/` — the browser UI: `index.html` is a landing page listing demos; each demo (`demos/embed/`, `demos/studio/`) has
-  its own `index.html`, `style.css`, and `app.js` (plain ESM, no build step).
+- `public/` — the browser UI: `index.html` is a landing page listing demos; each demo (`demos/embed/`, `demos/studio/`,
+  `demos/interview/`) has its own `index.html`, `style.css`, and `app.js` (plain ESM, no build step).
 - `docs/` — reference material: `openapi.yaml` (the Connect API).
 
 ## Getting Started
@@ -147,8 +159,8 @@ Requires Node `>=22` — run `nvm use` (reads `.nvmrc`) if you use nvm, or insta
 
 1. `cp .env.example .env`
 2. Fill in `PERXONA_API_BASE_URL`, `PERXONA_CONNECT_SECRET_KEY`, and `PERXONA_CONNECT_PUBLISHABLE_KEY` — sign up on the
-   Perxona console (see Getting an account below), then create both keys there under
-   **Organization → Integration → Connect API keys**.
+   Perxona console (see Getting an account below), then create both keys there: open the avatar
+   menu (top right), then **Management → Integration → Connect API keys**.
    Set `PERXONA_API_BASE_URL` to your region's URL (e.g. `https://console.perxona.ai/asia`).
 3. `npm install` — fails fast if your Node version is too old (`engine-strict` in `.npmrc`).
 4. `npm run dev` — runs with live reload (or `npm start` without watch). The app serves on the port from your `.env` (`8083` by
@@ -176,20 +188,26 @@ Required (the server exits at startup if any is missing — both keys are needed
   server: the `/api/*` routes have no request-layer authorization, so anything the secret key can do is reachable by anyone
   who can reach this server. Put your own authorization in front of them before running it anywhere but `localhost`.
 
+On Vercel (the platform sets `VERCEL`), `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and
+`PRESENTER_URL` to the engine of that region, because the Deploy Button only asks for the two keys. There `server.mjs` only
+exports `app` (no `app.listen`, no startup probes) and answers `/` itself, since Vercel serves `public/` from its CDN. See
+README "Deploy to Vercel".
+
 ### Getting an account
 
 Sign up at **<https://console.perxona.ai>** and sign in. There is no sign-up API — the Connect `signup`,
 `confirm-signup`, `forgot-password` and `reset-password` endpoints were removed. Password recovery is on the console's
 sign-in page.
 
-Then open **Organization → Integration → Connect API keys** and create two keys — one **secret** for
-`PERXONA_CONNECT_SECRET_KEY`, one **publishable** for `PERXONA_CONNECT_PUBLISHABLE_KEY`. Each is shown once and never again
-(the console stores only a hash), so copy it straight into `.env`.
+Then open the avatar menu (top right) → **Management → Integration → Connect API keys** and create two keys — one
+**secret** for `PERXONA_CONNECT_SECRET_KEY`, one **publishable** for `PERXONA_CONNECT_PUBLISHABLE_KEY`. Each is shown once
+and never again (the console stores only a hash), so copy it straight into `.env`.
 
 Optional: `PORT`; `DEMO_FIXED_*` (pins the avatar/scene/voice target reported as `fixedTarget` on `GET /api/config`) and
 `DEMO_FIXED_CHATBOT_ID` (pins the chatbot Embed converses with, reported as `chatbotId`). Embed reads both _instead of_ a
 picker. Leave them all blank and the server picks the first avatar, scene, voice and chatbot in your account instead —
-skipping any chatbot whose status is `disabled`, since that one would reject every message — so
+skipping any chatbot whose status is `disabled`, since that one would reject every message, and any app-managed chatbot
+(named with the `[app]` prefix, see "A chatbot your app creates for its own use") — so
 Embed runs with no configuration — a voice is included because `present()` fails without one, whereas a blank
 `DEMO_FIXED_VOICE_ID` alongside a pinned avatar/scene is a deliberate BYO-TTS choice. `/api/config` does not say whether a
 value was pinned or picked: the Embed page shows no configuration detail, so the server names its choices in the startup
@@ -200,10 +218,9 @@ never commit it; update `.env.example` when you add a new variable.
 
 ## Usage and Subscription
 
-Connect Kit is in **Preview** until **2026/09/20** (subject to platform configuration) — metered calls (chatbot
-conversations) are not subject to credit enforcement during this period. When enforcement starts, Connect Kit sign-ups
-default to the Perxona Console **Free Plan**. If that organization's credits are exhausted, **or its subscription itself is
-no longer active**, metered calls fail with the same HTTP `400` and `code: 1003`, with a body like one of these:
+Connect Kit sign-ups default to the Perxona Console **Free Plan**. If that organization's credits are exhausted, **or its
+subscription itself is no longer active**, metered calls fail with the same HTTP `400` and `code: 1003`, with a body
+like one of these:
 `{"code": 1003, "details": "credit_points exhausted for org_id: ..."}` or
 `{"code": 1003, "details": "Subscription status is not valid for org_id: ..."}` — the `details` field is what tells the two
 apart. A third, separate case — **no subscription record for the org at all** — fails with HTTP `403` and

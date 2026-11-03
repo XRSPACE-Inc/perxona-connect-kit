@@ -37,8 +37,8 @@ const USE_MOCK = process.env.USE_MOCK === "true";
 const PRESENTER_URL =
   process.env.PRESENTER_URL ||
   (ON_VERCEL
-    ? `https://cdn.perxona.ai/${CONSOLE_REGION}/prod/latest/widget/entry/presenter.js`
-    : "https://cdn.perxona.ai/prod/latest/widget/entry/presenter.js");
+    ? `https://cdn.perxona.ai/${CONSOLE_REGION}/prod/connect/latest/widget/entry/presenter.js`
+    : "https://cdn.perxona.ai/prod/connect/latest/widget/entry/presenter.js");
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || "openai").toLowerCase();
 const LLM_API_KEY = process.env.LLM_API_KEY;
 const PRESENTER_TARGET = {
@@ -496,17 +496,30 @@ async function resolveTarget() {
   }
 }
 
+// An app built on this kit names a chatbot it creates for its own use (one whose
+// replies are not meant to be read aloud as-is) with this prefix. Embed's
+// auto-pick skips such chatbots; Studio lists them, marked "(app-managed)".
+// Served to the browser as appManagedChatbotPrefix on GET /api/config.
+const APP_MANAGED_CHATBOT_PREFIX = "[app] ";
+
 /** The chatbot Embed converses against: DEMO_FIXED_CHATBOT_ID, else the first. */
 async function resolveChatbotId() {
   if (FIXED_CHATBOT_ID) return FIXED_CHATBOT_ID;
   try {
-    const { items } = await api.listChatbots(CONNECT_SECRET_KEY);
+    const { items = [] } = await api.listChatbots(CONNECT_SECRET_KEY);
     // Disabled chatbots stay in the list but reject every message.
     const chatbotId =
-      items?.find(({ status }) => status !== "disabled")?.id ?? null;
+      items.find(
+        ({ name, status }) =>
+          status !== "disabled" &&
+          !name?.startsWith(APP_MANAGED_CHATBOT_PREFIX),
+      )?.id ?? null;
     if (!chatbotId) {
       console.warn(
-        "No chatbots in this account yet, so the Embed demo has nothing to talk to.\n" +
+        (items.length
+          ? `None of the ${items.length} chatbot(s) in this account can be auto-selected — ` +
+            `Embed skips disabled ones and app-managed ones (named "${APP_MANAGED_CHATBOT_PREFIX}…").\n`
+          : "No chatbots in this account yet, so the Embed demo has nothing to talk to.\n") +
           "Create one in the Studio demo (/demos/studio/) — it is picked up on the next page load,\n" +
           "no restart needed — or set DEMO_FIXED_CHATBOT_ID in .env.",
       );
@@ -614,7 +627,8 @@ app.get("/api/health", async (_req, res) => {
   });
 });
 
-// GET /api/config → { mock, chat, presenterUrl, fixedTarget, chatbotId, subscriptionUrl }.
+// GET /api/config → { mock, chat, presenterUrl, fixedTarget, chatbotId,
+//                     appManagedChatbotPrefix, subscriptionUrl }.
 // Cheap to poll: `chat` reports the presence of LLM_API_KEY, never the key, and
 // resolveEmbedConfig()'s catalog lookup is memoized. No field says whether a
 // value was pinned or auto-picked — nothing may render that. This route has no
@@ -633,6 +647,7 @@ app.get(
       presenterUrl: PRESENTER_URL,
       fixedTarget: target,
       chatbotId,
+      appManagedChatbotPrefix: APP_MANAGED_CHATBOT_PREFIX,
       subscriptionUrl: SUBSCRIPTION_URL,
     });
   }),
@@ -1130,27 +1145,28 @@ const CHECK_ICONS = { reachable: "✓", unreachable: "✗", mock: "–" };
 // the port listener and the startup probes only run for a local `npm start`.
 export default app;
 
-if (!ON_VERCEL) app.listen(PORT, () => {
-  console.log(`\nPerxona Connect Kit`);
-  console.log(`  URL  : http://localhost:${PORT}`);
-  console.log(`  Mode : ${USE_MOCK ? "MOCK (no real API calls)" : "live"}`);
-  // Deferred probes so the banner prints immediately and startup never blocks.
-  // Labeled API/CDN so each line reads as that resource's reachability.
-  api.checkUpstream().then((status) => {
-    const icon = CHECK_ICONS[status] ?? "✗";
-    const hint =
-      status === "unreachable" ? " — check PERXONA_API_BASE_URL" : "";
-    console.log(`  API  : ${icon} ${status}  ${PERXONA_API_BASE_URL}${hint}`);
+if (!ON_VERCEL)
+  app.listen(PORT, () => {
+    console.log(`\nPerxona Connect Kit`);
+    console.log(`  URL  : http://localhost:${PORT}`);
+    console.log(`  Mode : ${USE_MOCK ? "MOCK (no real API calls)" : "live"}`);
+    // Deferred probes so the banner prints immediately and startup never blocks.
+    // Labeled API/CDN so each line reads as that resource's reachability.
+    api.checkUpstream().then((status) => {
+      const icon = CHECK_ICONS[status] ?? "✗";
+      const hint =
+        status === "unreachable" ? " — check PERXONA_API_BASE_URL" : "";
+      console.log(`  API  : ${icon} ${status}  ${PERXONA_API_BASE_URL}${hint}`);
+    });
+    // Fire-and-forget, so the picked ids reach the startup log and the first
+    // visitor skips the catalog round-trip. Failures are handled inside.
+    if (!USE_MOCK) resolveEmbedConfig();
+    checkPresenter().then((status) => {
+      const icon = CHECK_ICONS[status] ?? "✗";
+      const hint =
+        status === "reachable"
+          ? ""
+          : " — set PRESENTER_URL to a reachable engine (see .env)";
+      console.log(`  CDN  : ${icon} ${status}  ${PRESENTER_URL}${hint}`);
+    });
   });
-  // Fire-and-forget, so the picked ids reach the startup log and the first
-  // visitor skips the catalog round-trip. Failures are handled inside.
-  if (!USE_MOCK) resolveEmbedConfig();
-  checkPresenter().then((status) => {
-    const icon = CHECK_ICONS[status] ?? "✗";
-    const hint =
-      status === "reachable"
-        ? ""
-        : " — set PRESENTER_URL to a reachable engine (see .env)";
-    console.log(`  CDN  : ${icon} ${status}  ${PRESENTER_URL}${hint}`);
-  });
-});

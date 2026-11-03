@@ -1,17 +1,8 @@
 # Perxona Connect Kit — VRM Uploader
 
 `upload-vrm.sh` checks a `.vrm` file against what the Perxona Connect API and the avatar runtime
-accept, and uploads it when it passes. Once uploading reopens (see the notice below), the avatar
-appears in your organization's catalog right away — no redeploy, and nobody at Perxona has to
-upload it for you. <!-- vrm-upload-hold -->
-
-<!-- vrm-upload-hold -->
-
-> **Uploading is on hold — please do not upload yet.** An uploaded VRM becomes a Three.js avatar,
-> and Connect is not serving those yet: by default the avatar catalog does not return it, and
-> `<sv-presenter>`'s Three.js renderer has not been released. The upload itself succeeds, but you
-> cannot list, select or display the result. Until this notice is removed, run the script with
-> `--validate-only` only. The checks are unaffected, so you can still get a file ready.
+accept, and uploads it when it passes. The avatar appears in your organization's catalog right
+away — no redeploy, and nobody at Perxona has to upload it for you.
 
 ## Requirements
 
@@ -19,8 +10,8 @@ upload it for you. <!-- vrm-upload-hold -->
   is enough. It does not install anything for you: if `jq` or `curl` is missing it says so and
   stops.
 - A Connect API key of type **secret**. Only a secret key may write assets. Create one in the
-  Perxona console under Organization → Integration → Connect API keys, and leave its allowed-domain
-  list empty.
+  Perxona console (avatar menu, top right → Management → Integration → Connect API keys), and leave its
+  allowed-domain list empty.
 
 ## Getting the script
 
@@ -53,11 +44,6 @@ Result: PASSED (not uploaded)
 ```
 
 ## Uploading
-
-<!-- vrm-upload-hold -->
-
-> On hold for now — see the notice at the top of this page. This section describes how the upload
-> works once it opens again.
 
 ```bash
 export PERXONA_CONNECT_SECRET_KEY=pxc_...

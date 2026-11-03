@@ -32,6 +32,11 @@ Or skip the laptop and deploy this sample to Vercel (see [Deploy to Vercel](#dep
 Pick a demo, choose an avatar / scene / voice, click its launch button — the avatar speaks. The server authenticates with its
 own key; there's no login screen.
 
+> 💡 **New to GitHub, `.env` environment variables, or terminal commands?** See the
+> [**Vibe Coder Beginner Guide**](../../README.md#vibe-coder-beginner-guide) in the repository root README (or the
+> **Vibe Coder Guide** in the [Developer Handbook](https://connect.perxona.ai/#vibe-coder)) for a zero-jargon
+> walkthrough, `.env` setup tips, and copy-paste prompts for AI coding editors.
+
 ---
 
 ## Contents
@@ -77,7 +82,8 @@ end to end:
    the rest directly against the Connect API.
 4. Make the avatar speak — one call, the presenter handles synthesis and motion playback.
 
-Two demos ship with the sample. Both hold a multi-turn conversation the avatar speaks aloud; what differs is which side of
+Two demos ship with the sample, plus one product built on them. Both demos hold a multi-turn conversation the avatar speaks
+aloud; what differs is which side of
 the work you are looking at. **Embed** is what it looks like once it is live: a product site with an avatar answering
 questions on it, no controls and nothing on the page about its own configuration — the avatar and chatbot arrive already
 resolved. **Studio** is the console you build that from: browse the catalog, create and edit chatbots with knowledge files
@@ -86,12 +92,17 @@ few seconds to a few minutes) and function tools, interrupt mid-sentence, watch 
 switch at runtime between a Connect-hosted chatbot and your own `LLM_API_KEY` — the same conversation, answered by a
 different model.
 
+**InterviewCoach** (`public/demos/interview/`) is the third thing: not a demo of the kit but a small product built on it — a
+mock job interview in English, 日本語 or 繁體中文 where the app, not the model, picks the avatar's emotion from the score,
+creates its own Connect chatbot from code on the first Start, and picks a voice per language. It was scaffolded from Embed, which
+is the point. See [its README](public/demos/interview/README.md).
+
 ```text
 .
 ├── server.mjs        # Express backend — proxies catalog reads and serves the publishable Connect key
 ├── public/
 │   ├── index.html    # Landing page listing demos
-│   └── demos/        # embed and studio demo UIs
+│   └── demos/        # embed and studio demo UIs, plus the InterviewCoach app
 └── docs/             # Reference — openapi.yaml
 ```
 
@@ -100,13 +111,9 @@ Postman to browse them).
 
 ### Usage and Subscription
 
-> ⚠️ **Connect Kit is currently in Preview.** Through **2026/09/20** (subject to platform configuration), metered calls
-> (chatbot conversations) are not subject to usage-credit enforcement. Put less ceremoniously: the meter exists, but nobody
-> is sending you a bill yet.
-
-When credit enforcement starts, Connect Kit sign-ups are treated as Perxona Console **Free Plan** users by default. If that
-organization's credits are exhausted, **or its subscription itself is no longer active**, metered calls (such as chatbot
-chat) fail with the same HTTP `400` and `code: 1003`, with a body like one of these:
+Connect Kit sign-ups are treated as Perxona Console **Free Plan** users by default. If that organization's credits are
+exhausted, **or its subscription itself is no longer active**, metered calls (such as chatbot chat) fail with the same
+HTTP `400` and `code: 1003`, with a body like one of these:
 `{"code": 1003, "details": "credit_points exhausted for org_id: ..."}` or
 `{"code": 1003, "details": "Subscription status is not valid for org_id: ..."}` — the `details` field is what tells the two
 apart. A third, separate case — **no subscription record for the org at all** — fails with HTTP `403` and
@@ -214,7 +221,7 @@ Then open `.env` and fill in the values:
 | `DEMO_FIXED_AVATAR_ID`            | —        | Pins the avatar Embed uses, reported as `fixedTarget` on `GET /api/config`. Set together with `DEMO_FIXED_SCENE_ID`. Leave both blank and the server picks the first in your catalog. |
 | `DEMO_FIXED_SCENE_ID`             | —        | Pins the scene Embed uses. Takes effect only alongside `DEMO_FIXED_AVATAR_ID`.                                                                                                        |
 | `DEMO_FIXED_VOICE_ID`             | —        | Pins the voice. Blank alongside a pinned avatar/scene selects BYO-TTS (`presentWithAudio()`); the auto-pick always includes a voice.                                                  |
-| `DEMO_FIXED_CHATBOT_ID`           | —        | Pins the chatbot Embed converses with, reported as `chatbotId` on `GET /api/config`. Leave blank and the server picks the first non-disabled one in your account.                     |
+| `DEMO_FIXED_CHATBOT_ID`           | —        | Pins the chatbot Embed converses with, reported as `chatbotId` on `GET /api/config`. Leave blank and the server picks the first one that is not disabled or app-managed.              |
 | `LLM_API_KEY`                     | —        | API key for the selected provider. Leave blank and Studio's own-LLM source stays disabled.                                                                                            |
 | `LLM_PROVIDER`                    | —        | `openai` (default) for Chat Completions, or `anthropic` for Claude Messages API.                                                                                                      |
 | `LLM_BASE_URL`                    | —        | Provider base URL. OpenAI default: `https://api.openai.com/v1`; Anthropic default: `https://api.anthropic.com`.                                                                       |
@@ -232,8 +239,10 @@ entirely — and the Embed demo initializes the presenter and starts its convers
 voice and chatbot in your account on the first `/api/config` request (memoized, so later polls cost nothing — deleting the
 picked chatbot forces a re-pick on the next request instead of leaving `/api/config` serving a dead id). A **disabled**
 chatbot is skipped rather than picked — it would accept the selection and then reject every message, with the failure
-visible only in the browser console. Set them to
-pin your own, which is what a real integration does — pinned values make no catalog call at all.
+visible only in the browser console. So is an **app-managed** chatbot, whose name starts with the prefix `/api/config`
+reports as `appManagedChatbotPrefix` (`"[app] "`, trailing space included): an app built on the kit creates it for
+its own use — InterviewCoach's answers only in JSON, which Embed would read aloud. Studio lists these marked
+`(app-managed)`. Set them to pin your own, which is what a real integration does — pinned values make no catalog call at all.
 
 `/api/config` deliberately does **not** report whether a value was pinned or picked, and the Embed page shows neither. A
 live site does not annotate its own widget; the server names what it chose in the startup log instead, which is where an
@@ -271,19 +280,27 @@ The sample runs unchanged as one Vercel Function: Vercel detects Express in `ser
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
 
 The button clones this repository into your Git account with `samples/express` as the project root, asks for the two
-Connect API keys, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and `PRESENTER_URL` to the engine of that
-region; set `PERXONA_API_BASE_URL` in the project's environment variables if your account is in another region. Every other optional value from `.env.example`
-(`DEMO_FIXED_*`, `LLM_*`, `PRESENTER_URL`) can be added there too; redeploy after changing any of them.
+Connect API keys, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and
+`PRESENTER_URL` to the engine of that region; set `PERXONA_API_BASE_URL` in the project's environment variables if your
+account is in another region. Every other optional value from
+`.env.example` (`DEMO_FIXED_*`, `LLM_*`, `PRESENTER_URL`) can be added there too; redeploy after changing any of them.
 
-Two things that differ from running locally:
+Three things that differ from running locally:
 
 - **The publishable key's domain list.** Leave it empty for the first deploy, open the site, then restrict the key to the
   `*.vercel.app` address Vercel gave you (and any custom domain). The secret key's list stays empty, as always.
 - **The URL is public and the publishable key is visible to anyone who opens it**, by design, so it spends your
   organization's credits. Watch usage in the console, or take the deployment down when you are done with it.
+- **Every `/api/*` route is public too, and each one sends the secret key upstream.** Anyone with the URL can create, edit and
+  delete your chatbots, talk to them on your credits, publish avatars and read your billing usage through it (see
+  ["Auth model"](#auth-model)). If you add `LLM_*`, `/api/chat` also spends your `LLM_API_KEY` for anyone who calls it,
+  with no rate limit. Treat the deployment as a short-lived demo, or put your own authorization in front of `/api/*`
+  before you share the address.
 
 Already have the Vercel CLI? From this directory, `vercel deploy --temporary --env PERXONA_CONNECT_SECRET_KEY=... --env PERXONA_CONNECT_PUBLISHABLE_KEY=...`
-gives a throwaway deployment that lasts an hour, no account needed.
+gives a throwaway deployment, no account needed; it expires after a short time and the CLI prints when. The secret key on
+that command line lands in your shell history and is visible in `ps` while the deploy runs, so rotate it in the console
+when you are done, or use the Deploy button above instead.
 
 ---
 

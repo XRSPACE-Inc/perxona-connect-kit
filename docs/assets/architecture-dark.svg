@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="Architecture: your page holds the publishable key, your server holds the secret key, both talk to the Perxona Connect API">
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;fill:#F0F6FC}
+.t{font-size:19px;font-weight:700}
+.s{font-size:13.5px;fill:#9198A1}
+.n{font-size:12px;font-weight:700;fill:#fff;letter-spacing:.5px}
+.m{font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;fill:#F0F6FC}
+.chip{font-size:13px;font-weight:600;fill:#F0F6FC}
+.flow{stroke-dasharray:6 7;animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-26}}
+.bar{transform-box:fill-box;transform-origin:center;animation:talk 1s ease-in-out infinite}
+@keyframes talk{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.blink{animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
+.pkt{animation:pkt 2.4s ease-in-out infinite}
+@keyframes pkt{0%{transform:translateX(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateX(var(--d));opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4D82FF"/><stop offset="1" stop-color="#A08BFF"/></linearGradient>
+</defs>
+<rect x="20" y="30" width="220" height="150" rx="16" fill="#111A2E" stroke="#24345C" stroke-width="1"/>
+<text class="t" x="40" y="66" style="font-size:17px">Your page or app</text>
+<rect x="40" y="82" width="180" height="24" rx="6" fill="#16213D"/>
+<text class="m" x="50" y="98.5">&lt;sv-presenter&gt;</text>
+<rect x="40" y="114" width="180" height="24" rx="6" fill="#16213D"/>
+<text class="m" x="50" y="130.5">publishable key</text>
+<text class="s" x="40" y="204">renders, lip-syncs, speaks</text>
+<rect x="340" y="30" width="220" height="150" rx="16" fill="#111A2E" stroke="#4D82FF" stroke-width="1.8"/>
+<text class="t" x="360" y="66" style="font-size:17px">Your server</text>
+<rect x="360" y="82" width="180" height="24" rx="6" fill="#16213D"/>
+<text class="m" x="370" y="98.5">secret key</text>
+<rect x="360" y="114" width="180" height="24" rx="6" fill="#16213D"/>
+<text class="m" x="370" y="130.5">/api/* proxy</text>
+<text class="s" x="360" y="204">never sends the secret out</text>
+<rect x="660" y="30" width="220" height="150" rx="16" fill="#111A2E" stroke="#24345C" stroke-width="1"/>
+<text class="t" x="680" y="66" style="font-size:17px">Perxona Connect API</text>
+<rect x="680" y="82" width="180" height="24" rx="6" fill="#16213D"/>
+<text class="m" x="690" y="98.5">avatars · voices</text>
+<rect x="680" y="114" width="180" height="24" rx="6" fill="#16213D"/>
+<text class="m" x="690" y="130.5">chatbots · speech</text>
+<text class="s" x="680" y="204">the hosted service</text>
+<path class="flow" d="M246 105.0 H334" stroke="#4D82FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle class="pkt" style="--d:84px" cx="248" cy="105.0" r="4.5" fill="url(#g)"/>
+<text class="s" x="290.0" y="93.0" text-anchor="middle" style="font-size:11px">catalog, chat</text>
+<text class="s" x="290.0" y="124.0" text-anchor="middle" style="font-size:11px">no key</text>
+<path class="flow" d="M566 105.0 H654" stroke="#4D82FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle class="pkt" style="--d:84px" cx="568" cy="105.0" r="4.5" fill="url(#g)"/>
+<text class="s" x="610.0" y="93.0" text-anchor="middle" style="font-size:11px">secret key</text>
+<text class="s" x="610.0" y="124.0" text-anchor="middle" style="font-size:11px">proxied calls</text>
+<path class="flow" d="M130 220 C 130 290, 770 290, 770 220" stroke="#A08BFF" stroke-width="2" fill="none" stroke-linecap="round"/>
+<rect x="255.0" y="258" width="390" height="26" rx="13" fill="#0D1117" stroke="#24345C"/>
+<text class="s" x="450.0" y="275.5" text-anchor="middle" style="font-size:12px">presenter → API directly · publishable key: speech, avatar</text>
+</svg>

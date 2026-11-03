@@ -537,11 +537,13 @@ paths:
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/ConnectGoogleVoiceDetailResponse'
+                  - $ref: '#/components/schemas/ConnectGeminiVoiceDetailResponse'
                   - $ref: '#/components/schemas/ConnectAzureVoiceDetailResponse'
                 discriminator:
                   propertyName: provider
                   mapping:
                     google: '#/components/schemas/ConnectGoogleVoiceDetailResponse'
+                    gemini: '#/components/schemas/ConnectGeminiVoiceDetailResponse'
                     azure: '#/components/schemas/ConnectAzureVoiceDetailResponse'
                 title: Response Connect Get Voice Detail Api V1 Connect Voices  Voice Id  Get
         '422':
@@ -632,6 +634,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConnectPresentationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/motion-suggestion:
+    post:
+      tags:
+        - connect
+      summary: Suggest motions for a line of text
+      description: >-
+        Suggest motions for a line of text without an avatar. The endpoint accepts the gender and body proportion the
+        motions are for and the text they accompany, then returns the text with motion marks inserted and a performance
+        manifest of the motion assets the marks refer to.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __10 calls / 1 seconds__
+      operationId: post_v1_connect_create_motion_suggestion
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectMotionSuggestionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectMotionSuggestionResponse'
         '422':
           description: Validation Error
           content:
@@ -1141,9 +1189,14 @@ components:
           type: string
           format: binary
           title: Vrm File
-        skeleton_type:
-          $ref: '#/components/schemas/ConnectVRMSkeletonType'
-          description: Motion style the uploaded avatar draws its gestures from.
+        gender:
+          $ref: '#/components/schemas/ConnectMotionGender'
+          description: Gender of the body the avatar's motions are drawn for.
+        heads_tall:
+          $ref: '#/components/schemas/ConnectMotionHeadsTall'
+          description: >-
+            Body proportion in heads: 3 (stylized), 6, or 8 (realistic). Together with gender it selects which motion
+            set the avatar draws its gestures from.
         avatar_name:
           anyOf:
             - type: string
@@ -1166,7 +1219,8 @@ components:
       type: object
       required:
         - vrm_file
-        - skeleton_type
+        - gender
+        - heads_tall
       title: Body_upload_vrm_api_v1_connect_assets_vrm_upload_post
     ChatBotDetailResponse:
       properties:
@@ -1261,6 +1315,15 @@ components:
           anyOf:
             - $ref: '#/components/schemas/ConnectAvatarRuntimeConfigs'
             - type: 'null'
+        lower_body_pool:
+          items:
+            $ref: '#/components/schemas/ConnectMotionAssetResponse'
+          type: array
+          title: Lower Body Pool
+          description: >-
+            Motions the renderer may play under this avatar's gestures as a shared lower body, so consecutive gestures
+            keep one stance. Empty when none fits the avatar's skeleton, or when the organization has lower-body
+            blending off; every motion then plays its full body.
       type: object
       required:
         - avatar_id
@@ -1613,6 +1676,78 @@ components:
         Deliberately not a re-export of ``SubscriptionCreditResponse``: that schema also carries
         ``rate``, the ``*_in_cent`` fields, and the coupon grant/used/remaining breakdown, none of
         which is for an external Connect caller to see.
+    ConnectGeminiAudioConfig:
+      properties:
+        audioEncoding:
+          $ref: '#/components/schemas/AudioEncoding'
+        sampleRateHertz:
+          type: integer
+          title: Sampleratehertz
+        speechStyle:
+          type: string
+          title: Speechstyle
+      type: object
+      required:
+        - audioEncoding
+        - sampleRateHertz
+      title: ConnectGeminiAudioConfig
+      description: The audio a Gemini voice returns, and the delivery instruction its requests send apart from the text.
+    ConnectGeminiVoice:
+      properties:
+        name:
+          type: string
+          title: Name
+        model_name:
+          type: string
+          title: Model Name
+      type: object
+      required:
+        - name
+        - model_name
+      title: ConnectGeminiVoice
+      description: Gemini voice selection fields used by the ``generateContent`` request.
+    ConnectGeminiVoiceDetailResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        provider:
+          type: string
+          const: gemini
+          title: Provider
+        languages:
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          title: Languages
+        region:
+          $ref: '#/components/schemas/VoiceRegion'
+        endpoint_url:
+          type: string
+          title: Endpoint Url
+        voice:
+          $ref: '#/components/schemas/ConnectGeminiVoice'
+        audio_config:
+          $ref: '#/components/schemas/ConnectGeminiAudioConfig'
+      type: object
+      required:
+        - id
+        - name
+        - provider
+        - languages
+        - region
+        - endpoint_url
+        - voice
+        - audio_config
+      title: ConnectGeminiVoiceDetailResponse
     ConnectGoogleAudioConfig:
       properties:
         audioEncoding:
@@ -1829,6 +1964,13 @@ components:
             - type: string
             - type: 'null'
           title: Thumbnail
+        configs:
+          anyOf:
+            - $ref: '#/components/schemas/ConnectMotionRuntimeConfigs'
+            - type: 'null'
+          description: >-
+            The motion's runtime config, the same `configs.motion` a widget profile carries for it: `full_body_only` is
+            true for a motion tagged blend:none. Null when the motion has none.
       type: object
       required:
         - motion_id
@@ -1837,6 +1979,76 @@ components:
         - lod_urls
         - thumbnail
       title: ConnectMotionAssetResponse
+    ConnectMotionGender:
+      type: string
+      enum:
+        - male
+        - female
+      title: ConnectMotionGender
+      description: The gender of the body the motions were authored for.
+    ConnectMotionHeadsTall:
+      type: integer
+      enum:
+        - 3
+        - 6
+        - 8
+      title: ConnectMotionHeadsTall
+      description: 'Body proportion in heads: 3 (stylized), 6, or 8 (realistic). Together with gender it picks the motion set.'
+    ConnectMotionRuntimeConfigs:
+      properties:
+        motion:
+          anyOf:
+            - $ref: '#/components/schemas/MotionRuntimeConfig-Output'
+            - type: 'null'
+      type: object
+      title: ConnectMotionRuntimeConfigs
+      description: |-
+        Runtime config surface for Connect motions, scoped to the `motion` namespace.
+
+        Every asset it describes is MOTION-typed, which `validate_asset_configs` keeps free of any
+        other namespace, as `ConnectAvatarRuntimeConfigs` is for avatars.
+    ConnectMotionSuggestionRequest:
+      properties:
+        gender:
+          $ref: '#/components/schemas/ConnectMotionGender'
+          description: Gender of the body the motions are for. Selects which motion set suggestions are drawn from.
+        heads_tall:
+          $ref: '#/components/schemas/ConnectMotionHeadsTall'
+          description: >-
+            Body proportion in heads: 3 (stylized), 6, or 8 (realistic). Together with gender it selects which motion
+            set suggestions are drawn from.
+        text:
+          type: string
+          maxLength: 2048
+          minLength: 1
+          title: Text
+          description: Plain text the motions should accompany. Must not already contain [MOTION ...] marks.
+      type: object
+      required:
+        - gender
+        - heads_tall
+        - text
+      title: ConnectMotionSuggestionRequest
+      description: Request to suggest motions for a plain text line, for a body described by gender and proportion.
+    ConnectMotionSuggestionResponse:
+      properties:
+        markup:
+          type: string
+          title: Markup
+          description: >-
+            The request text with [MOTION id:priority] marks inserted where each suggested motion starts. Accepted as-is
+            as the message of the presentation endpoint. Equal to the request text when no motion was suggested.
+        performance_manifest:
+          additionalProperties:
+            $ref: '#/components/schemas/AssetManifestEntry'
+          type: object
+          title: Performance Manifest
+          description: Motion assets referenced by the marks in markup, keyed by motion id.
+      type: object
+      required:
+        - markup
+      title: ConnectMotionSuggestionResponse
+      description: Suggested motions for one line of text, returned to Connect SDK consumers.
     ConnectPresentationRequest:
       properties:
         avatar_id:
@@ -2054,24 +2266,6 @@ components:
         - region
         - token
       title: ConnectVoiceTextToSpeechTokenResponse
-    ConnectVRMSkeletonType:
-      type: string
-      enum:
-        - male
-        - female
-        - male_three_head
-        - female_three_head
-      title: ConnectVRMSkeletonType
-      description: |-
-        The motion style a VRM avatar draws its gestures from.
-
-        A style choice, not a technical constraint: a clip from any of these pools is retargeted
-        onto the uploaded VRM's own rig, so picking the wrong one yields gestures in the wrong
-        style rather than a playback failure.
-
-        The three-head values select the 3-head-tall proportions, authored as a separate motion
-        lineage. The plain male and female values select the 8-head-tall lineage, which is where
-        most of the pool lives.
     ConnectVRMUploadResponse:
       properties:
         avatar_id:
@@ -2280,6 +2474,11 @@ components:
               type: array
             - type: 'null'
           title: Cue Sets
+        full_body_only:
+          anyOf:
+            - type: boolean
+            - type: 'null'
+          title: Full Body Only
       additionalProperties: false
       type: object
       title: MotionRuntimeConfig
@@ -2291,6 +2490,10 @@ components:
         points of its own (``perxona_core.motion.key_points``), attached where the manifest is built, so
         the renderer times a gesture from the same points selection read. Both are None for a clip
         with no confirmed points.
+
+        ``full_body_only`` never comes from the asset's own ``configs`` either: it is True when the motion
+        carries ``blend:none`` (``perxona_core.motion.blend``), attached beside the key points, so the
+        renderer plays it whole instead of over the shared lower body. None otherwise.
     Page_ChatBotSummaryResponse_:
       properties:
         items:
@@ -2575,7 +2778,11 @@ components:
         - aws
         - azure
         - elevenlabs
+        - gemini
       title: VoiceProvider
+      description: |-
+        Who synthesizes a voice. ``GOOGLE`` speaks through Cloud TTS ``text:synthesize``, ``GEMINI`` through Vertex AI
+        ``generateContent``.
     VoiceRegion:
       type: string
       enum:

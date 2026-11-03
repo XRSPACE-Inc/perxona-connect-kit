@@ -641,6 +641,27 @@ function closeBotPicker() {
 }
 
 /**
+ * Whether an app built on this kit created this chatbot for its own use
+ * (GET /api/config → appManagedChatbotPrefix). Embed never auto-picks one.
+ * @param {{ name: string }} bot
+ */
+const isAppManaged = ({ name }) =>
+  Boolean(appConfig.appManagedChatbotPrefix) &&
+  name.startsWith(appConfig.appManagedChatbotPrefix);
+
+/**
+ * The picker's text for a chatbot: its name plus any status marks.
+ * @param {{ name: string, status: string }} bot
+ */
+function botLabel(bot) {
+  const marks = [
+    isAppManaged(bot) && "(app-managed)",
+    bot.status === "disabled" && "(disabled)",
+  ].filter(Boolean);
+  return [bot.name, ...marks].join(" ");
+}
+
+/**
  * Rebuild the picker's option list from the current chatbotList array.
  * @param {Array<{ id: string, name: string, status: string }>} bots
  */
@@ -656,9 +677,13 @@ function populateBotPicker(bots) {
   }
   botPickerList.replaceChildren(
     makeOption(null, bots.length ? "— select a chatbot —" : "— none yet —"),
-    ...bots.map(({ id, name, status }) =>
-      makeOption(id, status === "disabled" ? `${name} (disabled)` : name),
-    ),
+    ...bots.map((bot) => {
+      const li = makeOption(bot.id, botLabel(bot));
+      if (isAppManaged(bot))
+        li.title =
+          "Created and used by an app built on this kit. Embed doesn't auto-select it.";
+      return li;
+    }),
   );
 }
 
@@ -684,9 +709,7 @@ async function selectChatbot(id) {
   }
   const bot = chatbotList.find((b) => b.id === newId);
   botPickerLabel.textContent = bot
-    ? bot.status === "disabled"
-      ? `${bot.name} (disabled)`
-      : bot.name
+    ? botLabel(bot)
     : chatbotList.length
       ? "— select a chatbot —"
       : "— none yet —";
@@ -758,10 +781,18 @@ async function loadChatbots() {
       selectChatbot(null);
     }
     // A new organization has none; an empty picker on its own is a dead end.
-    if (chatbotList.length === 0) {
+    // Disabled and app-managed chatbots don't count — the same rule as
+    // resolveChatbotId() in server.mjs, which never auto-picks one; keep them in step.
+    if (
+      !chatbotList.some(
+        (bot) => bot.status !== "disabled" && !isAppManaged(bot),
+      )
+    ) {
       openNewBotForm(false);
       setBotStatus(
-        "No chatbots yet — this form is filled in, just press Save.",
+        chatbotList.length
+          ? "Only disabled or app-managed chatbots so far, and Embed needs one it can use — this form is filled in, just press Save."
+          : "No chatbots yet — this form is filled in, just press Save.",
       );
     }
   } catch (err) {

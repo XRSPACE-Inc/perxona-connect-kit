@@ -179,8 +179,8 @@ async function start() {
     (!cfg.fixedTarget &&
       "no presenter target — see the server's startup log") ||
     (!cfg.chatbotId &&
-      "no chatbot in this account yet. Create one in the Studio demo and " +
-        "reload — or set DEMO_FIXED_CHATBOT_ID");
+      "no usable chatbot (disabled/app-managed ones are skipped). Create " +
+        "one in the Studio demo and reload — or set DEMO_FIXED_CHATBOT_ID");
   if (blocker) throw new Error(blocker);
   await loadPresenterEngine(cfg.presenterUrl);
   const { connect_key: connectKey } = await request("/api/connect-key");

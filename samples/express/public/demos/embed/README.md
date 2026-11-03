@@ -79,7 +79,8 @@ await loadPresenterEngine(config.presenterUrl);
 const { connect_key } = await request("/api/connect-key");
 await presenter.initializeWithConnectKey(connect_key, config.fixedTarget);
 
-// Then, per message. config.chatbotId is null on an account with no chatbot,
+// Then, per message. config.chatbotId is null on an account with no chatbot
+// Embed can use (disabled and app-managed ones are skipped),
 // which is why start() refuses to bring the widget up at all in that case —
 // there is nothing to converse with, so the stage shows the fixed
 // "not available" sentence instead of the chat.
