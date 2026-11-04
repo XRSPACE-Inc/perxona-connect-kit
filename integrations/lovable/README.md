@@ -8,6 +8,17 @@ No code and no terminal. You describe the app; Lovable builds it with a talking 
 | [`PerxonaAvatar.tsx`](PerxonaAvatar.tsx) | The React avatar component Lovable copies into your app |
 | [`supabase/functions/perxona-chat/index.ts`](supabase/functions/perxona-chat/index.ts) | Optional: relay to a Perxona chatbot, keeping the secret key on the server |
 
+> [!TIP]
+> **Got a template link from your organizer?** Skip steps 2 and 3. Do step 1, then:
+>
+> 1. Open the link and click **Remix**. You get your own copy; the original is not affected.
+> 2. Tell Lovable: `Set the publishable key in src/config/perxona.ts to <YOUR_PUBLISHABLE_KEY>.`
+>    If Lovable asks to turn on Lovable Cloud, accept. If **Project settings → Knowledge** is
+>    empty, paste [`knowledge.md`](knowledge.md) there.
+> 3. Make it yours with the prompts in step 4.
+>
+> Organizers: see [Publish a remixable template](#publish-a-remixable-template) at the end.
+
 ## 1 · Get your Perxona key <sub>~2 min</sub>
 
 1. Sign up at [console.perxona.ai](https://console.perxona.ai) (free plan).
@@ -91,3 +102,31 @@ Follow-up prompts that work well:
 | Black box, nothing loads | Wrong region. Use `"eu"` if your Console URL contains `/eu`. |
 
 Lovable cannot open a link? Paste the file's contents into the chat instead of the URL.
+
+## Publish a remixable template
+
+For organizers, once. Participants then start from your link instead of from an empty project.
+
+1. **Build it.** Do steps 1 to 3 above with prompt **A**, and a simple persona such as
+   `You are a friendly assistant.` Check that the avatar speaks.
+2. **Add a setup screen.** Paste this prompt:
+
+   ```text
+   When publishableKey in src/config/perxona.ts is the placeholder "pxc_YOUR_PUBLISHABLE_KEY",
+   do not load the avatar. Show a setup card instead: "Add your Perxona publishable key to start.
+   Get one at console.perxona.ai → avatar menu → Management → Integration → Connect API keys,
+   then tell Lovable: Set the publishable key in src/config/perxona.ts to <your key>."
+   Then set publishableKey back to "pxc_YOUR_PUBLISHABLE_KEY".
+   ```
+
+   Check that the setup card now shows instead of the avatar.
+3. **Turn on remixing.** **Project settings → Sharing → Public remixing**: on. Copy the project link.
+4. **Share the link** with participants, for example in the hackathon guide.
+
+> [!IMPORTANT]
+> Remix copies all the code. If your own key is still in `src/config/perxona.ts`, every copy
+> spends **your** credits. Step 2 puts the placeholder back; check it before step 3.
+> Lovable Cloud secrets are not copied, so a secret key never travels with a remix.
+
+Each remix copies the version that exists at that moment. Changes you make afterwards do not
+reach copies already made.

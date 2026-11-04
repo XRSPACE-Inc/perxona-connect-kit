@@ -17,7 +17,8 @@
 
 | 你是 | 用 | 做法 |
 | --- | --- | --- |
-| 不會寫程式 | **Lovable** | 照 [`lovable/README.md`](lovable/README.md)：貼 Knowledge、貼一段 prompt，幾分鐘就有可以分享的網址 |
+| 不會寫程式（最快） | **Lovable 範本** | 打開主辦單位提供的範本連結 `<主辦單位填入 Remix 連結>`，按 **Remix** 複製一份到自己帳號，再跟 Lovable 說：`Set the publishable key in src/config/perxona.ts to <你的 publishable key>.`，avatar 就會出現。接著用一般對話把它改成你的角色 |
+| 不會寫程式，想從零開始 | **Lovable** | 照 [`lovable/README.md`](lovable/README.md)：貼 Knowledge、貼一段 prompt，幾分鐘就有可以分享的網址 |
 | 不會寫程式，想先有人帶 | **ChatGPT** | 打開主辦單位分享的 **Perxona Avatar Builder** Project，或安裝 `perxona-connect` skill，說你想做什麼，它會一步步教你，並寫好 Lovable prompt。詳見 [`chatgpt/README.md`](chatgpt/README.md) |
 | 工程師 | **Claude Code** | 執行 `claude plugin marketplace add XRSPACE-Inc/perxona-connect-kit` 和 `claude plugin install perxona-connect@perxona`，然後直接描述需求。詳見 [`claude/README.md`](claude/README.md) |
 | 想 10 分鐘做出原型 | **Claude / ChatGPT** | 請它以 [`starter/avatar.html`](starter/avatar.html) 為基礎寫一個 HTML 檔，下載後用瀏覽器打開 |
