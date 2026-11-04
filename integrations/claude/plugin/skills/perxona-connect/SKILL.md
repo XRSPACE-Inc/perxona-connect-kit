@@ -46,9 +46,9 @@ https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/llms-full
    https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/integrations/lovable/supabase/functions/perxona-chat/index.ts
    (Supabase/Deno; port it to the user's platform if needed).
 
-On claude.ai, an artifact preview usually cannot load the presenter engine from
-`cdn.perxona.ai`. Write a complete `.html` file for the user to download and open or host, and
-say so. For a no-code builder, suggest Lovable (`integrations/lovable/README.md` in the repo).
+In a chat app (a claude.ai artifact or ChatGPT canvas), the preview usually cannot load the
+presenter engine from `cdn.perxona.ai`. Write a complete `.html` file for the user to download
+and open or host, and say so. For a no-code builder, suggest Lovable (`integrations/lovable/README.md` in the repo).
 
 ## Integration, in order
 
