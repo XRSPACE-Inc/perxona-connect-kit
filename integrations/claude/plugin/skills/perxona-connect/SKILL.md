@@ -59,6 +59,8 @@ const PRESENTER_URL = `https://cdn.perxona.ai/${region}/prod/connect/latest/widg
 
 // 2. Declare <sv-presenter> in the DOM, then load the engine ONCE as a module script.
 //    There is no npm runtime package (@perxona/presenter-types is types only).
+//    The engine defines the element a moment AFTER its script's onload fires, so wait:
+await customElements.whenDefined("sv-presenter"); // else initializeWithConnectKey is undefined
 
 // 3. Listen BEFORE initializing: Ready is only ever an event.
 presenter.addEventListener("PRESENTER_STATUS", (e) => { if (e.detail.status === "Ready") enableUi(); });

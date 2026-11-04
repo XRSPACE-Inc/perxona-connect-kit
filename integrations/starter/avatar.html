@@ -154,6 +154,9 @@
           PERXONA.voiceId || firstId("/voices", "id"),
         ]);
         await loadPresenterEngine();
+        // The engine registers <sv-presenter> a moment after its script loads. Until then the
+        // element is a plain HTMLElement and initializeWithConnectKey is undefined.
+        await customElements.whenDefined("sv-presenter");
         await presenter.initializeWithConnectKey(PERXONA.publishableKey, { avatarId, sceneId, voiceId });
       } catch (err) {
         statusEl.textContent = `Avatar failed to start: ${err.message}`;

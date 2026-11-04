@@ -40,7 +40,9 @@ https://github.com/XRSPACE-Inc/perxona-connect-kit
 - Region `asia` or `eu` must match the account, for both
   `https://console.perxona.ai/{region}/api/v1/connect` and
   `https://cdn.perxona.ai/{region}/prod/connect/latest/widget/entry/presenter.js`.
-- Load the engine once as a module script; there is no npm runtime package.
+- Load the engine once as a module script; there is no npm runtime package. Then
+  `await customElements.whenDefined("sv-presenter")`: the element is defined a moment after the
+  script loads, and calling it earlier fails with "initializeWithConnectKey is not a function".
 - Listen for `PRESENTER_STATUS` (`Ready`) and `CONNECT_KEY_REJECTED` before
   `initializeWithConnectKey(publishableKey, { avatarId, sceneId, voiceId })`. A rejected key is
   never retried.
