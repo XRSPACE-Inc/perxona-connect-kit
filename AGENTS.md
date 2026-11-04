@@ -7,6 +7,9 @@ whole English handbook in one file for context loading.
 - Handbook pages as Markdown: [`docs/en/`](docs/en/) (also [`docs/zh-tw/`](docs/zh-tw/) and [`docs/ja/`](docs/ja/)).
 - Runnable sample: [`samples/express/`](samples/express/), with its own [`AGENTS.md`](samples/express/AGENTS.md) on how to scaffold a new demo from the existing ones.
 - A finished product built on the sample: [`samples/express/public/demos/interview/`](samples/express/public/demos/interview/).
+- No server, or building from Lovable, Claude or ChatGPT: [`integrations/`](integrations/README.md). Its
+  [`starter/avatar.html`](integrations/starter/avatar.html) (plain HTML) and
+  [`lovable/PerxonaAvatar.tsx`](integrations/lovable/PerxonaAvatar.tsx) (React) run on the publishable key alone.
 
 Two keys exist: a secret Connect API key (server only) and a publishable key (browser).
 Never put the secret key in client code or commit a `.env`.

@@ -37,6 +37,14 @@ Key facts for agents:
 - [InterviewCoach demo](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/samples/express/public/demos/interview/README.md): a practice app where the avatar is the product
 - [VRM uploader](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/tools/vrm-uploader/README.md): check and upload your own .vrm avatar
 
+## No-server and AI-tool integrations
+
+- [Integrations overview](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/integrations/README.md): build with the kit from Lovable, Claude and ChatGPT
+- [Browser-only starter](https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/integrations/starter/avatar.html): one HTML file, publishable key only, no server
+- [React avatar component](https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/integrations/lovable/PerxonaAvatar.tsx): `PerxonaAvatar` with `unlockAudio()`, `speak()`, `setThinking()`, `stop()`
+- [Perxona chatbot relay](https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/integrations/lovable/supabase/functions/perxona-chat/index.ts): Supabase/Lovable Cloud edge function that keeps the secret key server-side
+- [perxona-connect skill](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/integrations/claude/plugin/skills/perxona-connect/SKILL.md): condensed rules for agents; also a Claude Code plugin
+
 ## Optional
 
 - [Handbook in Traditional Chinese](https://github.com/XRSPACE-Inc/perxona-connect-kit/tree/main/docs/zh-tw)

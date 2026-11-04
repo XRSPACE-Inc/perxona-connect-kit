@@ -1,0 +1,13 @@
+{
+  "name": "perxona-connect",
+  "version": "1.0.0",
+  "description": "Give your AI agent a face: build talking 3D avatar apps with Perxona Connect Kit (<sv-presenter> and the Connect API).",
+  "author": {
+    "name": "XRSPACE",
+    "url": "https://perxona.ai"
+  },
+  "homepage": "https://connect.perxona.ai",
+  "repository": "https://github.com/XRSPACE-Inc/perxona-connect-kit",
+  "license": "Apache-2.0",
+  "keywords": ["avatar", "3d", "lip-sync", "tts", "web-component", "agent", "perxona"]
+}
