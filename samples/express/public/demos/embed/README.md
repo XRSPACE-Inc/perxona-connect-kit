@@ -49,7 +49,7 @@ Two details worth knowing:
 None of the specifics are reported to the page — not which value was picked,
 not which value is missing, not why playback failed. All of that goes to the
 server log at startup and to `console.error` in the browser. The one thing the
-page itself will say, if `start()` rejects for any reason, is a fixed sentence
+page itself will say, if `start()` rejects or the stage fails, is a fixed sentence
 in the stage — "This assistant isn't available right now" — in place of the
 loading placeholder, so a visitor sees a page that explains itself rather than
 a slot that silently never fills in.
