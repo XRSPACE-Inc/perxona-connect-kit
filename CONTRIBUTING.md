@@ -105,7 +105,9 @@ Check what a key, a scope or an endpoint can do against the handbook's API refer
 
 ## Adding a demo, a sample or a tool
 
-**A demo** goes under `samples/express/public/demos/<name>/`. In the same pull request, update:
+**A demo** is another page in an existing sample. In the Express sample it goes under
+`samples/express/public/demos/<name>/` with its script in `app.js`, the file name the type check
+in CI looks for. In the same pull request, update:
 
 - `samples/express/public/index.html`, with a link and a one-line description
 - `samples/express/README.md`: the directory tree, the list of demos, and the route and
@@ -116,7 +118,8 @@ Check what a key, a scope or an endpoint can do against the handbook's API refer
 **A sample** is for a different runtime or framework. A variation in the user interface is a demo
 of an existing sample, not a new sample. Give it its own directory under `samples/` with its own
 `README.md`, `AGENTS.md` and dependency manifest, then add it to `samples/AGENTS.md` and to the
-"Samples and tools" list in `README.md`.
+"Samples and tools" list in `README.md`. The paths and file names above belong to the Express
+sample. A new sample chooses its own layout and states it in its `AGENTS.md`.
 
 **A tool** follows the same rules under `tools/`, with its index in `tools/AGENTS.md`.
 
