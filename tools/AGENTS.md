@@ -19,3 +19,5 @@ point for your own tooling.
   and coding conventions. This file only covers the top-level layout.
 - New tools get their own subdirectory here, following the same self-contained shape (own `README.md`,
   own `AGENTS.md`, own dependency manifest).
+- If you are adding or changing a tool to send it back to the repository, read
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md) first.

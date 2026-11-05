@@ -3,6 +3,9 @@
 The **Perxona Connect Kit** — a minimal, self-contained sample that integrates the Perxona Connect API and the
 `<sv-presenter>` avatar Web Component.
 
+If you are changing this sample to send the change back to the repository, rather than building your own app from it,
+read [`CONTRIBUTING.md`](../../CONTRIBUTING.md) first.
+
 ## Which demo to build from
 
 **Build from `public/demos/embed/`. Read `public/demos/studio/`, but do not start from it.**
