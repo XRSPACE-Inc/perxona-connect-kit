@@ -382,7 +382,7 @@ The presenter is loaded from Perxona's CDN. `app.js` fetches `GET /api/config` o
 | `presenter.presentWithAudio(audio, content)`             | Play back a supplied speech audio buffer with `content` as the transcript for the performance.                                   |
 | `presenter.playMotion(motionId)`                         | Resolve, preload, and play one body motion independently from the speech queue.                                                  |
 | `presenter.interruptPresentation()`                      | Stop the current performance and clear the queue.                                                                                |
-| event `PRESENTER_STATUS`                                 | `Uninitialized` → `Initializing` → `Ready`.                                                                                      |
+| event `PRESENTER_STATUS`                                 | `Uninitialized` → `Initializing` → `Ready`, or `Failed` with `message` when the stage cannot come up; initialize again to retry. |
 | event `CONNECT_KEY_REJECTED`                             | The Connect API refused the key: revoked, expired, or missing a scope. Nothing to retry — reissue it and initialize again.       |
 
 ### Initialization (the core flow)
