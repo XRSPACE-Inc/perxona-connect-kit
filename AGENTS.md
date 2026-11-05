@@ -18,7 +18,8 @@ your own app from a sample, read [`CONTRIBUTING.md`](CONTRIBUTING.md) before you
 The rules that matter most:
 
 - Samples stay minimal and self-contained, and `main` must run against production.
-- Demos are vanilla JavaScript with no build step. Do not add a bundler or a framework.
+- Demos in the Express sample are vanilla JavaScript with no build step. Do not add a bundler or
+  a framework to them.
 - Do not hand-edit `docs/en/`, `docs/zh-tw/`, `docs/ja/`, `llms.txt` or `llms-full.txt`. They are
   generated from the handbook.
 - When you correct a fact, open every file that states it. A search is not enough.

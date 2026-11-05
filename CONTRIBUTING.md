@@ -9,8 +9,8 @@ it: start from [`AGENTS.md`](AGENTS.md) and the sample's own `README.md` instead
 - **Samples stay minimal and self-contained.** Each sample and tool has its own dependencies and
   its own docs, and shares no code or build step with the others. `samples/express/` uses `npm`
   and Node 22 or newer on purpose, because that is what someone cloning it already has.
-- **Demos are vanilla JavaScript with no build step.** Do not add a bundler or a framework to
-  `samples/express/public/demos/`.
+- **Demos in the Express sample are vanilla JavaScript with no build step.** Do not add a bundler
+  or a framework to `samples/express/public/demos/`.
 - **Write for a reader with no inside knowledge.** Before adding anything, ask whether a developer
   who has only this repository and the handbook would understand it.
 - **`main` must run against production.** Every sample on `main` has to work with the production
@@ -105,9 +105,12 @@ Check what a key, a scope or an endpoint can do against the handbook's API refer
 
 ## Adding a demo, a sample or a tool
 
-**A demo** is another page in an existing sample. In the Express sample it goes under
-`samples/express/public/demos/<name>/` with its script in `app.js`, the file name the type check
-in CI looks for. In the same pull request, update:
+A **sample** is a standalone app for one runtime or framework, in its own directory under
+`samples/`, such as `samples/express/`. A **demo** is one page inside a sample, such as Embed or
+Studio in the Express sample.
+
+**A demo in the Express sample** goes under `samples/express/public/demos/<name>/` with its script
+in `app.js`, the file name the type check in CI looks for. In the same pull request, update:
 
 - `samples/express/public/index.html`, with a link and a one-line description
 - `samples/express/README.md`: the directory tree, the list of demos, and the route and
@@ -115,11 +118,11 @@ in CI looks for. In the same pull request, update:
 - `samples/express/AGENTS.md`: the architecture and configuration sections
 - `samples/express/.env.example`, if the demo adds a variable
 
-**A sample** is for a different runtime or framework. A variation in the user interface is a demo
-of an existing sample, not a new sample. Give it its own directory under `samples/` with its own
-`README.md`, `AGENTS.md` and dependency manifest, then add it to `samples/AGENTS.md` and to the
-"Samples and tools" list in `README.md`. The paths and file names above belong to the Express
-sample. A new sample chooses its own layout and states it in its `AGENTS.md`.
+**A sample for a new runtime or framework** gets its own directory under `samples/` with its own
+`README.md`, `AGENTS.md` and dependency manifest. Add it to `samples/AGENTS.md` and to the
+"Samples and tools" list in `README.md`. It chooses its own layout and states it in its
+`AGENTS.md`: the paths and file names above belong to the Express sample. A variation in the user
+interface is a demo of an existing sample, not a new sample.
 
 **A tool** follows the same rules under `tools/`, with its index in `tools/AGENTS.md`.
 
