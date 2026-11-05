@@ -1,0 +1,164 @@
+name: CI
+
+# Runs on every pull request, forks included, so nothing here may need a
+# credential: no secrets are read, and the token can only read the repository.
+# Do not switch to pull_request_target, which would run a fork's code with this
+# repository's permissions.
+#
+# No paths filter and no job-level condition on purpose. A skipped job reports
+# as passing, so filtering would let a pull request merge without its checks.
+#
+# CONTRIBUTING.md repeats these commands under "Checks". Change both together.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  express:
+    name: Express sample
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: samples/express/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            samples/express/package-lock.json
+            .github/ci/package-lock.json
+
+      # The sample ships no linter or type checker of its own, so that
+      # `npm install` stays small for someone who clones it. CI brings its own.
+      - name: Install CI tooling
+        run: npm ci --prefix .github/ci
+
+      # Installs the version of @perxona/presenter-types pinned by the
+      # lockfile, which is the presenter contract the type check below reads.
+      - name: Install the sample
+        run: npm ci
+        working-directory: samples/express
+
+      - name: Check syntax
+        working-directory: samples/express
+        run: |
+          for file in server.mjs scripts/*.mjs public/demos/*/app.js; do
+            node --check "$file"
+          done
+
+      - name: Lint
+        run: .github/ci/node_modules/.bin/eslint --config .github/ci/eslint.config.mjs samples
+
+      # The glob picks up a new demo without a change here.
+      - name: Check the demos against the presenter types
+        run: >-
+          .github/ci/node_modules/.bin/tsc --noEmit --checkJs --allowJs
+          --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck
+          samples/express/public/demos/*/app.js
+
+  vrm-uploader:
+    # macOS is not redundant: the script is written to bash 3.2 because that is
+    # what macOS ships, and only a macOS runner has that shell together with the
+    # BSD od/head/wc the script reads GLB headers with.
+    name: VRM uploader (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    defaults:
+      run:
+        working-directory: tools/vrm-uploader
+
+    env:
+      # Pins the interpreter on macOS rather than letting the shebang pick up a
+      # newer bash from Homebrew, which would leave the 3.2 floor untested.
+      VRM_UPLOADER_BASH: ${{ matrix.os == 'macos-latest' && '/bin/bash' || '' }}
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      # pnpm/action-setup runs first so that setup-node's `cache: pnpm` finds
+      # pnpm already on PATH.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: tools/vrm-uploader/package.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: tools/vrm-uploader/.nvmrc
+          cache: pnpm
+          cache-dependency-path: tools/vrm-uploader/pnpm-lock.yaml
+
+      # A macOS job that silently ran bash 5 would prove nothing about the floor
+      # the script targets, so the version is asserted rather than printed.
+      - name: Confirm the pinned interpreter
+        if: matrix.os == 'macos-latest'
+        run: |
+          /bin/bash --version | head -1
+          /bin/bash -c '[ "${BASH_VERSINFO[0]}" -eq 3 ]' ||
+            { echo "::error::/bin/bash is not the 3.x this job exists to cover"; exit 1; }
+
+      - name: Check shell syntax
+        run: bash -n upload-vrm.sh
+
+      # The script is the whole tool, so a shellcheck finding is a defect in the
+      # deliverable itself rather than in supporting code: no severity is
+      # tolerated.
+      #
+      # Prints the version first because the runner's shellcheck moves on its
+      # own schedule and renames findings as it goes, so a failure here that
+      # nobody can reproduce locally is a version gap, and the log says which.
+      #
+      # ubuntu only: shellcheck reads the source, so the answer cannot differ by
+      # platform, and the macOS runner would have to install it first.
+      - name: Shellcheck
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          shellcheck --version
+          shellcheck --format=gcc upload-vrm.sh
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Also platform-independent, for the same reason as shellcheck above.
+      - name: Lint tests
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm exec eslint .
+
+      # Runs the real script, so this also covers the parts of it a reader
+      # cannot check by eye: the GLB header arithmetic and the jq analysis pass.
+      - name: Run tests
+        run: pnpm exec vitest run
+
+  # The one check the branch ruleset requires. It stays the same name when jobs
+  # are added or the matrix changes, and `always()` keeps it from being skipped,
+  # which would count as passing.
+  result:
+    name: CI result
+    if: always()
+    needs: [express, vrm-uploader]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fail unless every job succeeded
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: |
+          echo "::error::A CI job failed, was cancelled or was skipped"
+          exit 1

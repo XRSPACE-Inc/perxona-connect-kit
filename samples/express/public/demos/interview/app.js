@@ -333,7 +333,7 @@ const escapeHtml = (s) =>
   );
 
 // ── presenter events: Ready gate + latency capture ─────────────────────────
-presenter.addEventListener("PRESENTER_STATUS", (e) => {
+presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ e) => {
   const status = e.detail?.status;
   if (status !== "Ready" && status !== "Failed") return;
   state.stageFailed = status === "Failed";
@@ -511,7 +511,9 @@ $("#again-btn").addEventListener("click", () => {
 });
 
 // ── optional voice answers (Web Speech API, where the browser has it) ──────
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SR =
+  /** @type {any} */ (window).SpeechRecognition ||
+  /** @type {any} */ (window).webkitSpeechRecognition;
 if (SR) {
   micBtn.hidden = false;
   let rec = null;

@@ -1,0 +1,8 @@
+# The linter and type checker settings under .github/ci/ are left out on
+# purpose: a change to them, including one that relaxes a check, merges on
+# green CI like everything else.
+#
+# Owners must have write access to this repository, and the author of a pull
+# request cannot be the owner who approves it.
+/.github/workflows/ @XRSPACE-Inc/devops @ch-chiang
+/.github/CODEOWNERS @XRSPACE-Inc/devops @ch-chiang
