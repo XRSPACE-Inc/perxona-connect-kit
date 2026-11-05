@@ -471,11 +471,27 @@ const STATUS_LABELS = {
   Uninitialized: "",
   Initializing: "Initializing…",
   Ready: "✓ Ready",
+  Failed: "Failed",
 };
 
 presenter.addEventListener("PRESENTER_STATUS", (e) => {
-  const { status } = e.detail;
-  setStatus(STATUS_LABELS[status] ?? status);
+  const { status, message } = e.detail;
+  setStatus(
+    status === "Failed" && message
+      ? `Failed: ${message}`
+      : (STATUS_LABELS[status] ?? status),
+  );
+  // initializeWithConnectKey() settles once the stage has started, so a stage
+  // that then fails reaches this page only here, never through the Launch
+  // click's catch. A second launch can fail too, so undo what Ready set up.
+  if (status === "Failed") {
+    presenterReady = false;
+    isLaunching = false;
+    presenter.hidden = true;
+    stagePlaceholder.hidden = false;
+    updateChatUI();
+    updateInitBtn();
+  }
   if (status === "Ready") {
     presenterReady = true;
     isLaunching = false;
