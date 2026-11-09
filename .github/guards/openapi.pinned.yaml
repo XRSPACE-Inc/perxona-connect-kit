@@ -1,0 +1,2807 @@
+# SPDX-License-Identifier: MIT
+openapi: 3.1.0
+info:
+  title: Perxona Connect API
+  description: The Perxona Connect API — authentication, avatar catalog, and TTS token routes for the sv-presenter Web Component.
+  version: 0.1.0
+servers: []
+paths:
+  /api/v1/connect/auth/login:
+    post:
+      tags:
+        - connect
+      summary: Authenticate a Connect user and issue an access token
+      description: >-
+        Authenticate with email/password and receive a JWT access token signed with the dedicated Connect secret. Pass
+        the token as `Authorization: Bearer <token>` on subsequent Connect API calls.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __5 calls / 1 seconds__
+      operationId: post_v1_connect_connect_login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectLoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectLoginResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/auth/logout:
+    post:
+      tags:
+        - connect
+      summary: Revoke the Connect access token
+      description: >-
+        Adds the current Connect Bearer token to the revocation set. Subsequent requests using the same token will be
+        rejected with 401.
+      operationId: post_v1_connect_connect_logout
+      responses:
+        '204':
+          description: Successful Response
+      security:
+        - HTTPBearer: []
+  /api/v1/connect/assets/avatars:
+    get:
+      tags:
+        - connect
+      summary: List avatars
+      description: >-
+        Return a paginated list of active avatars accessible to the authenticated user's organization or the default
+        organization scope.
+      operationId: get_v1_connect_list_avatars
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Size
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AssetSortEnum'
+            default: created_at
+        - name: direction
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SortDirection'
+            default: desc
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ConnectListAvatarResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/assets/avatars/{avatar_id}:
+    get:
+      tags:
+        - connect
+      summary: Get avatar detail
+      description: Return full detail for a single active avatar including LOD URLs and lipsync support.
+      operationId: get_v1_connect_get_avatar
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: avatar_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Avatar Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectAvatarDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/assets/avatars/{avatar_id}/motions:
+    get:
+      tags:
+        - connect
+      summary: List avatar motions
+      description: >-
+        Return a paginated list of active motions compatible with the avatar's skeleton, optionally filtered by pose tag
+        or one or more motion IDs.
+      operationId: get_v1_connect_list_connect_avatar_motions
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: avatar_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Avatar Id
+        - name: pose_tag
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                pattern: ^pose:[a-z0-9_]+$
+              - type: 'null'
+            title: Pose Tag
+        - name: motion_ids
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: array
+                items:
+                  type: string
+                  minLength: 1
+              - type: 'null'
+            title: Motion Ids
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Size
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AssetSortEnum'
+            default: created_at
+        - name: direction
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SortDirection'
+            default: desc
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ConnectMotionAssetResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/assets/scenes:
+    get:
+      tags:
+        - connect
+      summary: List scenes
+      description: >-
+        Return a paginated list of active scenes accessible to the authenticated user's organization or the default
+        organization scope.
+      operationId: get_v1_connect_list_scenes
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Size
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AssetSortEnum'
+            default: created_at
+        - name: direction
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SortDirection'
+            default: desc
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ConnectListSceneResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/assets/scenes/{scene_id}:
+    get:
+      tags:
+        - connect
+      summary: Get scene detail
+      description: Return full detail for a single active scene including LOD URLs.
+      operationId: get_v1_connect_get_scene
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: scene_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Scene Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectSceneDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/assets/vrm/upload:
+    post:
+      tags:
+        - connect
+      summary: Upload and publish a Three.js VRM avatar
+      description: >-
+        Accepts, validates, and stores a VRM file, then publishes an active Three.js avatar. The avatar is tagged for
+        Three.js only, and the asset endpoints serve the engine the organization is set to — so it is listed and
+        readable once that setting is Three.js (enable_connect_use_threejs_only). Uploading first and switching the
+        organization afterwards is supported; until the switch, the avatar exists but the catalog does not return it.
+        The setting is organization-wide, not per avatar: switching it also changes which scenes and motions Connect
+        serves the organization, so any scene or motion tagged for Cocos alone stops being returned at the same moment.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __5 calls / 60 seconds__
+      operationId: post_v1_connect_upload_vrm
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_upload_vrm_api_v1_connect_assets_vrm_upload_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectVRMUploadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/voices:
+    get:
+      tags:
+        - connect
+      summary: List available custom voice models
+      description: >-
+        Return a paginated list of custom voices available to the organization. Supports filtering by language and
+        provider.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __30 calls / 1 seconds__
+      operationId: get_v1_connect_connect_list_voices
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Size
+        - name: search_term
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Search Term
+        - name: date_range_type
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/DateRangeStrEnum'
+              - type: 'null'
+            title: Date Range Type
+        - name: start_at
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: Start At
+        - name: end_at
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: 'null'
+            title: End At
+        - name: language
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/Language'
+              - type: 'null'
+            title: Language
+        - name: provider
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/VoiceProvider'
+              - type: 'null'
+            title: Provider
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ConnectVoiceResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/voices/{voice_id}:
+    get:
+      tags:
+        - connect
+      summary: Get Connect voice synthesis details
+      description: >-
+        Return the public provider-specific synthesis configuration for a custom voice visible to the current
+        organization.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __30 calls / 1 seconds__
+      operationId: get_v1_connect_connect_get_voice_detail
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: voice_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Voice Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ConnectGoogleVoiceDetailResponse'
+                  - $ref: '#/components/schemas/ConnectGeminiVoiceDetailResponse'
+                  - $ref: '#/components/schemas/ConnectAzureVoiceDetailResponse'
+                discriminator:
+                  propertyName: provider
+                  mapping:
+                    google: '#/components/schemas/ConnectGoogleVoiceDetailResponse'
+                    gemini: '#/components/schemas/ConnectGeminiVoiceDetailResponse'
+                    azure: '#/components/schemas/ConnectAzureVoiceDetailResponse'
+                title: Response Connect Get Voice Detail Api V1 Connect Voices  Voice Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/voice-tokens/tts:
+    post:
+      tags:
+        - connect
+      summary: Generate a text-to-speech token
+      description: |-
+        Issue a TTS token for the given custom voice ID.
+
+        ## Rate Limit 
+        This endpoint is limit __5 calls / 1 seconds__
+      operationId: post_v1_connect_connect_generate_text_to_speech_token
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectVoiceTextToSpeechTokenRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectVoiceTextToSpeechTokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/presentation:
+    post:
+      tags:
+        - connect
+      summary: Generate presentation payload
+      description: >-
+        Generate a one-shot presentation payload for SDK consumers. The endpoint accepts an avatar asset, a custom
+        voice, and text to speak, then returns clean display text, formatted speech content, and a performance manifest
+        of motion assets.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __10 calls / 1 seconds__
+      operationId: post_v1_connect_create_presentation
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectPresentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectPresentationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/motion-suggestion:
+    post:
+      tags:
+        - connect
+      summary: Suggest motions for a line of text
+      description: >-
+        Suggest motions for a line of text without an avatar. The endpoint accepts the gender and body proportion the
+        motions are for and the text they accompany, then returns the text with motion marks inserted and a performance
+        manifest of the motion assets the marks refer to.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __10 calls / 1 seconds__
+      operationId: post_v1_connect_create_motion_suggestion
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectMotionSuggestionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectMotionSuggestionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/chatbots:
+    post:
+      tags:
+        - connect
+      summary: Create a chat bot
+      description: >-
+        Create a new Connect chat bot, optionally seeding its knowledge file and tools. Knowledge file upload and tool
+        creation are best-effort: their failure does not roll back the created chat bot.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __5 calls / 60 seconds__
+      operationId: post_v1_connect_create_chat_bot
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_create_chat_bot_api_v1_connect_chatbots_post'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatBotDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+        - connect
+      summary: List chat bots
+      description: >-
+        List all non-deleted chat bots (including disabled ones) for the caller's organization as paginated lightweight
+        summaries.
+      operationId: get_v1_connect_list_chat_bots
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Size
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ChatBotSummaryResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/chatbots/{chat_bot_id}:
+    get:
+      tags:
+        - connect
+      summary: Get chat bot detail
+      description: Get full detail for a single chat bot, including its knowledge status and tools.
+      operationId: get_v1_connect_get_chat_bot
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: chat_bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Chat Bot Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatBotDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+        - connect
+      summary: Update a chat bot
+      description: >-
+        Partially update a chat bot's fields, knowledge file, and/or tools. Only fields actually provided are changed.
+        knowledge_file and remove_knowledge are mutually exclusive. Omit tools to leave the tool set unchanged; pass an
+        empty array to clear it. Knowledge operations commit independently, so they remain applied if a subsequent tool
+        or field update fails.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __5 calls / 60 seconds__
+      operationId: patch_v1_connect_update_chat_bot
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: chat_bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Chat Bot Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_update_chat_bot_api_v1_connect_chatbots__chat_bot_id__patch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatBotDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - connect
+      summary: Delete a chat bot
+      description: Soft-delete a chat bot and clean up its knowledge/tool bindings.
+      operationId: delete_v1_connect_delete_chat_bot
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: chat_bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Chat Bot Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/chatbots/{chat_bot_id}/chat:
+    post:
+      tags:
+        - connect
+      summary: Send a message to a chat bot
+      description: |-
+        Send the conversation messages to the chat bot and return its reply.
+
+        ## Rate Limit 
+        This endpoint is limit __120 calls / 60 seconds__
+      operationId: post_v1_connect_chat_with_chat_bot
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: chat_bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Chat Bot Id
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectChatBotChatRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectChatBotChatResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/connect/credit:
+    get:
+      tags:
+        - connect
+      summary: Get the organization's credit usage
+      description: >-
+        Return the organization's subscription credit usage snapshot: used, total, and remaining credit points, whether
+        the quota is exceeded, and the usage period's start and end. Usage is refreshed by a background worker roughly
+        every 10 minutes, not computed live on each call — a request made seconds after a billable call may not yet
+        reflect it. SECRET keys only — this is billing information, and PUBLISHABLE keys are meant to ship in a browser.
+
+
+        ## Rate Limit 
+
+        This endpoint is limit __30 calls / 1 seconds__
+      operationId: get_v1_connect_get_credit
+      security:
+        - HTTPBearer: []
+        - ConnectAPIKey: []
+      parameters:
+        - name: origin
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectCreditResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AssetLOD:
+      type: string
+      enum:
+        - lod0
+        - lod1
+        - lod2
+      title: AssetLOD
+      description: The level of detail for the asset
+    AssetManifestEntry:
+      properties:
+        type:
+          anyOf:
+            - $ref: '#/components/schemas/AssetType'
+            - type: 'null'
+        lod0:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Lod0
+        lod1:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Lod1
+        lod2:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Lod2
+        configs:
+          anyOf:
+            - $ref: '#/components/schemas/AssetRuntimeConfigs-Output'
+            - type: 'null'
+      type: object
+      title: AssetManifestEntry
+      description: |-
+        The manifest entry for one asset: its type, CDN URLs for each LOD level, and runtime configs.
+
+        The REST asset lookup reads configs from the source asset. Conversation manifests pin
+        the first successfully resolved Geppetto URLs and configs together until conversation end.
+        Entries with no resolved LOD URL carry no configs and are not cached.
+    AssetRuntimeConfigs-Output:
+      properties:
+        avatar:
+          anyOf:
+            - $ref: '#/components/schemas/AvatarRuntimeConfig-Output'
+            - type: 'null'
+        motion:
+          anyOf:
+            - $ref: '#/components/schemas/MotionRuntimeConfig-Output'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: AssetRuntimeConfigs
+      description: Immutable runtime configuration overrides grouped by asset type.
+    AssetSortEnum:
+      type: string
+      enum:
+        - created_at
+        - updated_at
+        - bundle_id
+        - display_order
+      title: AssetSortEnum
+    AssetType:
+      type: string
+      enum:
+        - avatar
+        - scene
+        - motion
+        - facial_motion
+      title: AssetType
+      description: The type of the asset
+    AudioEncoding:
+      type: string
+      enum:
+        - LINEAR16
+        - MP3
+        - OGG_OPUS
+        - MULAW
+        - ALAW
+      title: AudioEncoding
+    AvatarRuntimeConfig-Output:
+      properties:
+        retargeting:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        morph_crossfade:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        look_at:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        timeline:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: AvatarRuntimeConfig
+      description: Runtime behavior overrides owned by an avatar asset.
+    AvatarThumbnailType:
+      type: string
+      enum:
+        - default
+        - head
+        - upper_body
+        - full_body
+        - three_quarter_face
+        - animated_full_body
+        - hd
+        - loading
+      title: AvatarThumbnailType
+      description: The type of thumbnail for the asset
+    BehaviorToggleConfig:
+      properties:
+        enabled:
+          anyOf:
+            - type: boolean
+            - type: 'null'
+          title: Enabled
+        settings:
+          anyOf:
+            - $ref: '#/components/schemas/SettingsEnvelope'
+            - type: 'null'
+      additionalProperties: false
+      type: object
+      title: BehaviorToggleConfig
+      description: Enable flag and opaque, versioned settings for one runtime behavior.
+    Body_create_chat_bot_api_v1_connect_chatbots_post:
+      properties:
+        name:
+          type: string
+          title: Name
+        custom_instructions:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Custom Instructions
+        knowledge_file:
+          anyOf:
+            - type: string
+              format: binary
+            - type: 'null'
+          title: Knowledge File
+        tools:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Tools
+      type: object
+      required:
+        - name
+      title: Body_create_chat_bot_api_v1_connect_chatbots_post
+    Body_update_chat_bot_api_v1_connect_chatbots__chat_bot_id__patch:
+      properties:
+        name:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Name
+        custom_instructions:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Custom Instructions
+        chat_bot_status:
+          anyOf:
+            - $ref: '#/components/schemas/ConnectChatBotStatus'
+            - type: 'null'
+        knowledge_file:
+          anyOf:
+            - type: string
+              format: binary
+            - type: 'null'
+          title: Knowledge File
+        remove_knowledge:
+          type: boolean
+          title: Remove Knowledge
+          default: false
+        tools:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Tools
+      type: object
+      title: Body_update_chat_bot_api_v1_connect_chatbots__chat_bot_id__patch
+    Body_upload_vrm_api_v1_connect_assets_vrm_upload_post:
+      properties:
+        vrm_file:
+          type: string
+          format: binary
+          title: Vrm File
+        gender:
+          $ref: '#/components/schemas/ConnectMotionGender'
+          description: Gender of the body the avatar's motions are drawn for.
+        heads_tall:
+          $ref: '#/components/schemas/ConnectMotionHeadsTall'
+          description: >-
+            Body proportion in heads: 3 (stylized), 6, or 8 (realistic). Together with gender it selects which motion
+            set the avatar draws its gestures from.
+        avatar_name:
+          anyOf:
+            - type: string
+              maxLength: 256
+            - type: 'null'
+          title: Avatar Name
+          description: Display name for the uploaded avatar. Defaults to the VRM filename if omitted.
+        lod:
+          $ref: '#/components/schemas/AssetLOD'
+          description: Target LOD for the uploaded avatar. Only lod0 is currently supported.
+          default: lod0
+        lipsync_mode:
+          $ref: '#/components/schemas/LipSyncMode'
+          description: >-
+            Lip sync engine the avatar speaks with. Keep the default 'wlipsync' for a VRM of any origin; pick
+            'xrlipsync' when the model carries the full ARKit blendshape set. 'wlipsync' drives the VRM's own mouth
+            expression presets. 'xrlipsync' runs the ML model, which drives the VRM's ARKit blendshapes when all 52 of
+            them resolve and otherwise projects onto those same presets.
+          default: wlipsync
+      type: object
+      required:
+        - vrm_file
+        - gender
+        - heads_tall
+      title: Body_upload_vrm_api_v1_connect_assets_vrm_upload_post
+    ChatBotDetailResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        custom_instructions:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Custom Instructions
+        status:
+          $ref: '#/components/schemas/ConnectChatBotStatus'
+        knowledge:
+          anyOf:
+            - $ref: '#/components/schemas/ConnectChatBotKnowledgeFileDO'
+            - type: 'null'
+        tools:
+          items:
+            $ref: '#/components/schemas/ConnectChatBotToolDO'
+          type: array
+          title: Tools
+      type: object
+      required:
+        - id
+        - name
+        - status
+      title: ChatBotDetailResponse
+      description: Full chat bot detail, including its bound knowledge file and tools.
+    ChatBotSummaryResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        status:
+          $ref: '#/components/schemas/ConnectChatBotStatus'
+      type: object
+      required:
+        - id
+        - name
+        - status
+      title: ChatBotSummaryResponse
+      description: Lightweight chat bot summary, used for the list endpoint.
+    ConnectAvatarDetailResponse:
+      properties:
+        avatar_id:
+          type: string
+          title: Avatar Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        thumbnail_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/AvatarThumbnailType'
+          type: object
+          title: Thumbnail Urls
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        lod_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/AssetLOD'
+          type: object
+          title: Lod Urls
+        lipsync_configs:
+          additionalProperties:
+            additionalProperties:
+              $ref: '#/components/schemas/LipSyncConfig-Output'
+            type: object
+          propertyNames:
+            $ref: '#/components/schemas/LipSyncMode'
+          type: object
+          title: Lipsync Configs
+        lipsync_mode:
+          $ref: '#/components/schemas/LipSyncMode'
+        configs:
+          anyOf:
+            - $ref: '#/components/schemas/ConnectAvatarRuntimeConfigs'
+            - type: 'null'
+        lower_body_pool:
+          items:
+            $ref: '#/components/schemas/ConnectMotionAssetResponse'
+          type: array
+          title: Lower Body Pool
+          description: >-
+            Motions the renderer may play under this avatar's gestures as a shared lower body, so consecutive gestures
+            keep one stance. Empty when none fits the avatar's skeleton, or when the organization has lower-body
+            blending off; every motion then plays its full body.
+      type: object
+      required:
+        - avatar_id
+        - name
+        - description
+        - thumbnail_urls
+        - tags
+        - lod_urls
+        - lipsync_configs
+        - lipsync_mode
+      title: ConnectAvatarDetailResponse
+    ConnectAvatarRuntimeConfigs:
+      properties:
+        avatar:
+          anyOf:
+            - $ref: '#/components/schemas/AvatarRuntimeConfig-Output'
+            - type: 'null'
+      type: object
+      title: ConnectAvatarRuntimeConfigs
+      description: |-
+        Runtime config surface for Connect avatar-facing endpoints.
+
+        Scoped to the `avatar` namespace only: every asset this endpoint serves is AVATAR-typed,
+        and `validate_asset_configs` forbids any other namespace from ever being set on one — so
+        exposing the full `AssetRuntimeConfigs` shape here would mean every future namespace (e.g.
+        `motion`) permanently answers `null` to a Connect partner that can never receive it.
+
+        This narrowing applies only to avatar-specific endpoints. `connect/presentation`'s
+        `performance_manifest` deliberately keeps the shared `AssetManifestEntry` instead — REST
+        `get_asset_lod_urls`, the Chat WebSocket manifest and Connect's performance manifest all
+        carry the same wire type, so `configs.avatar` sits permanently null on a motion entry there.
+        That is the cost of one wire type across every surface that emits a manifest entry rather
+        than a Connect-specific one.
+    ConnectAzureVoice:
+      properties:
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+        - name
+      title: ConnectAzureVoice
+      description: Azure voice selection fields used by the Speech SDK.
+    ConnectAzureVoiceDetailResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        provider:
+          type: string
+          const: azure
+          title: Provider
+        languages:
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          title: Languages
+        region:
+          $ref: '#/components/schemas/VoiceRegion'
+        endpoint_url:
+          type: string
+          title: Endpoint Url
+        voice:
+          $ref: '#/components/schemas/ConnectAzureVoice'
+      type: object
+      required:
+        - id
+        - name
+        - provider
+        - languages
+        - region
+        - endpoint_url
+        - voice
+      title: ConnectAzureVoiceDetailResponse
+    ConnectChatBotChatRequest:
+      properties:
+        messages:
+          $ref: '#/components/schemas/ConnectChatBotMessages'
+      type: object
+      required:
+        - messages
+      title: ConnectChatBotChatRequest
+      description: Validated HTTP body for a stateless Connect chat request.
+    ConnectChatBotChatResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        status:
+          $ref: '#/components/schemas/ConnectChatBotInteractionStatus'
+        reply_text:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Reply Text
+      type: object
+      required:
+        - id
+        - status
+      title: ConnectChatBotChatResponse
+    ConnectChatBotInteractionStatus:
+      type: string
+      enum:
+        - pending
+        - succeeded
+        - failed
+      title: ConnectChatBotInteractionStatus
+    ConnectChatBotKnowledgeFileDO:
+      properties:
+        chat_bot_id:
+          type: string
+          title: Chat Bot Id
+        file_id:
+          type: string
+          title: File Id
+        name:
+          type: string
+          title: Name
+        status:
+          $ref: '#/components/schemas/ConnectKnowledgeFileStatus'
+      type: object
+      required:
+        - chat_bot_id
+        - file_id
+        - name
+        - status
+      title: ConnectChatBotKnowledgeFileDO
+      description: Domain object describing a chat bot's bound knowledge file.
+    ConnectChatBotMessage:
+      properties:
+        role:
+          $ref: '#/components/schemas/ConnectChatBotMessageRole'
+        parts:
+          items:
+            $ref: '#/components/schemas/ConnectChatBotMessagePart'
+          type: array
+          maxItems: 10
+          minItems: 1
+          title: Parts
+      type: object
+      required:
+        - role
+        - parts
+      title: ConnectChatBotMessage
+    ConnectChatBotMessagePart:
+      properties:
+        type:
+          $ref: '#/components/schemas/ConnectChatBotMessagePartType'
+          default: text
+        text:
+          type: string
+          maxLength: 8000
+          title: Text
+      type: object
+      required:
+        - text
+      title: ConnectChatBotMessagePart
+    ConnectChatBotMessagePartType:
+      type: string
+      enum:
+        - text
+      title: ConnectChatBotMessagePartType
+    ConnectChatBotMessageRole:
+      type: string
+      enum:
+        - user
+        - assistant
+      title: ConnectChatBotMessageRole
+    ConnectChatBotMessages:
+      items:
+        $ref: '#/components/schemas/ConnectChatBotMessage'
+      type: array
+      maxItems: 1001
+      minItems: 1
+      title: ConnectChatBotMessages
+    ConnectChatBotStatus:
+      type: string
+      enum:
+        - active
+        - disabled
+      title: ConnectChatBotStatus
+    ConnectChatBotToolAPIKeyAuthDO:
+      properties:
+        secret_type:
+          type: string
+          const: api_key
+          title: Secret Type
+          default: api_key
+        api_key_header:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Api Key Header
+        api_key_value:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Api Key Value
+      type: object
+      title: ConnectChatBotToolAPIKeyAuthDO
+      description: Masked API key authentication configuration returned for a tool.
+    ConnectChatBotToolBearerTokenAuthDO:
+      properties:
+        secret_type:
+          type: string
+          const: bearer_token
+          title: Secret Type
+          default: bearer_token
+        bearer_token:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Bearer Token
+      type: object
+      title: ConnectChatBotToolBearerTokenAuthDO
+      description: Masked bearer token authentication configuration returned for a tool.
+    ConnectChatBotToolDO:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        settings:
+          $ref: '#/components/schemas/ConnectChatBotToolSettingsDO'
+      type: object
+      required:
+        - id
+        - name
+        - settings
+      title: ConnectChatBotToolDO
+    ConnectChatBotToolNoAuthDO:
+      properties:
+        secret_type:
+          type: string
+          const: no_auth
+          title: Secret Type
+          default: no_auth
+      type: object
+      title: ConnectChatBotToolNoAuthDO
+      description: Authentication configuration for a tool that requires no credentials.
+    ConnectChatBotToolRequestDO:
+      properties:
+        method:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Method
+        url:
+          type: string
+          title: Url
+          default: ''
+        headers:
+          additionalProperties:
+            type: string
+          type: object
+          title: Headers
+        query_params:
+          additionalProperties: true
+          type: object
+          title: Query Params
+        body:
+          additionalProperties: true
+          type: object
+          title: Body
+      type: object
+      title: ConnectChatBotToolRequestDO
+      description: HTTP request configuration returned for a Connect-managed tool.
+    ConnectChatBotToolResponseDO:
+      properties:
+        body_schema:
+          additionalProperties: true
+          type: object
+          title: Body Schema
+      type: object
+      title: ConnectChatBotToolResponseDO
+      description: Response schema returned for a Connect-managed tool.
+    ConnectChatBotToolSettingsDO:
+      properties:
+        request:
+          $ref: '#/components/schemas/ConnectChatBotToolRequestDO'
+        auth:
+          oneOf:
+            - $ref: '#/components/schemas/ConnectChatBotToolNoAuthDO'
+            - $ref: '#/components/schemas/ConnectChatBotToolAPIKeyAuthDO'
+            - $ref: '#/components/schemas/ConnectChatBotToolBearerTokenAuthDO'
+          title: Auth
+          discriminator:
+            propertyName: secret_type
+            mapping:
+              api_key: '#/components/schemas/ConnectChatBotToolAPIKeyAuthDO'
+              bearer_token: '#/components/schemas/ConnectChatBotToolBearerTokenAuthDO'
+              no_auth: '#/components/schemas/ConnectChatBotToolNoAuthDO'
+        response:
+          $ref: '#/components/schemas/ConnectChatBotToolResponseDO'
+      type: object
+      required:
+        - request
+        - response
+      title: ConnectChatBotToolSettingsDO
+      description: HTTP API specification returned for a Connect-managed tool.
+    ConnectCreditResponse:
+      properties:
+        used_credit_points:
+          type: integer
+          title: Used Credit Points
+        total_credit_points:
+          type: integer
+          title: Total Credit Points
+        remaining_credit_points:
+          type: integer
+          title: Remaining Credit Points
+        is_quota_exceeded:
+          type: boolean
+          title: Is Quota Exceeded
+        period_start:
+          type: string
+          format: date-time
+          title: Period Start
+        period_end:
+          type: string
+          format: date-time
+          title: Period End
+      type: object
+      required:
+        - used_credit_points
+        - total_credit_points
+        - remaining_credit_points
+        - is_quota_exceeded
+        - period_start
+        - period_end
+      title: ConnectCreditResponse
+      description: |-
+        The organization's credit usage snapshot, stripped of internal billing detail.
+
+        Deliberately not a re-export of ``SubscriptionCreditResponse``: that schema also carries
+        ``rate``, the ``*_in_cent`` fields, and the coupon grant/used/remaining breakdown, none of
+        which is for an external Connect caller to see.
+    ConnectGeminiAudioConfig:
+      properties:
+        audioEncoding:
+          $ref: '#/components/schemas/AudioEncoding'
+        sampleRateHertz:
+          type: integer
+          title: Sampleratehertz
+        speechStyle:
+          type: string
+          title: Speechstyle
+      type: object
+      required:
+        - audioEncoding
+        - sampleRateHertz
+      title: ConnectGeminiAudioConfig
+      description: The audio a Gemini voice returns, and the delivery instruction its requests send apart from the text.
+    ConnectGeminiVoice:
+      properties:
+        name:
+          type: string
+          title: Name
+        model_name:
+          type: string
+          title: Model Name
+      type: object
+      required:
+        - name
+        - model_name
+      title: ConnectGeminiVoice
+      description: Gemini voice selection fields used by the ``generateContent`` request.
+    ConnectGeminiVoiceDetailResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        provider:
+          type: string
+          const: gemini
+          title: Provider
+        languages:
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          title: Languages
+        region:
+          $ref: '#/components/schemas/VoiceRegion'
+        endpoint_url:
+          type: string
+          title: Endpoint Url
+        voice:
+          $ref: '#/components/schemas/ConnectGeminiVoice'
+        audio_config:
+          $ref: '#/components/schemas/ConnectGeminiAudioConfig'
+      type: object
+      required:
+        - id
+        - name
+        - provider
+        - languages
+        - region
+        - endpoint_url
+        - voice
+        - audio_config
+      title: ConnectGeminiVoiceDetailResponse
+    ConnectGoogleAudioConfig:
+      properties:
+        audioEncoding:
+          $ref: '#/components/schemas/AudioEncoding'
+        speakingRate:
+          type: number
+          title: Speakingrate
+        pitch:
+          type: number
+          title: Pitch
+        volumeGainDb:
+          anyOf:
+            - type: number
+            - type: 'null'
+          title: Volumegaindb
+        sampleRateHertz:
+          type: integer
+          title: Sampleratehertz
+        effectsProfileId:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: 'null'
+          title: Effectsprofileid
+      type: object
+      required:
+        - audioEncoding
+        - speakingRate
+        - pitch
+        - sampleRateHertz
+      title: ConnectGoogleAudioConfig
+      description: Normalized Google Cloud TTS audio configuration exposed to Connect.
+    ConnectGoogleVoice:
+      properties:
+        name:
+          type: string
+          title: Name
+        model_name:
+          type: string
+          title: Model Name
+        speaker_gender:
+          anyOf:
+            - $ref: '#/components/schemas/VoiceGender'
+            - type: 'null'
+          description: >-
+            The gender the speaker speaks in, which the presenter sends to Google TTS as ssmlGender. Null for a speaker
+            whose gender is not known.
+      type: object
+      required:
+        - name
+        - model_name
+      title: ConnectGoogleVoice
+      description: Google voice selection fields used by the Cloud TTS request.
+    ConnectGoogleVoiceDetailResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        provider:
+          type: string
+          const: google
+          title: Provider
+        languages:
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          title: Languages
+        region:
+          $ref: '#/components/schemas/VoiceRegion'
+        endpoint_url:
+          type: string
+          title: Endpoint Url
+        voice:
+          $ref: '#/components/schemas/ConnectGoogleVoice'
+        audio_config:
+          $ref: '#/components/schemas/ConnectGoogleAudioConfig'
+      type: object
+      required:
+        - id
+        - name
+        - provider
+        - languages
+        - region
+        - endpoint_url
+        - voice
+        - audio_config
+      title: ConnectGoogleVoiceDetailResponse
+    ConnectKnowledgeFileStatus:
+      type: string
+      enum:
+        - processing
+        - ready
+        - error
+      title: ConnectKnowledgeFileStatus
+      description: The external-facing knowledge file status exposed to Connect clients.
+    ConnectListAvatarResponse:
+      properties:
+        avatar_id:
+          type: string
+          title: Avatar Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        thumbnail_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/AvatarThumbnailType'
+          type: object
+          title: Thumbnail Urls
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+      type: object
+      required:
+        - avatar_id
+        - name
+        - description
+        - thumbnail_urls
+        - tags
+      title: ConnectListAvatarResponse
+    ConnectListSceneResponse:
+      properties:
+        scene_id:
+          type: string
+          title: Scene Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        thumbnail_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/SceneThumbnailType'
+          type: object
+          title: Thumbnail Urls
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+      type: object
+      required:
+        - scene_id
+        - name
+        - description
+        - thumbnail_urls
+        - tags
+      title: ConnectListSceneResponse
+    ConnectLoginRequest:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - email
+        - password
+      title: ConnectLoginRequest
+      description: The Connect login request schema
+    ConnectLoginResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+      type: object
+      required:
+        - access_token
+      title: ConnectLoginResponse
+      description: The Connect login response carrying the access token only
+    ConnectMotionAssetResponse:
+      properties:
+        motion_id:
+          type: string
+          title: Motion Id
+        name:
+          type: string
+          title: Name
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        lod_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/AssetLOD'
+          type: object
+          title: Lod Urls
+        thumbnail:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Thumbnail
+        configs:
+          anyOf:
+            - $ref: '#/components/schemas/ConnectMotionRuntimeConfigs'
+            - type: 'null'
+          description: >-
+            The motion's runtime config, the same `configs.motion` a widget profile carries for it: `full_body_only` is
+            true for a motion tagged blend:none. Null when the motion has none.
+      type: object
+      required:
+        - motion_id
+        - name
+        - tags
+        - lod_urls
+        - thumbnail
+      title: ConnectMotionAssetResponse
+    ConnectMotionGender:
+      type: string
+      enum:
+        - male
+        - female
+      title: ConnectMotionGender
+      description: The gender of the body the motions were authored for.
+    ConnectMotionHeadsTall:
+      type: integer
+      enum:
+        - 3
+        - 6
+        - 8
+      title: ConnectMotionHeadsTall
+      description: 'Body proportion in heads: 3 (stylized), 6, or 8 (realistic). Together with gender it picks the motion set.'
+    ConnectMotionRuntimeConfigs:
+      properties:
+        motion:
+          anyOf:
+            - $ref: '#/components/schemas/MotionRuntimeConfig-Output'
+            - type: 'null'
+      type: object
+      title: ConnectMotionRuntimeConfigs
+      description: |-
+        Runtime config surface for Connect motions, scoped to the `motion` namespace.
+
+        Every asset it describes is MOTION-typed, which `validate_asset_configs` keeps free of any
+        other namespace, as `ConnectAvatarRuntimeConfigs` is for avatars.
+    ConnectMotionSuggestionRequest:
+      properties:
+        gender:
+          $ref: '#/components/schemas/ConnectMotionGender'
+          description: Gender of the body the motions are for. Selects which motion set suggestions are drawn from.
+        heads_tall:
+          $ref: '#/components/schemas/ConnectMotionHeadsTall'
+          description: >-
+            Body proportion in heads: 3 (stylized), 6, or 8 (realistic). Together with gender it selects which motion
+            set suggestions are drawn from.
+        text:
+          type: string
+          maxLength: 2048
+          minLength: 1
+          title: Text
+          description: Plain text the motions should accompany. Must not already contain [MOTION ...] marks.
+      type: object
+      required:
+        - gender
+        - heads_tall
+        - text
+      title: ConnectMotionSuggestionRequest
+      description: Request to suggest motions for a plain text line, for a body described by gender and proportion.
+    ConnectMotionSuggestionResponse:
+      properties:
+        markup:
+          type: string
+          title: Markup
+          description: >-
+            The request text with [MOTION id:priority] marks inserted where each suggested motion starts. Accepted as-is
+            as the message of the presentation endpoint. Equal to the request text when no motion was suggested.
+        performance_manifest:
+          additionalProperties:
+            $ref: '#/components/schemas/AssetManifestEntry'
+          type: object
+          title: Performance Manifest
+          description: Motion assets referenced by the marks in markup, keyed by motion id.
+      type: object
+      required:
+        - markup
+      title: ConnectMotionSuggestionResponse
+      description: Suggested motions for one line of text, returned to Connect SDK consumers.
+    ConnectPresentationRequest:
+      properties:
+        avatar_id:
+          type: string
+          maxLength: 26
+          minLength: 26
+          title: Avatar Id
+          description: Avatar asset ID used to load presentation assets for this request.
+        voice_id:
+          anyOf:
+            - type: string
+              maxLength: 26
+              minLength: 26
+              description: A valid ULID string
+            - type: 'null'
+          title: Voice Id
+          description: >-
+            Custom voice ID used to format the speech payload. Omit for BYO TTS mode: no speech synthesis runs and
+            speech_format is returned as unknown.
+        message:
+          type: string
+          maxLength: 2048
+          minLength: 1
+          title: Message
+          description: Text that the presenter should speak.
+        emotion:
+          anyOf:
+            - $ref: '#/components/schemas/EmotionCategory'
+            - type: 'null'
+          description: >-
+            Emotional tone of the message. Drives facial-expression selection for the suggested motions; when both
+            emotion and intensity are omitted, no facial expression is attached.
+        intensity:
+          anyOf:
+            - $ref: '#/components/schemas/IntensityCategory'
+            - type: 'null'
+          description: >-
+            Intensity of the emotional tone. Drives facial-expression selection for the suggested motions; when both
+            emotion and intensity are omitted, no facial expression is attached.
+      type: object
+      required:
+        - avatar_id
+        - message
+      title: ConnectPresentationRequest
+      description: Request to generate a presenter payload for a plain text message.
+    ConnectPresentationResponse:
+      properties:
+        performance_manifest:
+          additionalProperties:
+            $ref: '#/components/schemas/AssetManifestEntry'
+          type: object
+          title: Performance Manifest
+          description: Motion assets selected for this presentation request.
+        dropped_motion_ids:
+          items:
+            type: string
+          type: array
+          title: Dropped Motion Ids
+          description: >-
+            Motion/facial ids from the request message's [MOTION ...] marks that were not accepted (the asset is
+            unknown, not shared with this organization, or lacks a required engine tag): their marks remain in the
+            returned text and performance_manifest carries no entry for them. This reports gate refusals only, not
+            playability — an accepted id whose asset has no uploaded LOD files is absent from this list yet its manifest
+            entry carries only null URLs. A drop is a persistent data condition — the same id keeps being dropped until
+            the asset's tags or sharing change; fix the asset rather than retrying. Always empty when the message
+            carried no marks (server-suggested motion).
+        display_text:
+          type: string
+          title: Display Text
+          description: >-
+            Clean, displayable text for UI elements (e.g., subtitles or chat bubbles). All vocal instructions and motion
+            markers have been stripped.
+        presentation:
+          type: string
+          title: Presentation
+          description: Spoken text before SSML conversion, preserving motion marks for downstream consumers.
+        speech_content:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Speech Content
+          description: >-
+            The formatted payload for the speech synthesis engine. Depending on the active voice profile, this may
+            contain specific acoustic markup (such as SSML tags or bracketed prompts) to control intonation and pacing.
+            Null in BYO TTS mode (request omitted voice_id); clients should read display_text instead.
+        speech_format:
+          $ref: '#/components/schemas/SpeechFormat'
+          description: 'Speech content format: raw_text, ssml, markup, or unknown (BYO TTS mode).'
+        language:
+          type: string
+          title: Language
+          description: Language code (e.g. 'en', 'zh').
+        voice_name:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Voice Name
+          description: >-
+            Identifier for the voice model used by the presenter widget. Null in BYO TTS mode (request omitted
+            voice_id).
+        posture_style:
+          anyOf:
+            - $ref: '#/components/schemas/PostureStyle'
+            - type: 'null'
+          description: >-
+            Turn-level emotion posture style for the 3D avatar: the client applies a small persistent rotation-only
+            posture offset (spine/shoulder/head) on top of whatever gesture clip plays. ``null`` means no posture
+            styling for this performance; ``intensity=neutral`` is a medium gain, NOT 'no posture'. Connect note: this
+            is the EFFECTIVE style resolved against the org's emotion-posture flag — NOT an echo of the request; null
+            when the flag is off or the request carried no emotion.
+      type: object
+      required:
+        - dropped_motion_ids
+        - display_text
+        - presentation
+        - speech_content
+        - speech_format
+        - language
+        - voice_name
+        - posture_style
+      title: ConnectPresentationResponse
+      description: Presentation payload returned to Connect SDK consumers.
+    ConnectSceneDetailResponse:
+      properties:
+        scene_id:
+          type: string
+          title: Scene Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        thumbnail_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/SceneThumbnailType'
+          type: object
+          title: Thumbnail Urls
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        lod_urls:
+          additionalProperties:
+            type: string
+          propertyNames:
+            $ref: '#/components/schemas/AssetLOD'
+          type: object
+          title: Lod Urls
+      type: object
+      required:
+        - scene_id
+        - name
+        - description
+        - thumbnail_urls
+        - tags
+        - lod_urls
+      title: ConnectSceneDetailResponse
+    ConnectVoiceResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        languages:
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          title: Languages
+        provider:
+          $ref: '#/components/schemas/VoiceProvider'
+      type: object
+      required:
+        - id
+        - name
+        - languages
+        - provider
+      title: ConnectVoiceResponse
+    ConnectVoiceTextToSpeechTokenRequest:
+      properties:
+        voice_id:
+          type: string
+          title: Voice Id
+      type: object
+      required:
+        - voice_id
+      title: ConnectVoiceTextToSpeechTokenRequest
+    ConnectVoiceTextToSpeechTokenResponse:
+      properties:
+        provider:
+          $ref: '#/components/schemas/VoiceProvider'
+        region:
+          $ref: '#/components/schemas/VoiceRegion'
+        token:
+          type: string
+          title: Token
+        expires_in:
+          anyOf:
+            - type: integer
+            - type: 'null'
+          title: Expires In
+      type: object
+      required:
+        - provider
+        - region
+        - token
+      title: ConnectVoiceTextToSpeechTokenResponse
+    ConnectVRMUploadResponse:
+      properties:
+        avatar_id:
+          type: string
+          title: Avatar Id
+      type: object
+      required:
+        - avatar_id
+      title: ConnectVRMUploadResponse
+      description: |-
+        Result of a successful VRM upload: the active avatar's asset ID.
+
+        Only `avatar_id` is returned, matching the existing Connect API convention
+        (``ConnectListAvatarResponse``/``ConnectAvatarDetailResponse``) of never
+        exposing internal revision IDs to Connect clients.
+    CueSet:
+      properties:
+        cues:
+          type: integer
+          maximum: 3
+          minimum: 1
+          title: Cues
+        points:
+          items:
+            $ref: '#/components/schemas/KeyPoint'
+          type: array
+          title: Points
+        start:
+          type: number
+          minimum: 0
+          title: Start
+          default: 0
+        ends_after_last:
+          type: boolean
+          title: Ends After Last
+          default: false
+      type: object
+      required:
+        - cues
+        - points
+      title: CueSet
+      description: |-
+        How a clip lands ``cues`` words: its own ``cues`` points, the clip time it starts playing
+        from for them (``start``, the move into the first; what comes before is cut), and whether it
+        ends after the hold of the last point (``ends_after_last``) or plays on to its end.
+    DateRangeStrEnum:
+      type: string
+      enum:
+        - past_7_days
+        - past_14_days
+        - past_30_days
+        - custom
+      title: DateRangeStrEnum
+    EmotionCategory:
+      type: string
+      enum:
+        - joy
+        - excitement
+        - admiration
+        - caring
+        - gratitude
+        - sadness
+        - disappointment
+        - annoyance
+        - embarrassment
+        - curiosity
+        - surprise
+        - realization
+        - confusion
+      title: EmotionCategory
+      description: |-
+        The 13-way agent-side vocabulary — what the AGENT expresses in a turn.
+
+        The values are wire and storage contracts: motion assets are tagged with them, stored
+        emotion mappings answer with them, and the Suggest request's ``turn_base_emotion``
+        carries one. Member order is the order the CMS lists them in.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    IntensityCategory:
+      type: string
+      enum:
+        - low
+        - neutral
+        - high
+      title: IntensityCategory
+      description: How strongly the agent expresses an ``EmotionCategory``.
+    KeyPoint:
+      properties:
+        landing:
+          type: number
+          minimum: 0
+          title: Landing
+        hold_end:
+          type: number
+          minimum: 0
+          title: Hold End
+      type: object
+      required:
+        - landing
+        - hold_end
+      title: KeyPoint
+    Language:
+      type: string
+      enum:
+        - auto
+        - ar
+        - bn
+        - bg
+        - hr
+        - cs
+        - da
+        - nl
+        - en
+        - et
+        - fi
+        - fr
+        - de
+        - el
+        - he
+        - hi
+        - hu
+        - id
+        - it
+        - ja
+        - ko
+        - lv
+        - lt
+        - nb
+        - pl
+        - pt
+        - ro
+        - ru
+        - sr
+        - sk
+        - sl
+        - es
+        - sw
+        - sv
+        - th
+        - tr
+        - uk
+        - vi
+        - zh
+      title: Language
+    LipSyncConfig-Output:
+      properties:
+        config:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Config
+        resource:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Resource
+        config_url:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Config Url
+          readOnly: true
+        resource_url:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Resource Url
+          readOnly: true
+      type: object
+      required:
+        - config_url
+        - resource_url
+      title: LipSyncConfig
+      description: The lip sync configuration
+    LipSyncMode:
+      type: string
+      enum:
+        - wlipsync
+        - xrlipsync
+      title: LipSyncMode
+      description: The lip sync mode
+    MotionRuntimeConfig-Output:
+      properties:
+        timeline:
+          anyOf:
+            - $ref: '#/components/schemas/BehaviorToggleConfig'
+            - type: 'null'
+        key_points:
+          anyOf:
+            - items:
+                $ref: '#/components/schemas/KeyPoint'
+              type: array
+            - type: 'null'
+          title: Key Points
+        cue_sets:
+          anyOf:
+            - items:
+                $ref: '#/components/schemas/CueSet'
+              type: array
+            - type: 'null'
+          title: Cue Sets
+        full_body_only:
+          anyOf:
+            - type: boolean
+            - type: 'null'
+          title: Full Body Only
+      additionalProperties: false
+      type: object
+      title: MotionRuntimeConfig
+      description: |-
+        Runtime behavior overrides owned by a motion asset, plus the clip's confirmed key points.
+
+        ``key_points`` and ``cue_sets`` never come from the asset's own ``configs``: they are the
+        confirmed key points of the revision serving as the asset's LOD0 and its cue sets, each with
+        points of its own (``perxona_core.motion.key_points``), attached where the manifest is built, so
+        the renderer times a gesture from the same points selection read. Both are None for a clip
+        with no confirmed points.
+
+        ``full_body_only`` never comes from the asset's own ``configs`` either: it is True when the motion
+        carries ``blend:none`` (``perxona_core.motion.blend``), attached beside the key points, so the
+        renderer plays it whole instead of over the shared lower body. None otherwise.
+    Page_ChatBotSummaryResponse_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ChatBotSummaryResponse'
+          type: array
+          title: Items
+        total:
+          type: integer
+          minimum: 0
+          title: Total
+        page:
+          type: integer
+          minimum: 1
+          title: Page
+        size:
+          type: integer
+          minimum: 1
+          title: Size
+        pages:
+          type: integer
+          minimum: 0
+          title: Pages
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+        - pages
+      title: Page[ChatBotSummaryResponse]
+    Page_ConnectListAvatarResponse_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ConnectListAvatarResponse'
+          type: array
+          title: Items
+        total:
+          type: integer
+          minimum: 0
+          title: Total
+        page:
+          type: integer
+          minimum: 1
+          title: Page
+        size:
+          type: integer
+          minimum: 1
+          title: Size
+        pages:
+          type: integer
+          minimum: 0
+          title: Pages
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+        - pages
+      title: Page[ConnectListAvatarResponse]
+    Page_ConnectListSceneResponse_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ConnectListSceneResponse'
+          type: array
+          title: Items
+        total:
+          type: integer
+          minimum: 0
+          title: Total
+        page:
+          type: integer
+          minimum: 1
+          title: Page
+        size:
+          type: integer
+          minimum: 1
+          title: Size
+        pages:
+          type: integer
+          minimum: 0
+          title: Pages
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+        - pages
+      title: Page[ConnectListSceneResponse]
+    Page_ConnectMotionAssetResponse_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ConnectMotionAssetResponse'
+          type: array
+          title: Items
+        total:
+          type: integer
+          minimum: 0
+          title: Total
+        page:
+          type: integer
+          minimum: 1
+          title: Page
+        size:
+          type: integer
+          minimum: 1
+          title: Size
+        pages:
+          type: integer
+          minimum: 0
+          title: Pages
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+        - pages
+      title: Page[ConnectMotionAssetResponse]
+    Page_ConnectVoiceResponse_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ConnectVoiceResponse'
+          type: array
+          title: Items
+        total:
+          type: integer
+          minimum: 0
+          title: Total
+        page:
+          type: integer
+          minimum: 1
+          title: Page
+        size:
+          type: integer
+          minimum: 1
+          title: Size
+        pages:
+          type: integer
+          minimum: 0
+          title: Pages
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+        - pages
+      title: Page[ConnectVoiceResponse]
+    PostureStyle:
+      $defs:
+        EmotionCategory:
+          description: |-
+            The 13-way agent-side vocabulary — what the AGENT expresses in a turn.
+
+            The values are wire and storage contracts: motion assets are tagged with them, stored
+            emotion mappings answer with them, and the Suggest request's ``turn_base_emotion``
+            carries one. Member order is the order the CMS lists them in.
+          enum:
+            - joy
+            - excitement
+            - admiration
+            - caring
+            - gratitude
+            - sadness
+            - disappointment
+            - annoyance
+            - embarrassment
+            - curiosity
+            - surprise
+            - realization
+            - confusion
+          title: EmotionCategory
+          type: string
+        IntensityCategory:
+          description: How strongly the agent expresses an ``EmotionCategory``.
+          enum:
+            - low
+            - neutral
+            - high
+          title: IntensityCategory
+          type: string
+      description: 'The emotion posture for one performance: which emotion styles the avatar''s body posture, and how strongly.'
+      properties:
+        emotion:
+          $ref: '#/components/schemas/EmotionCategory'
+          description: Canonical turn-level emotion driving the posture envelope.
+        intensity:
+          $ref: '#/components/schemas/IntensityCategory'
+          description: Posture gain tier; ``neutral`` is medium, not off.
+      required:
+        - emotion
+        - intensity
+      title: PostureStyle
+      type: object
+    SceneThumbnailType:
+      type: string
+      enum:
+        - default
+        - high_res
+        - loading
+      title: SceneThumbnailType
+      description: The type of thumbnail for a scene asset
+    SettingsEnvelope:
+      properties:
+        version:
+          type: integer
+          maximum: 9007199254740991
+          exclusiveMinimum: 0
+          title: Version
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - payload
+      title: SettingsEnvelope
+      description: |-
+        A versioned, opaque settings payload owned entirely by the frontend.
+
+        The backend never interprets `payload` — it only validates the envelope shape here and
+        storage limits (depth/bytes/key-count) at the request layer (`_validate_runtime_settings`).
+        `version` must be a real positive integer: bool is rejected even though `bool` is an `int`
+        subtype, and so are str/float, because this field round-trips through frontend JS.
+    SortDirection:
+      type: string
+      enum:
+        - asc
+        - desc
+      title: SortDirection
+      description: The sort direction
+    SpeechFormat:
+      type: string
+      enum:
+        - raw_text
+        - ssml
+        - markup
+        - unknown
+      title: SpeechFormat
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    VoiceGender:
+      type: string
+      enum:
+        - male
+        - female
+        - neutral
+        - unspecified
+      title: VoiceGender
+    VoiceProvider:
+      type: string
+      enum:
+        - google
+        - aws
+        - azure
+        - elevenlabs
+        - gemini
+      title: VoiceProvider
+      description: |-
+        Who synthesizes a voice. ``GOOGLE`` speaks through Cloud TTS ``text:synthesize``, ``GEMINI`` through Vertex AI
+        ``generateContent``.
+    VoiceRegion:
+      type: string
+      enum:
+        - none
+        - southeastasia
+        - westeurope
+        - eastus
+        - westus
+        - japaneast
+      title: VoiceRegion
+      description: |-
+        This enum represents the different regions where voice models can be deployed.
+        It must match the provider Location/Region names because the Speech Cognitive API uses these names.
+  securitySchemes:
+    ConnectAPIKey:
+      type: apiKey
+      description: Connect API Key to access the service
+      in: header
+      name: X-Connect-Key
+    HTTPBearer:
+      type: http
+      scheme: bearer
