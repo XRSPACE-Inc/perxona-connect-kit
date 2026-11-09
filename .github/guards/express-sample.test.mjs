@@ -12,8 +12,9 @@
 // Node built-ins only, and nothing imported from the sample's own tests, so
 // changing those cannot change what is checked here.
 //
-// Every route declared in server.mjs is called and its response searched for
-// the secret key. Only the routes in ROUTES are called with a request body
+// Every route server.mjs declares as app.<method>("<path>") is called and its
+// response searched for the secret key; a route declared another way, such as
+// through express.Router(), is not found. Only the routes in ROUTES are called with a request body
 // that reaches the Connect API; a new route gets that part of the check once
 // a code owner adds it to ROUTES. Calls to a host written into server.mjs
 // rather than read from its settings are not seen here.
@@ -233,13 +234,16 @@ describe("Express sample guard", () => {
   let api;
   let sample;
   let declared;
+  let operations;
   let listed;
   let unlisted;
   let firstRound;
   let refusedRound;
 
   before(async () => {
+    // Read before the sample starts, so that nothing it runs can change them.
     declared = await declaredRoutes();
+    operations = await readContract();
     const listedNames = ROUTES.map(([method, route]) => `${method} ${route}`);
     unlisted = declared.filter((r) => !listedNames.includes(r)).map((r) => r.split(" "));
 
@@ -308,7 +312,6 @@ describe("Express sample guard", () => {
   });
 
   it("only calls what the pinned contract lists", async () => {
-    const operations = await readContract();
     assert.ok(operations.length > 0, "openapi.pinned.yaml lists no operations");
     const unknown = new Set();
     for (const { method, path: callPath } of api.requests) {

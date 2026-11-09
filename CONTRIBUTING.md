@@ -25,7 +25,7 @@ it: start from [`AGENTS.md`](AGENTS.md) and the sample's own `README.md` instead
 | --- | --- |
 | `docs/en/`, `docs/zh-tw/`, `docs/ja/`, `llms.txt`, `llms-full.txt` | Generated from the handbook at <https://connect.perxona.ai> by [`tools/handbook-to-markdown/`](tools/handbook-to-markdown/) |
 | `samples/express/docs/openapi.yaml` | A copy of the Connect API contract, kept as read-only reference |
-| `.github/guards/openapi.pinned.yaml` | A copy of the live contract at <https://connect.perxona.ai/openapi.yaml>, updated by a maintainer |
+| `.github/guards/openapi.pinned.yaml` | A copy of the live contract at <https://connect.perxona.ai/openapi.yaml>; any pull request may refresh it from there, and a code owner approves |
 
 The handbook and the Connect API contract are maintained by Perxona outside this repository. If
 one of them is wrong, [open an issue](https://github.com/XRSPACE-Inc/perxona-connect-kit/issues)
@@ -89,10 +89,9 @@ checks that the secret key never reaches a browser, that every call carries the 
 that every call is in the Connect API contract. It finds every route in `server.mjs` and checks
 its responses for the secret key, but it only has a working request for the routes it lists, so
 a new route is fully checked once a maintainer adds it there: name any new route in your pull
-request. If the guard
-fails because the sample calls something the live contract now has, a maintainer updates
-`openapi.pinned.yaml` from the live contract; you can do it in the same pull request, and a
-code owner approves it.
+request. If the guard fails because the sample calls something the live contract now has,
+refresh `openapi.pinned.yaml` from the live contract in the same pull request; a code owner
+approves it.
 
 VRM uploader, from `tools/vrm-uploader/`:
 
