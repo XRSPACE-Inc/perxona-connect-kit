@@ -155,6 +155,10 @@ your IDE at that package for autocomplete and JSDoc on presenter methods.
 - `public/` — the browser UI: `index.html` is a landing page listing demos; each demo (`demos/embed/`, `demos/studio/`,
   `demos/interview/`) has its own `index.html`, `style.css`, and `app.js` (plain ESM, no build step).
 - `docs/` — reference material: `openapi.yaml` (the Connect API).
+- `tests/` — tests that start `server.mjs` against a fake Connect API; `npm test` runs them. When you add or
+  change a route, add a test, and add the route to the list at the top of `tests/routes.test.mjs`. The separate
+  guard in `.github/guards/` lists routes by hand and only a code owner can change it, so say in the pull request
+  that the route is new. See `tests/README.md`.
 
 ## Getting Started
 

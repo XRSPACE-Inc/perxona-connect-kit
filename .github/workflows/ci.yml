@@ -68,6 +68,17 @@ jobs:
           --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck
           samples/express/public/demos/*/app.js
 
+      # Starts server.mjs against a fake Connect API on the runner; no key and
+      # no network needed.
+      - name: Run the sample's tests
+        working-directory: samples/express
+        run: npm test
+
+      # Lives outside the sample so that only a code owner can change what it
+      # checks (see .github/CODEOWNERS).
+      - name: Run the guard
+        run: node --test .github/guards/*.test.mjs
+
   vrm-uploader:
     # macOS is not redundant: the script is written to bash 3.2 because that is
     # what macOS ships, and only a macOS runner has that shell together with the
