@@ -1,6 +1,8 @@
 // Every route the sample serves still exists and answers with the shape the
 // demos read.
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { sampleEnv, startServer } from "./helpers/start-server.mjs";
 import { startStubUpstream } from "./helpers/stub-upstream.mjs";
@@ -18,36 +20,38 @@ after(async () => {
   await upstream?.close();
 });
 
-const get = (path) => fetch(`${server.url}${path}`);
+const get = (route) => fetch(`${server.url}${route}`);
 
 describe("every route is still there", () => {
-  // Add a line here when you add a route. A route that disappears answers 404.
+  // Every route server.mjs declares, as it declares it, and a path to call it
+  // with. Add a line here when you add a route; the last test below fails
+  // until you do. A route that disappears answers 404.
   const routes = [
-    ["GET", "/"],
-    ["GET", "/api/health"],
-    ["GET", "/api/config"],
-    ["GET", "/api/connect-key"],
-    ["GET", "/api/voices"],
-    ["GET", "/api/credit"],
-    ["GET", "/api/avatars"],
-    ["GET", "/api/avatars/avatar-first"],
-    ["GET", "/api/avatars/avatar-first/motions"],
-    ["GET", "/api/scenes"],
-    ["GET", "/api/scenes/scene-first"],
-    ["GET", "/api/chatbots"],
-    ["POST", "/api/chatbots"],
-    ["GET", "/api/chatbots/bot-first"],
-    ["PATCH", "/api/chatbots/bot-first"],
-    ["DELETE", "/api/chatbots/bot-new-unused"],
-    ["POST", "/api/chatbots/bot-first/knowledge"],
-    ["DELETE", "/api/chatbots/bot-first/knowledge"],
-    ["POST", "/api/chatbots/bot-first/chat"],
-    ["POST", "/api/chat"],
+    ["GET", "/", "/"],
+    ["GET", "/api/health", "/api/health"],
+    ["GET", "/api/config", "/api/config"],
+    ["GET", "/api/connect-key", "/api/connect-key"],
+    ["GET", "/api/voices", "/api/voices"],
+    ["GET", "/api/credit", "/api/credit"],
+    ["GET", "/api/avatars", "/api/avatars"],
+    ["GET", "/api/avatars/:id", "/api/avatars/avatar-first"],
+    ["GET", "/api/avatars/:id/motions", "/api/avatars/avatar-first/motions"],
+    ["GET", "/api/scenes", "/api/scenes"],
+    ["GET", "/api/scenes/:id", "/api/scenes/scene-first"],
+    ["GET", "/api/chatbots", "/api/chatbots"],
+    ["POST", "/api/chatbots", "/api/chatbots"],
+    ["GET", "/api/chatbots/:id", "/api/chatbots/bot-first"],
+    ["PATCH", "/api/chatbots/:id", "/api/chatbots/bot-first"],
+    ["DELETE", "/api/chatbots/:id", "/api/chatbots/bot-new-unused"],
+    ["POST", "/api/chatbots/:id/knowledge", "/api/chatbots/bot-first/knowledge"],
+    ["DELETE", "/api/chatbots/:id/knowledge", "/api/chatbots/bot-first/knowledge"],
+    ["POST", "/api/chatbots/:id/chat", "/api/chatbots/bot-first/chat"],
+    ["POST", "/api/chat", "/api/chat"],
   ];
 
-  for (const [method, path] of routes) {
-    it(`${method} ${path}`, async () => {
-      const res = await fetch(`${server.url}${path}`, {
+  for (const [method, , callPath] of routes) {
+    it(`${method} ${callPath}`, async () => {
+      const res = await fetch(`${server.url}${callPath}`, {
         method,
         headers: { "Content-Type": "application/json" },
         ...(method === "POST" || method === "PATCH" ? { body: "{}" } : {}),
@@ -55,6 +59,20 @@ describe("every route is still there", () => {
       assert.notEqual(res.status, 404);
     });
   }
+
+  it("lists every route server.mjs declares", async () => {
+    const source = await readFile(path.join(import.meta.dirname, "../server.mjs"), "utf8");
+    const declared = [...source.matchAll(/\bapp\.(get|post|put|patch|delete)\(\s*["'`]([^"'`]+)["'`]/g)].map(
+      ([, method, route]) => `${method.toUpperCase()} ${route}`,
+    );
+    const listed = routes.map(([method, route]) => `${method} ${route}`);
+    assert.ok(declared.length > 0, "found no routes in server.mjs");
+    assert.deepEqual(
+      declared.filter((route) => !listed.includes(route)),
+      [],
+      "add these routes to the list at the top of this test",
+    );
+  });
 });
 
 describe("health and config", () => {

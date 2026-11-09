@@ -156,9 +156,9 @@ your IDE at that package for autocomplete and JSDoc on presenter methods.
   `demos/interview/`) has its own `index.html`, `style.css`, and `app.js` (plain ESM, no build step).
 - `docs/` — reference material: `openapi.yaml` (the Connect API).
 - `tests/` — tests that start `server.mjs` against a fake Connect API; `npm test` runs them. When you add or
-  change a route, add a test, and add the route to the list at the top of `tests/routes.test.mjs`. The separate
-  guard in `.github/guards/` lists routes by hand and only a code owner can change it, so say in the pull request
-  that the route is new. See `tests/README.md`.
+  change a route, add a test, and add the route to the list at the top of `tests/routes.test.mjs` (a test fails
+  until you do). The separate guard in `.github/guards/` only has a working request for the routes it lists, and
+  only a code owner can change it, so say in the pull request that the route is new. See `tests/README.md`.
 
 ## Getting Started
 

@@ -62,11 +62,11 @@ npm ci --prefix .github/ci
   --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck \
   samples/express/public/demos/*/app.js
 
-(cd samples/express && npm test)
 node --test .github/guards/*.test.mjs
+(cd samples/express && npm test)
 ```
 
-The last command checks every demo's calls into `<sv-presenter>` against
+The `tsc` command checks every demo's calls into `<sv-presenter>` against
 `@perxona/presenter-types`, and an event's payload where the handler names the event type.
 `PRESENTER_STATUS` handlers are typed `any` for now, because the demos handle the `Failed` status
 and the published types do not include it yet. The command also type-checks the rest of each
@@ -82,12 +82,14 @@ Connect API on your own machine, so they need no key; [`samples/express/tests/RE
 to add one.
 
 **Pull request checks never use the network.** A scheduled check that compares the sample with
-the live Connect API is separate, and is allowed to.
+the live Connect API is planned; it will run separately and will be allowed to.
 
-The last command runs the guard in [`.github/guards/`](.github/guards/). It checks that the secret
-key never reaches a browser, that every call carries the right key, and that every call is in
-the Connect API contract. It lists the sample's routes by hand, so a route you add is not
-checked until a maintainer adds it there: name any new route in your pull request. If the guard
+`node --test .github/guards/*.test.mjs` runs the guard in [`.github/guards/`](.github/guards/). It
+checks that the secret key never reaches a browser, that every call carries the right key, and
+that every call is in the Connect API contract. It finds every route in `server.mjs` and checks
+its responses for the secret key, but it only has a working request for the routes it lists, so
+a new route is fully checked once a maintainer adds it there: name any new route in your pull
+request. If the guard
 fails because the sample calls something the live contract now has, a maintainer updates
 `openapi.pinned.yaml` from the live contract; you can do it in the same pull request, and a
 code owner approves it.

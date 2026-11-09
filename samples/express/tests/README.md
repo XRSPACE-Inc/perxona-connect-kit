@@ -35,7 +35,8 @@ To run one file: `node --test tests/chatbots.test.mjs`.
    with `assert`.
 3. If your change makes the server call an endpoint the fake does not answer yet, add it to
    `helpers/stub-upstream.mjs`. The fake answers `404` for anything it does not know.
-4. If you added a route, also add it to the list at the top of `routes.test.mjs`.
+4. If you added a route, also add it to the list at the top of `routes.test.mjs`. A test there fails
+   until every route in `server.mjs` is on the list.
 
 For example, a check that a new `GET /api/hello` route answers:
 
