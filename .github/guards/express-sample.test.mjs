@@ -40,8 +40,10 @@ const NOT_CONNECT_API = [/^\/presenter\.js$/, /^\/llm\//];
 const base64 = (text) => Buffer.from(text).toString("base64");
 const chatMessages = [{ role: "user", parts: [{ type: "text", text: "Hi" }] }];
 
-// Every route as server.mjs declares it, with a body valid enough to reach
-// the Connect API. Path parameters are filled with "item-1".
+// The routes this guard has a working request body for, as server.mjs
+// declares them; each must reach the Connect API. A route declared in
+// server.mjs but missing here is still searched for the secret key. Path
+// parameters are filled with "item-1".
 const ROUTES = [
   ["GET", "/"],
   ["GET", "/api/health"],
