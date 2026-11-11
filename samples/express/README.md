@@ -285,10 +285,17 @@ Connect API keys, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `ht
 account is in another region. Every other optional value from
 `.env.example` (`DEMO_FIXED_*`, `LLM_*`, `PRESENTER_URL`) can be added there too; redeploy after changing any of them.
 
+When the deploy finishes, open the project's own domain (`<project>.vercel.app`, listed under Domains), not the
+per-deployment link with a hash in it: Vercel puts a sign-in wall on those by default, so visitors would only see
+"Protected by Vercel Authentication".
+
 Three things that differ from running locally:
 
-- **The publishable key's domain list.** Leave it empty for the first deploy, open the site, then restrict the key to the
-  `*.vercel.app` address Vercel gave you (and any custom domain). The secret key's list stays empty, as always.
+- **The publishable key's domain list.** A key's allowed domains are set when it is created and cannot be edited later.
+  Deploy first with an unrestricted publishable key, note the project domain Vercel gives you, then create a second
+  publishable key in the console restricted to that domain (and any custom domain), replace
+  `PERXONA_CONNECT_PUBLISHABLE_KEY` in the project's environment variables, redeploy, and delete the first key. The
+  secret key's list stays empty, as always.
 - **The URL is public and the publishable key is visible to anyone who opens it**, by design, so it spends your
   organization's credits. Watch usage in the console, or take the deployment down when you are done with it.
 - **Every `/api/*` route is public too, and each one sends the secret key upstream.** Anyone with the URL can create, edit and
