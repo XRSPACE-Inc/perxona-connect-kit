@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/xrspace-inc/perxona-connect-kit",
+  "public_key": "pk_CbEEjIyvnBM8CN5vKrZKk",
   "projectTitle": "Perxona Connect Kit",
   "description": "Add a talking 3D AI avatar to a web app with the Perxona Connect API and the <sv-presenter> Presenter SDK web component: avatars, scenes, voices, lip-sync, emotions and motions, with an Express sample and tools.",
   "folders": [],
