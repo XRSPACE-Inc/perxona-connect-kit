@@ -2,9 +2,13 @@
 openapi: 3.1.0
 info:
   title: Perxona Connect API
-  description: The Perxona Connect API — authentication, avatar catalog, and TTS token routes for the sv-presenter Web Component.
+  description: >-
+    The Perxona Connect API — authentication, avatar catalog, and TTS token routes for the sv-presenter Web Component. A
+    Connect API key works only in the region that issued it, so use your own regional base URL if it differs from the
+    server listed here.
   version: 0.1.0
-servers: []
+servers:
+  - url: https://console.perxona.ai/asia
 paths:
   /api/v1/connect/auth/login:
     post:
@@ -1970,7 +1974,8 @@ components:
             - type: 'null'
           description: >-
             The motion's runtime config, the same `configs.motion` a widget profile carries for it: `full_body_only` is
-            true for a motion tagged blend:none. Null when the motion has none.
+            true for a motion tagged blend:none, `own_face` for one tagged blend:own_face. Null when the motion has
+            none.
       type: object
       required:
         - motion_id
@@ -2307,10 +2312,7 @@ components:
         - cues
         - points
       title: CueSet
-      description: |-
-        How a clip lands ``cues`` words: its own ``cues`` points, the clip time it starts playing
-        from for them (``start``, the move into the first; what comes before is cut), and whether it
-        ends after the hold of the last point (``ends_after_last``) or plays on to its end.
+      description: The shape of a retired ``MotionRuntimeConfig.cue_sets`` item, kept on the published wire.
     DateRangeStrEnum:
       type: string
       enum:
@@ -2374,6 +2376,7 @@ components:
         - landing
         - hold_end
       title: KeyPoint
+      description: The shape of a retired ``MotionRuntimeConfig.key_points`` item, kept on the published wire.
     Language:
       type: string
       enum:
@@ -2479,21 +2482,31 @@ components:
             - type: boolean
             - type: 'null'
           title: Full Body Only
+        own_face:
+          anyOf:
+            - type: boolean
+            - type: 'null'
+          title: Own Face
       additionalProperties: false
       type: object
       title: MotionRuntimeConfig
       description: |-
-        Runtime behavior overrides owned by a motion asset, plus the clip's confirmed key points.
+        Runtime behavior overrides owned by a motion asset.
 
-        ``key_points`` and ``cue_sets`` never come from the asset's own ``configs``: they are the
-        confirmed key points of the revision serving as the asset's LOD0 and its cue sets, each with
-        points of its own (``perxona_core.motion.key_points``), attached where the manifest is built, so
-        the renderer times a gesture from the same points selection read. Both are None for a clip
-        with no confirmed points.
+        ``key_points`` and ``cue_sets`` are retired and always None. The Connect responses publish
+        both fields, so they stay in the schema, and stored configs carry them as null; any value
+        read or sent is dropped. Every write of ``asset.configs`` stores them again as null (its
+        column type dumps without ``exclude_none``), so before removing the fields, either clear both
+        keys under ``motion`` in ``asset.configs`` with a data migration or keep reading past them:
+        under ``extra="forbid"`` a leftover key fails every query that loads the asset.
 
-        ``full_body_only`` never comes from the asset's own ``configs`` either: it is True when the motion
-        carries ``blend:none`` (``perxona_core.motion.blend``), attached beside the key points, so the
+        ``full_body_only`` never comes from the asset's own ``configs``: it is True when the motion
+        carries ``blend:none`` (``perxona_core.motion.blend``), attached where the manifest is built, so the
         renderer plays it whole instead of over the shared lower body. None otherwise.
+
+        ``own_face`` comes from the tags the same way: True when the motion carries ``blend:own_face``
+        (``perxona_core.motion.blend``), so the renderer keeps the clip's own expression over the
+        speech's facial cues while it plays. None otherwise.
     Page_ChatBotSummaryResponse_:
       properties:
         items:
