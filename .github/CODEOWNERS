@@ -5,4 +5,5 @@
 # Owners must have write access to this repository, and the author of a pull
 # request cannot be the owner who approves it.
 /.github/workflows/ @XRSPACE-Inc/devops @ch-chiang
+/.github/guards/ @XRSPACE-Inc/devops @ch-chiang
 /.github/CODEOWNERS @XRSPACE-Inc/devops @ch-chiang
