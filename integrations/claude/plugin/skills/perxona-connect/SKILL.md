@@ -62,8 +62,12 @@ const PRESENTER_URL = `https://cdn.perxona.ai/${region}/prod/connect/latest/widg
 //    The engine defines the element a moment AFTER its script's onload fires, so wait:
 await customElements.whenDefined("sv-presenter"); // else initializeWithConnectKey is undefined
 
-// 3. Listen BEFORE initializing: Ready is only ever an event.
-presenter.addEventListener("PRESENTER_STATUS", (e) => { if (e.detail.status === "Ready") enableUi(); });
+// 3. Listen BEFORE initializing: Ready and Failed are only ever events. Failed arrives AFTER
+//    initializeWithConnectKey() resolves, when the stage cannot come up; e.detail.message says why.
+presenter.addEventListener("PRESENTER_STATUS", (e) => {
+  if (e.detail.status === "Ready") enableUi();
+  if (e.detail.status === "Failed") showError(e.detail.message); // initialize again to retry
+});
 presenter.addEventListener("CONNECT_KEY_REJECTED", () => showKeyError()); // never retry
 
 // 4. Target: avatar + scene go together; present() needs a voice. If the user gave no IDs,

@@ -69,6 +69,9 @@ Choose one. Ask the user if it is unclear.
 - `perxona-chat` returns `code` 1003 or 14005: the organization's Perxona credits or
   subscription need attention. Show: "The avatar's credits are used up. Please check the
   Perxona Console." Never show the raw error details; they contain the organization id.
+- Avatar status `error` with "Avatar failed to start": the presenter reported `Failed` because
+  the stage could not come up (for example, an avatar that will not load). Show the message
+  and offer a reload.
 - `speak()` returns `AUDIO_CONTEXT_UNAVAILABLE`: `unlockAudio()` did not run in a user gesture.
 
 ## Do not

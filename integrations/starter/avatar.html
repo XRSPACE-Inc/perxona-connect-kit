@@ -104,8 +104,15 @@
         });
       }
 
-      // Ready only ever arrives as an event, so listen before initializing.
+      // Ready and Failed only ever arrive as events, so listen before initializing.
+      // Failed comes AFTER initializeWithConnectKey() has resolved: the stage could not come up
+      // (for example, an avatar that will not load), and e.detail.message says why.
       presenter.addEventListener("PRESENTER_STATUS", (e) => {
+        if (e.detail?.status === "Failed") {
+          statusEl.textContent = `Avatar failed to start: ${e.detail.message ?? "unknown reason"}. Reload to try again.`;
+          talkBtn.disabled = true;
+          return;
+        }
         if (e.detail?.status !== "Ready") return;
         statusEl.textContent = "Ready. Your first message also turns the sound on.";
         talkBtn.disabled = false;

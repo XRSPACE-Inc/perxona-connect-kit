@@ -123,9 +123,13 @@ export const PerxonaAvatar = forwardRef<PerxonaAvatarHandle, Props>(function Per
     if (!node || started.current) return;
     started.current = true;
 
-    // Ready only ever arrives as an event, so listen before initializing.
+    // Ready and Failed only ever arrive as events, so listen before initializing. Failed comes
+    // after initializeWithConnectKey() has resolved, when the stage cannot come up (for example,
+    // an avatar that will not load); detail.message says why. Remount to try again.
     const onPresenterStatus = (e: Event) => {
-      if ((e as CustomEvent).detail?.status === "Ready") report("ready");
+      const detail = (e as CustomEvent).detail;
+      if (detail?.status === "Ready") report("ready");
+      if (detail?.status === "Failed") report("error", `Avatar failed to start: ${detail.message ?? "unknown reason"}`);
     };
     // A rejected key never recovers by retrying: it is revoked, expired, or not allowed on
     // this domain. Fix it in the Perxona Console, then reload.

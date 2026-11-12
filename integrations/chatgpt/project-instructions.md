@@ -43,7 +43,8 @@ https://github.com/XRSPACE-Inc/perxona-connect-kit
 - Load the engine once as a module script; there is no npm runtime package. Then
   `await customElements.whenDefined("sv-presenter")`: the element is defined a moment after the
   script loads, and calling it earlier fails with "initializeWithConnectKey is not a function".
-- Listen for `PRESENTER_STATUS` (`Ready`) and `CONNECT_KEY_REJECTED` before
+- Listen for `PRESENTER_STATUS` (`Ready`, or `Failed` with a `message` when the stage cannot come
+  up; `Failed` arrives after initialize has resolved) and `CONNECT_KEY_REJECTED` before
   `initializeWithConnectKey(publishableKey, { avatarId, sceneId, voiceId })`. A rejected key is
   never retried.
 - Avatar and scene go together; `present()` needs a voice. With no IDs given, use the first item
