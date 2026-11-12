@@ -520,8 +520,8 @@ at all. See [Usage and Subscription](#usage-and-subscription) to top up or upgra
 Audio needs a user gesture: **Launch Presenter** in `studio`, or sending your first message in `embed`. Either one calls
 `resumeAudioPlayback()`; audio won't start from page load alone, in these demos or in your own app. Watch for
 `PRESENTER_STATUS` to reach `Ready`; if it reports `Failed` instead, the stage could not come up and `message` says why —
-initialize again to retry. For anything else, check the browser console — `embed` reports other failures there rather
-than on the page, on purpose.
+initialize again to retry, or in `embed` reload the page. Check the browser console too — `embed` logs every failure
+there, `message` included, and shows only a generic sentence on the page, on purpose.
 
 **Why is Studio's "Your own LLM" option greyed out?** `LLM_API_KEY` is unset, so `/api/chat` would return `501`. Set it,
 choose `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic`, then restart — the base URL and model both default to match the
