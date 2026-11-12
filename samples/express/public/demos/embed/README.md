@@ -68,6 +68,7 @@ what.
 ```js
 // Subscribe before anything can await — see "Why the order matters" below.
 presenter.addEventListener("PRESENTER_STATUS", (event) => {
+  if (event.detail?.status === "Failed") showStageError(event.detail.message);
   if (event.detail?.status !== "Ready") return;
   document.getElementById("stage-loading").remove(); // drop the placeholder
   chatPanel.hidden = false;
@@ -106,8 +107,8 @@ spoken before you have said something first.
 ## Why the order matters
 
 Every handler is attached **before** the first `await`. `PRESENTER_STATUS` is
-the only way to learn the presenter is ready — nothing exposes a status to read
-back — so one fired while the listener is still an `await` away is lost for
+the only way to learn the presenter is ready, or that its stage failed —
+nothing exposes a status to read back — so one fired while the listener is still an `await` away is lost for
 good. Worse, a rejection during top-level `await` aborts module evaluation
 outright: register the chat form's handler after it and a CDN failure leaves
 you with a page that renders perfectly and does nothing at all. The bootstrap

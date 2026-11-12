@@ -519,8 +519,9 @@ at all. See [Usage and Subscription](#usage-and-subscription) to top up or upgra
 **Why doesn't the avatar appear, or why is there no sound?** Audio playback must be unlocked by a real user gesture.
 Audio needs a user gesture: **Launch Presenter** in `studio`, or sending your first message in `embed`. Either one calls
 `resumeAudioPlayback()`; audio won't start from page load alone, in these demos or in your own app. Watch for
-`PRESENTER_STATUS` to reach `Ready`, and check the browser console — `embed` reports every failure there rather than on the
-page, on purpose.
+`PRESENTER_STATUS` to reach `Ready`; if it reports `Failed` instead, the stage could not come up and `message` says why —
+initialize again to retry. For anything else, check the browser console — `embed` reports other failures there rather
+than on the page, on purpose.
 
 **Why is Studio's "Your own LLM" option greyed out?** `LLM_API_KEY` is unset, so `/api/chat` would return `501`. Set it,
 choose `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic`, then restart — the base URL and model both default to match the
