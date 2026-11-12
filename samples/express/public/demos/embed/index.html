@@ -62,10 +62,14 @@
           </div>
           <!-- Shown instead, in the same slot, when start() rejects for any
                reason (bad config, an unreachable presenter engine, no
-               chatbot yet). Fixed and non-technical, same as the
+               chatbot yet) or the stage fails. Nothing has been said yet, so
+               trying again is a plain reload: href="". Fixed and non-technical, same as the
                subscription-issue chat message — the actual reason still goes
                only to console.error. See app.js and the README. -->
-          <div id="stage-error" class="stage-error" hidden></div>
+          <div id="stage-failure" class="stage-error" hidden>
+            <p id="stage-error"></p>
+            <a class="send-btn" href="">Try again</a>
+          </div>
         </div>
 
         <!-- Hidden until PRESENTER_STATUS reports Ready. There is no separate

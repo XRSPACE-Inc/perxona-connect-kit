@@ -5,6 +5,9 @@ The **Perxona Connect Kit — VRM Uploader** is `upload-vrm.sh`: one shell scrip
 avatar. It is the whole tool — there is no app, no build step and no runtime dependency beyond
 `bash`, `jq` and `curl`.
 
+If you are changing this tool to send the change back to the repository, read
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md) first.
+
 ## Using it from an agent
 
 ```bash

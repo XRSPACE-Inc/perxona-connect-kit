@@ -1,0 +1,16 @@
+{
+  "name": "connect-kit-ci",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Linters and type checker the CI workflow runs over the samples",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0",
+    "typescript": "~5.6.3"
+  }
+}

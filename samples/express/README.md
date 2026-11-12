@@ -285,10 +285,17 @@ Connect API keys, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `ht
 account is in another region. Every other optional value from
 `.env.example` (`DEMO_FIXED_*`, `LLM_*`, `PRESENTER_URL`) can be added there too; redeploy after changing any of them.
 
+When the deploy finishes, open the project's own domain (`<project>.vercel.app`, listed under Domains), not the
+per-deployment link with a hash in it: Vercel puts a sign-in wall on those by default, so visitors would only see
+"Protected by Vercel Authentication".
+
 Three things that differ from running locally:
 
-- **The publishable key's domain list.** Leave it empty for the first deploy, open the site, then restrict the key to the
-  `*.vercel.app` address Vercel gave you (and any custom domain). The secret key's list stays empty, as always.
+- **The publishable key's domain list.** A key's allowed domains are set when it is created and cannot be edited later.
+  Deploy first with an unrestricted publishable key, note the project domain Vercel gives you, then create a second
+  publishable key in the console restricted to that domain (and any custom domain), replace
+  `PERXONA_CONNECT_PUBLISHABLE_KEY` in the project's environment variables, redeploy, and delete the first key. The
+  secret key's list stays empty, as always.
 - **The URL is public and the publishable key is visible to anyone who opens it**, by design, so it spends your
   organization's credits. Watch usage in the console, or take the deployment down when you are done with it.
 - **Every `/api/*` route is public too, and each one sends the secret key upstream.** Anyone with the URL can create, edit and
@@ -375,7 +382,7 @@ The presenter is loaded from Perxona's CDN. `app.js` fetches `GET /api/config` o
 | `presenter.presentWithAudio(audio, content)`             | Play back a supplied speech audio buffer with `content` as the transcript for the performance.                                   |
 | `presenter.playMotion(motionId)`                         | Resolve, preload, and play one body motion independently from the speech queue.                                                  |
 | `presenter.interruptPresentation()`                      | Stop the current performance and clear the queue.                                                                                |
-| event `PRESENTER_STATUS`                                 | `Uninitialized` → `Initializing` → `Ready`.                                                                                      |
+| event `PRESENTER_STATUS`                                 | `Uninitialized` → `Initializing` → `Ready`, or `Failed` with `message` when the stage cannot come up; initialize again to retry. |
 | event `CONNECT_KEY_REJECTED`                             | The Connect API refused the key: revoked, expired, or missing a scope. Nothing to retry — reissue it and initialize again.       |
 
 ### Initialization (the core flow)
@@ -512,8 +519,9 @@ at all. See [Usage and Subscription](#usage-and-subscription) to top up or upgra
 **Why doesn't the avatar appear, or why is there no sound?** Audio playback must be unlocked by a real user gesture.
 Audio needs a user gesture: **Launch Presenter** in `studio`, or sending your first message in `embed`. Either one calls
 `resumeAudioPlayback()`; audio won't start from page load alone, in these demos or in your own app. Watch for
-`PRESENTER_STATUS` to reach `Ready`, and check the browser console — `embed` reports every failure there rather than on the
-page, on purpose.
+`PRESENTER_STATUS` to reach `Ready`; if it reports `Failed` instead, the stage could not come up and `message` says why —
+initialize again to retry, or in `embed` reload the page. Check the browser console too — `embed` logs every failure
+there, `message` included, and shows only a generic sentence on the page, on purpose.
 
 **Why is Studio's "Your own LLM" option greyed out?** `LLM_API_KEY` is unset, so `/api/chat` would return `501`. Set it,
 choose `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic`, then restart — the base URL and model both default to match the

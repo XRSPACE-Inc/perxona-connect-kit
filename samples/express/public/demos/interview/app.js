@@ -105,6 +105,9 @@ const state = {
   turns: [],
   chatbotId: null,
   voiceId: null,
+  // Failed can land before or after initializeWithConnectKey() settles, so
+  // clearing voiceId from the listener would not stick.
+  stageFailed: false,
   starting: false,
   startedAt: 0,
   audioUnlocked: false,
@@ -330,9 +333,18 @@ const escapeHtml = (s) =>
   );
 
 // ── presenter events: Ready gate + latency capture ─────────────────────────
-presenter.addEventListener("PRESENTER_STATUS", (e) => {
-  // A Start that re-initializes for another voice waits on its own Ready.
-  if (e.detail?.status !== "Ready" || state.starting) return;
+presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ e) => {
+  const status = e.detail?.status;
+  if (status !== "Ready" && status !== "Failed") return;
+  state.stageFailed = status === "Failed";
+  // A Start that re-initializes for another voice waits on its own outcome.
+  if (state.starting) return;
+  if (state.stageFailed) {
+    console.error(`InterviewCoach: stage failed: ${e.detail.message ?? ""}`);
+    setupError.textContent = UNAVAILABLE;
+    setupError.hidden = false;
+  }
+  // After Failed too: Start is what tries the stage again.
   startBtn.disabled = false;
   startBtn.textContent = "Start the interview";
 });
@@ -350,15 +362,18 @@ const READY_TIMEOUT_MS = 15000;
 
 /**
  * Resolves on the next Ready: initializeWithConnectKey() settles before the engine
- * can speak. Rejects after READY_TIMEOUT_MS, which Start reports as unavailable.
+ * can speak. Rejects on Failed or after READY_TIMEOUT_MS, which Start reports as
+ * unavailable.
  */
 const waitForNextReady = () =>
   new Promise((resolve, reject) => {
     const onStatus = (e) => {
-      if (e.detail?.status !== "Ready") return;
+      const status = e.detail?.status;
+      if (status !== "Ready" && status !== "Failed") return;
       clearTimeout(timer);
       presenter.removeEventListener("PRESENTER_STATUS", onStatus);
-      resolve();
+      if (status === "Ready") resolve();
+      else reject(new Error(`stage failed: ${e.detail.message ?? ""}`));
     };
     const timer = setTimeout(() => {
       presenter.removeEventListener("PRESENTER_STATUS", onStatus);
@@ -383,9 +398,9 @@ setupForm.addEventListener("submit", async (e) => {
     }
     // Created on Start, not on page load: browsing the page leaves nothing in the org.
     state.chatbotId ??= await ensureChatbot();
-    // Re-initialize only when the language needs another voice.
+    // Re-initialize only when the language needs another voice or the stage failed.
     const voiceId = VOICE_BY_LANG[state.lang].id;
-    if (voiceId !== state.voiceId) {
+    if (voiceId !== state.voiceId || state.stageFailed) {
       // initialize drops the current session even when it then fails, so a failed
       // Start must not leave the old voice looking reusable.
       state.voiceId = null;
@@ -496,7 +511,9 @@ $("#again-btn").addEventListener("click", () => {
 });
 
 // ── optional voice answers (Web Speech API, where the browser has it) ──────
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SR =
+  /** @type {any} */ (window).SpeechRecognition ||
+  /** @type {any} */ (window).webkitSpeechRecognition;
 if (SR) {
   micBtn.hidden = false;
   let rec = null;

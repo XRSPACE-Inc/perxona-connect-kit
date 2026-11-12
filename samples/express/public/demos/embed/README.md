@@ -49,7 +49,7 @@ Two details worth knowing:
 None of the specifics are reported to the page — not which value was picked,
 not which value is missing, not why playback failed. All of that goes to the
 server log at startup and to `console.error` in the browser. The one thing the
-page itself will say, if `start()` rejects for any reason, is a fixed sentence
+page itself will say, if `start()` rejects or the stage fails, is a fixed sentence
 in the stage — "This assistant isn't available right now" — in place of the
 loading placeholder, so a visitor sees a page that explains itself rather than
 a slot that silently never fills in.
@@ -68,6 +68,7 @@ what.
 ```js
 // Subscribe before anything can await — see "Why the order matters" below.
 presenter.addEventListener("PRESENTER_STATUS", (event) => {
+  if (event.detail?.status === "Failed") showStageError(event.detail.message);
   if (event.detail?.status !== "Ready") return;
   document.getElementById("stage-loading").remove(); // drop the placeholder
   chatPanel.hidden = false;
@@ -106,8 +107,9 @@ spoken before you have said something first.
 ## Why the order matters
 
 Every handler is attached **before** the first `await`. `PRESENTER_STATUS` is
-the only way to learn the presenter is ready — nothing exposes a status to read
-back — so one fired while the listener is still an `await` away is lost for
+the only way to learn the presenter is ready, or that its stage failed —
+nothing exposes a status to read back — so one fired while the listener is
+still an `await` away is lost for
 good. Worse, a rejection during top-level `await` aborts module evaluation
 outright: register the chat form's handler after it and a CDN failure leaves
 you with a page that renders perfectly and does nothing at all. The bootstrap

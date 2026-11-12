@@ -62,37 +62,67 @@ let isLaunching = false;
 const creditUsageSummary = document.getElementById("credit-numbers");
 const creditUpdatedAt = document.getElementById("credit-updated-at");
 const creditStatus = document.getElementById("credit-status");
-const creditRefreshBtn = document.getElementById("credit-refresh-btn");
+const creditRefreshBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("credit-refresh-btn")
+);
 
-const avatarSelect = document.getElementById("avatar-select");
-const sceneSelect = document.getElementById("scene-select");
-const voiceSelect = document.getElementById("voice-select");
+const avatarSelect = /** @type {HTMLSelectElement} */ (
+  document.getElementById("avatar-select")
+);
+const sceneSelect = /** @type {HTMLSelectElement} */ (
+  document.getElementById("scene-select")
+);
+const voiceSelect = /** @type {HTMLSelectElement} */ (
+  document.getElementById("voice-select")
+);
 const voiceLanguagesHint = document.getElementById("voice-languages");
-const avatarIcon = document.getElementById("avatar-icon");
-const sceneIcon = document.getElementById("scene-icon");
-const initBtn = document.getElementById("init-btn");
+const avatarIcon = /** @type {HTMLImageElement} */ (
+  document.getElementById("avatar-icon")
+);
+const sceneIcon = /** @type {HTMLImageElement} */ (
+  document.getElementById("scene-icon")
+);
+const initBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("init-btn")
+);
 const statusMsg = document.getElementById("status-msg");
 const stagePlaceholder = document.getElementById("stage-placeholder");
 
 // Chatbot manager — custom bot picker (replaces native <select> to avoid
 // Chrome's native-dropdown misposition bug inside scrolled overflow containers)
-const botPickerBtn = document.getElementById("bot-picker-btn");
+const botPickerBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-picker-btn")
+);
 const botPickerLabel = document.getElementById("bot-picker-label");
 const botPickerList = document.getElementById("bot-picker-list");
-const botDeleteBtn = document.getElementById("bot-delete-btn");
-const botEditor = document.getElementById("bot-editor");
+const botDeleteBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-delete-btn")
+);
+const botEditor = /** @type {HTMLDetailsElement} */ (
+  document.getElementById("bot-editor")
+);
 const botEditorSummary = document.getElementById("bot-editor-summary");
-const botNameInput = document.getElementById("bot-name");
-const botInstructionsInput = document.getElementById("bot-instructions");
-const botSaveBtn = document.getElementById("bot-save-btn");
-const botCancelBtn = document.getElementById("bot-cancel-btn");
+const botNameInput = /** @type {HTMLInputElement} */ (
+  document.getElementById("bot-name")
+);
+const botInstructionsInput = /** @type {HTMLTextAreaElement} */ (
+  document.getElementById("bot-instructions")
+);
+const botSaveBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-save-btn")
+);
+const botCancelBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-cancel-btn")
+);
 const botStatusMsg = document.getElementById("bot-status");
 // Knowledge file
-const botKnowledgeFileInput = document.getElementById("bot-knowledge-file");
+const botKnowledgeFileInput = /** @type {HTMLInputElement} */ (
+  document.getElementById("bot-knowledge-file")
+);
 const botKnowledgeFilename = document.getElementById("bot-knowledge-filename");
 const botKnowledgeStatus = document.getElementById("bot-knowledge-status");
-const botKnowledgeRemoveBtn = document.getElementById(
-  "bot-knowledge-remove-btn",
+const botKnowledgeRemoveBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-knowledge-remove-btn")
 );
 const botKnowledgeIndicatorRow = document.getElementById(
   "bot-knowledge-indicator-row",
@@ -103,33 +133,54 @@ const botKnowledgeIndicator = document.getElementById(
 const botKnowledgeStalledNotice = document.getElementById(
   "bot-knowledge-stalled-notice",
 );
-const botKnowledgePollResumeBtn = document.getElementById(
-  "bot-knowledge-poll-resume-btn",
+const botKnowledgePollResumeBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-knowledge-poll-resume-btn")
 );
 // Function tools
-const botToolsInput = document.getElementById("bot-tools");
+const botToolsInput = /** @type {HTMLTextAreaElement} */ (
+  document.getElementById("bot-tools")
+);
 const botToolsCount = document.getElementById("bot-tools-count");
-const botToolsExampleBtn = document.getElementById("bot-tools-example-btn");
-const botToolsCurrent = document.getElementById("bot-tools-current");
+const botToolsExampleBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-tools-example-btn")
+);
+const botToolsCurrent = /** @type {HTMLDetailsElement} */ (
+  document.getElementById("bot-tools-current")
+);
 const botToolsCurrentJson = document.getElementById("bot-tools-current-json");
 const botIdRow = document.getElementById("bot-id-row");
 const botIdValue = document.getElementById("bot-id-value");
-const botIdCopy = document.getElementById("bot-id-copy");
-const botNewBtn = document.getElementById("bot-new-btn");
+const botIdCopy = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-id-copy")
+);
+const botNewBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("bot-new-btn")
+);
 
 // Chat panel
 const chatPlaceholder = document.getElementById("chat-placeholder");
 const chatHintText = document.getElementById("chat-hint-text");
 const chatContent = document.getElementById("chat-content");
 const chatLog = document.getElementById("chat-log");
-const chatForm = document.getElementById("chat-form");
-const chatInput = document.getElementById("chat-input");
-const chatSendBtn = document.getElementById("chat-send-btn");
-const chatStopBtn = document.getElementById("chat-stop-btn");
+const chatForm = /** @type {HTMLFormElement} */ (
+  document.getElementById("chat-form")
+);
+const chatInput = /** @type {HTMLInputElement} */ (
+  document.getElementById("chat-input")
+);
+const chatSendBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("chat-send-btn")
+);
+const chatStopBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("chat-stop-btn")
+);
 
 // Source switch
+/** @type {NodeListOf<HTMLInputElement>} */
 const sourceRadios = document.querySelectorAll('input[name="source"]');
-const sourceOwnRadio = document.getElementById("source-own");
+const sourceOwnRadio = /** @type {HTMLInputElement} */ (
+  document.getElementById("source-own")
+);
 const sourceOwnHint = document.getElementById("source-own-hint");
 const sourceLabel = document.getElementById("active-source-label");
 const chatbotManager = document.getElementById("chatbot-manager");
@@ -195,7 +246,12 @@ const subscriptionIssueReply =
 // Debug timeline panel
 const debugPanel = document.getElementById("debug-panel");
 const debugLog = document.getElementById("debug-log");
-const debugClearBtn = document.getElementById("debug-clear-btn");
+const debugClearBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("debug-clear-btn")
+);
+
+/** @typedef {import('@perxona/presenter-types').PerformanceStateEvent} PerformanceStateEvent */
+/** @typedef {import('@perxona/presenter-types').PlayingSpeechTextEvent} PlayingSpeechTextEvent */
 
 /** @type {HTMLElement & import('@perxona/presenter-types').IPresentationWidget} */
 const presenter = document.querySelector("sv-presenter");
@@ -471,11 +527,27 @@ const STATUS_LABELS = {
   Uninitialized: "",
   Initializing: "Initializing…",
   Ready: "✓ Ready",
+  Failed: "Failed",
 };
 
-presenter.addEventListener("PRESENTER_STATUS", (e) => {
-  const { status } = e.detail;
-  setStatus(STATUS_LABELS[status] ?? status);
+presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ e) => {
+  const { status, message } = e.detail;
+  setStatus(
+    status === "Failed" && message
+      ? `Failed: ${message}`
+      : (STATUS_LABELS[status] ?? status),
+  );
+  // initializeWithConnectKey() settles once the stage has started, so a stage
+  // that then fails reaches this page only here, never through the Launch
+  // click's catch. A second launch can fail too, so undo what Ready set up.
+  if (status === "Failed") {
+    presenterReady = false;
+    isLaunching = false;
+    presenter.hidden = true;
+    stagePlaceholder.hidden = false;
+    updateChatUI();
+    updateInitBtn();
+  }
   if (status === "Ready") {
     presenterReady = true;
     isLaunching = false;
@@ -508,10 +580,13 @@ presenter.addEventListener("CONNECT_KEY_REJECTED", () => {
 // These events expose the internal state machine of sv-presenter so the demo
 // can show exactly what happens after present() is called.
 
-presenter.addEventListener("PERFORMANCE_STATE", (e) => {
-  const { state } = e.detail;
-  appendDebug("sdk", `Presenter state → ${state}`);
-});
+presenter.addEventListener(
+  "PERFORMANCE_STATE",
+  (/** @type {CustomEvent<PerformanceStateEvent>} */ e) => {
+    const { state } = e.detail;
+    appendDebug("sdk", `Presenter state → ${state}`);
+  },
+);
 
 presenter.addEventListener("PERFORMANCE_START", () => {
   appendDebug("sdk", "Performance started");
@@ -526,11 +601,14 @@ presenter.addEventListener("ALL_PERFORMANCE_FINISHED", () => {
   setSpeaking(false);
 });
 
-presenter.addEventListener("PLAYING_SPEECH_TEXT", (e) => {
-  const raw = e.detail?.text ?? "";
-  const preview = raw.length > 60 ? `${raw.slice(0, 60)}…` : raw;
-  appendDebug("sdk", `Speaking: “${preview}”`);
-});
+presenter.addEventListener(
+  "PLAYING_SPEECH_TEXT",
+  (/** @type {CustomEvent<PlayingSpeechTextEvent>} */ e) => {
+    const raw = e.detail?.text ?? "";
+    const preview = raw.length > 60 ? `${raw.slice(0, 60)}…` : raw;
+    appendDebug("sdk", `Speaking: “${preview}”`);
+  },
+);
 
 // ── Initialize presenter ───────────────────────────────────────────────────
 
@@ -714,7 +792,9 @@ async function selectChatbot(id) {
       ? "— select a chatbot —"
       : "— none yet —";
   // Sync aria-selected in the open list
-  botPickerList.querySelectorAll(".bot-picker-option").forEach((li) => {
+  /** @type {NodeListOf<HTMLElement>} */ (
+    botPickerList.querySelectorAll(".bot-picker-option")
+  ).forEach((li) => {
     li.setAttribute(
       "aria-selected",
       (li.dataset.botId === (newId ?? "")).toString(),
@@ -749,7 +829,10 @@ botPickerBtn.addEventListener("click", (e) => {
 
 botPickerList.addEventListener("click", (e) => {
   e.stopPropagation();
-  const option = e.target.closest(".bot-picker-option");
+  /** @type {HTMLElement | null} */
+  const option = /** @type {Element} */ (e.target).closest(
+    ".bot-picker-option",
+  );
   if (!option) return;
   const id = option.dataset.botId || null;
   selectChatbot(id);
@@ -1534,7 +1617,7 @@ function showCurrentTools(tools) {
  * secret (MaskedOutboundSecret) but returns settings.request.headers
  * unmasked — a credential placed in a fixed header instead of `auth` would
  * otherwise render here in plaintext.
- * @param {unknown[]} tools
+ * @param {Record<string, any>[]} tools
  */
 function redactToolHeaders(tools) {
   return tools.map((tool) => {

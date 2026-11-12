@@ -13,3 +13,17 @@ whole English handbook in one file for context loading.
 
 Two keys exist: a secret Connect API key (server only) and a publishable key (browser).
 Never put the secret key in client code or commit a `.env`.
+
+## Contributing to this repository
+
+If the task is to change this repository itself and send the change back, rather than to build
+your own app from a sample, read [`CONTRIBUTING.md`](CONTRIBUTING.md) before you edit anything.
+The rules that matter most:
+
+- Samples stay minimal and self-contained, and `main` must run against production.
+- Demos in the Express sample are vanilla JavaScript with no build step. Do not add a bundler or
+  a framework to them.
+- Do not hand-edit `docs/en/`, `docs/zh-tw/`, `docs/ja/`, `llms.txt` or `llms-full.txt`. They are
+  generated from the handbook.
+- When you correct a fact, open every file that states it. A search is not enough.
+- CI must be green to merge, and it runs without credentials. Do not add a check that needs a key.

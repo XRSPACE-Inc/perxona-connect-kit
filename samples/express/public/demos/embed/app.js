@@ -25,9 +25,9 @@ const history = [];
 const MAX_HISTORY_TURNS = 20; // 10 user + 10 assistant
 const GREETING = "Hi! Ask me anything about XRSPACE.";
 const FAILURE_REPLY = "Sorry — I couldn't reach the assistant just then.";
-// Shown in #stage-error when start() rejects, whatever the cause — the
-// actual reason (bad config, unreachable presenter engine, no chatbot yet)
-// only ever reaches console.error. See README.md "Where the errors went".
+// Shown in #stage-error when start() rejects or the stage fails, whatever the
+// cause — the actual reason (bad config, unreachable presenter engine, no
+// chatbot yet, an avatar that won't load) only ever reaches console.error. See README.md "Where the errors went".
 const PRESENTER_UNAVAILABLE_REPLY =
   "This assistant isn't available right now. Please check back soon.";
 const toConnectMessages = (turns) =>
@@ -99,8 +99,18 @@ async function loadPresenterEngine(url) {
   });
 }
 
+function showStageError(reason) {
+  document.getElementById("stage-loading")?.remove();
+  const stageError = document.getElementById("stage-error");
+  stageError.textContent = PRESENTER_UNAVAILABLE_REPLY;
+  stageError.parentElement.hidden = false;
+  console.error(`Embed: ${reason}`);
+}
+
 // Attach before initializing: Ready is only ever an event, never readable state.
+// Failed is too: initializeWithConnectKey() settles before the stage is up.
 presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ event) => {
+  if (event.detail?.status === "Failed") showStageError(event.detail.message);
   if (event.detail?.status !== "Ready") return;
   document.getElementById("stage-loading")?.remove();
   chatPanel.hidden = false;
@@ -189,12 +199,6 @@ async function start() {
 }
 
 config = await start().catch((err) => {
-  document.getElementById("stage-loading")?.remove();
-  const stageError = document.getElementById("stage-error");
-  if (stageError) {
-    stageError.textContent = PRESENTER_UNAVAILABLE_REPLY;
-    stageError.hidden = false;
-  }
-  console.error(`Embed: ${err.message}`);
+  showStageError(err.message);
   return {};
 });
