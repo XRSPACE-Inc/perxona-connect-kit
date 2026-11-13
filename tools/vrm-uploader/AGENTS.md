@@ -51,18 +51,34 @@ upload if every blocking check passed.
 ## Checks
 
 Blocking: `file_readable`, `file_size` (50 MB, the API's own `MAX_VRM_FILE_SIZE_MB`),
-`glb_container`, `json_chunk`, `vrm_extension`, `embedded_resources`, `skinned_mesh`.
-Warning only: `expressions`.
+`glb_container`, `json_chunk`, `vrm_extension`, `embedded_resources`, `skinned_mesh`,
+`node_constraints`. Warning only: `expressions`.
 
 Two deliberate limits:
 
 - **The VRM version is reported, never judged.** 1.0 and 0.x both upload, matching the API, which
   accepts either extension. Where the two spell something differently — mouth presets, humanoid
   bones, MToon, spring bones — `analyze_document` reads both spellings.
-- **Skeleton checking stops at "some mesh has a skin".** Whether the skin's joints are the humanoid
-  bones, whether every required bone is present, and whether the hips sit above the ground are all
-  left out on purpose. They are real failure modes, and the day one of them reaches production is
-  the day to add it — not before.
+- **Skeleton checking stops at "some mesh has a skin, and its skinned meshes carry weights".**
+  The weights half is there because a model without them passed this script and then failed to
+  load: the glTF loader
+  builds every primitive of a skinned node as skinned, so a single primitive with no
+  `JOINTS_0`/`WEIGHTS_0` fails the whole model, even though glTF itself allows it. Whether the
+  skin's joints are the humanoid bones, whether every required bone is present, and whether the
+  hips sit above the ground are all left out on purpose. They are real failure modes, and the day
+  one of them reaches production is the day to add it — not before.
+
+`node_constraints` reads `VRMC_node_constraint` the way the avatar runtime does, and must keep
+doing so — looser and a model the runtime refuses goes up, stricter and a working one is turned
+away:
+
+- Constraints are read only when `extensionsUsed` lists the extension, only with a `specVersion`
+  of `1.0` or `1.0-beta`, and with roll ahead of aim ahead of rotation when one node carries
+  several.
+- A constraint depends on every constraint on its source or on an ancestor of its source, and an
+  aim constraint also on its own node's parent chain. A loop in that graph, a constraint that is
+  its own source included, fails the check, and so does a source that is not a node in the file:
+  the runtime throws on both.
 
 ## The lip-sync engine
 

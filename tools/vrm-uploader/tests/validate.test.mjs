@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { ARKIT_52, buildGlb, vrm0Document, vrm1Document } from "./glb.mjs";
 import {
+  checkMessage,
   checkStatus,
   makeWorkDir,
   removeWorkDir,
@@ -46,6 +47,7 @@ describe("a file that passes every check", () => {
       "vrm_extension",
       "embedded_resources",
       "skinned_mesh",
+      "node_constraints",
       "expressions",
     ]);
   });
@@ -203,6 +205,156 @@ describe("checks that block an upload", () => {
 
     expect(code).toBe(EXIT_INVALID);
     expect(checkStatus(json, "skinned_mesh")).toBe("fail");
+  });
+});
+
+describe("skin weights", () => {
+  it("fails when a skinned node's mesh has no JOINTS_0/WEIGHTS_0", async () => {
+    const document = vrm1Document();
+    delete document.meshes[0].primitives[0].attributes.JOINTS_0;
+    delete document.meshes[0].primitives[0].attributes.WEIGHTS_0;
+    const file = await writeFixture("unweighted.vrm", buildGlb(document));
+    const { code, json } = await runJson([file, "--validate-only"]);
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "skinned_mesh")).toBe("fail");
+    expect(checkMessage(json, "skinned_mesh")).toContain("Body");
+  });
+
+  // The glTF loader builds every primitive of a skinned node as skinned, so
+  // one primitive without weights is enough, even though glTF itself allows it.
+  it("fails when only one primitive of a skinned mesh lacks weights", async () => {
+    const document = vrm1Document();
+    document.meshes[0].primitives.push({ attributes: { POSITION: 0 } });
+    const file = await writeFixture("half-weighted.vrm", buildGlb(document));
+    const { code, json } = await runJson([file, "--validate-only"]);
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "skinned_mesh")).toBe("fail");
+  });
+
+  it("ignores a mesh without weights on a node with no skin", async () => {
+    const document = vrm1Document();
+    document.meshes.push({ name: "Prop", primitives: [{ attributes: { POSITION: 0 } }] });
+    document.nodes.push({ name: "Prop", mesh: document.meshes.length - 1 });
+    document.nodes[0].children.push(document.nodes.length - 1);
+    const file = await writeFixture("static-prop.vrm", buildGlb(document));
+    const { code, json } = await runJson([file, "--validate-only"]);
+
+    expect(code).toBe(EXIT_OK);
+    expect(checkStatus(json, "skinned_mesh")).toBe("pass");
+  });
+});
+
+/**
+ * Put VRMC_node_constraint on the fixture's nodes. The fixture's tree is
+ * Root(0) -> { J_Bip_C_Hips(1), Body(2) }.
+ */
+function withConstraints(constraints, { declared = true, specVersion = "1.0" } = {}) {
+  const document = vrm1Document();
+  for (const [node, constraint] of Object.entries(constraints)) {
+    document.nodes[node].extensions = {
+      VRMC_node_constraint: { specVersion, constraint },
+    };
+  }
+  if (declared) document.extensionsUsed = ["VRMC_vrm", "VRMC_node_constraint"];
+  return document;
+}
+
+async function checkConstraints(name, document) {
+  const file = await writeFixture(name, buildGlb(document));
+  return runJson([file, "--validate-only"]);
+}
+
+describe("node constraints", () => {
+  it("passes a file without constraints", async () => {
+    const { json } = await checkConstraints("no-constraints.vrm", vrm1Document());
+
+    expect(checkStatus(json, "node_constraints")).toBe("pass");
+    expect(checkMessage(json, "node_constraints")).toBe("no node constraints");
+  });
+
+  it("passes constraints that do not depend on each other in a loop", async () => {
+    const { code, json } = await checkConstraints(
+      "constraints-ok.vrm",
+      withConstraints({ 1: { rotation: { source: 2 } } }),
+    );
+
+    expect(code).toBe(EXIT_OK);
+    expect(checkStatus(json, "node_constraints")).toBe("pass");
+  });
+
+  it("fails when two constraints use each other as source", async () => {
+    const { code, json } = await checkConstraints(
+      "constraints-loop.vrm",
+      withConstraints({ 1: { rotation: { source: 2 } }, 2: { rotation: { source: 1 } } }),
+    );
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "node_constraints")).toBe("fail");
+    expect(checkMessage(json, "node_constraints")).toContain("J_Bip_C_Hips -> Body -> J_Bip_C_Hips");
+  });
+
+  it("fails when a constraint is its own source", async () => {
+    const { code, json } = await checkConstraints(
+      "constraints-self.vrm",
+      withConstraints({ 2: { roll: { source: 2, rollAxis: "X" } } }),
+    );
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "node_constraints")).toBe("fail");
+  });
+
+  // A constraint also waits on whatever constrains an ancestor of its source,
+  // so a source under the constrained node waits on that node itself.
+  it("fails when a constraint's source sits under the constrained node", async () => {
+    const { code, json } = await checkConstraints(
+      "constraints-ancestor.vrm",
+      withConstraints({ 0: { rotation: { source: 2 } } }),
+    );
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "node_constraints")).toBe("fail");
+  });
+
+  it("fails when a source is not a node in the file", async () => {
+    const { code, json } = await checkConstraints(
+      "constraints-bad-source.vrm",
+      withConstraints({ 1: { rotation: { source: 99 } } }),
+    );
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "node_constraints")).toBe("fail");
+    expect(checkMessage(json, "node_constraints")).toContain("99");
+  });
+
+  it("ignores constraints when the extension is not declared used", async () => {
+    const { json } = await checkConstraints(
+      "constraints-undeclared.vrm",
+      withConstraints({ 2: { rotation: { source: 2 } } }, { declared: false }),
+    );
+
+    expect(checkStatus(json, "node_constraints")).toBe("pass");
+  });
+
+  it("ignores a constraint with an unknown specVersion", async () => {
+    const { json } = await checkConstraints(
+      "constraints-unknown-spec.vrm",
+      withConstraints({ 2: { rotation: { source: 2 } } }, { specVersion: "2.0" }),
+    );
+
+    expect(checkStatus(json, "node_constraints")).toBe("pass");
+  });
+
+  // When a node carries more than one constraint, roll wins over aim and aim
+  // over rotation, so a looping rotation behind a valid roll never runs.
+  it("reads roll before aim before rotation", async () => {
+    const { json } = await checkConstraints(
+      "constraints-priority.vrm",
+      withConstraints({ 2: { roll: { source: 1, rollAxis: "X" }, rotation: { source: 2 } } }),
+    );
+
+    expect(checkStatus(json, "node_constraints")).toBe("pass");
   });
 });
 

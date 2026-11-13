@@ -57,7 +57,7 @@ ARKIT_52='[
 
 # Every check, in the order they run. Whatever has not run by the time the
 # script finishes is reported as skipped, so the report always covers all of them.
-ALL_CHECK_IDS="file_readable file_size glb_container json_chunk vrm_extension embedded_resources skinned_mesh expressions"
+ALL_CHECK_IDS="file_readable file_size glb_container json_chunk vrm_extension embedded_resources skinned_mesh node_constraints expressions"
 
 EXIT_OK=0
 EXIT_USAGE=1
@@ -489,6 +489,26 @@ analyze_document() {
   jq --argjson arkit "$ARKIT_52" -f /dev/stdin "$WORK_DIR/chunk.json" >"$WORK_DIR/analysis.json" <<'JQ'
 def trim: sub("^\\s+"; "") | sub("\\s+$"; "");
 def norm: ascii_downcase | trim;
+def node_label($nodes; $i):
+  (($nodes[$i] | objects | .name) // null) as $name
+  | if ($name | type) == "string" and ($name | length) > 0 then $name else "node \($i)" end;
+def has_skin_weights:
+  type == "object"
+  and ((.attributes | type) == "object")
+  and (.attributes | has("JOINTS_0") and has("WEIGHTS_0"));
+# Peel off every constraint whose dependencies are all settled; whatever is
+# left depends, directly or not, on a loop.
+def unsettled($deps):
+  . as $rest
+  | [$rest[] | select(. as $u | $deps[$u | tostring] | any(.[]; . as $v | $rest | any(.[]; . == $v)) | not)] as $free
+  | if ($free | length) == 0 then $rest else ($rest - $free | unsettled($deps)) end;
+# Every unsettled constraint depends on another unsettled one, so walking that
+# edge from any of them must come back round to a constraint already on the path.
+def loop_from($deps; $rest):
+  .[-1] as $u
+  | first($deps[$u | tostring][] | select(. as $v | $rest | any(.[]; . == $v))) as $next
+  | (to_entries | map(select(.value == $next)) | .[0].key) as $at
+  | if $at != null then .[$at:] + [$next] else (. + [$next] | loop_from($deps; $rest)) end;
 
 . as $doc
 | (($doc.extensions // {}) | if type == "object" then . else {} end) as $ext
@@ -549,6 +569,66 @@ def norm: ascii_downcase | trim;
      []
    end) as $mouth
 
+| (($doc.nodes // []) | if type == "array" then . else [] end) as $nodes
+| ($nodes | length) as $node_count
+| (reduce range(0; $node_count) as $i ([];
+     reduce ((($nodes[$i] | objects | .children) // [])
+             | if type == "array" then .[] else empty end
+             | numbers
+             | select(. >= 0 and . < $node_count and . == floor)) as $child
+       (.; .[$child] = $i))) as $parent
+
+# A node with a skin is loaded as a skinned mesh whole: the glTF loader does
+# not look at its primitives one by one, so one primitive without weights is
+# enough for the model to fail to load.
+| ([range(0; $node_count) as $i
+    | ($nodes[$i] | objects) as $node
+    | select(($node | has("mesh") and has("skin")) and (($node.mesh | type) == "number"))
+    | ((($doc.meshes // [])[$node.mesh] | objects | .primitives) // []) as $primitives
+    | select(($primitives | type) == "array"
+             and ($primitives | any(.[]; type == "object" and (has_skin_weights | not))))
+    | node_label($nodes; $i)]) as $unweighted
+
+# Node constraints, read the way the avatar runtime reads them: only when the
+# extension is declared used, only a known specVersion, and roll before aim
+# before rotation when a node carries more than one.
+| ((($doc.extensionsUsed // []) | if type == "array" then . else [] end)
+   | any(.[]; . == "VRMC_node_constraint")) as $constraints_used
+| (if $constraints_used then
+     [range(0; $node_count) as $i
+      | ((($nodes[$i] | objects | .extensions) // {}) | objects | .VRMC_node_constraint) as $declared
+      | select(($declared | type) == "object"
+               and (["1.0", "1.0-beta"] | any(.[]; . == $declared.specVersion)))
+      | (($declared.constraint // {}) | if type == "object" then . else {} end) as $constraint
+      | first(("roll", "aim", "rotation") | select($constraint[.] != null)) as $kind
+      | {node: $i, kind: $kind, source: (($constraint[$kind] | objects | .source) // null)}]
+   else
+     []
+   end) as $constraints
+| ([$constraints[]
+    | select((.source | type) != "number" or .source != (.source | floor)
+             or .source < 0 or .source >= $node_count)]) as $bad_sources
+
+# A constraint waits on any constraint sitting on its source or on an ancestor
+# of it; an aim constraint also waits on its own node's parent chain. A loop in
+# that graph cannot be updated in any order, and the runtime refuses the model.
+| ([$constraints[].node]) as $constrained
+| (if ($bad_sources | length) > 0 then
+     null
+   else
+     (reduce $constraints[] as $c ({};
+        .[$c.node | tostring] =
+          ([$c.source, (if $c.kind == "aim" then $parent[$c.node] else empty end)
+            | select(. != null)
+            | limit($node_count + 1; recurse($parent[.] // empty))]
+           | unique
+           | map(select(. as $a | $constrained | any(.[]; . == $a)))))) as $deps
+     | ($constrained | unsettled($deps)) as $rest
+     | if ($rest | length) == 0 then null
+       else ([$rest[0]] | loop_from($deps; $rest) | map(node_label($nodes; .)))
+       end
+   end) as $constraint_loop
+
 | {
     vrm: $vrm,
     external_uris: [(($doc.buffers // [])[] | select(type == "object") | .uri),
@@ -559,6 +639,11 @@ def norm: ascii_downcase | trim;
                          | select(type == "object")
                          | select(has("mesh") and has("skin"))]
                         | length,
+    unweighted_skinned_nodes: $unweighted,
+    node_constraints: {count: ($constraints | length),
+                       bad_sources: [$bad_sources[]
+                                     | {node: node_label($nodes; .node), kind, source}],
+                       loop: $constraint_loop},
     mouth_presets: {bound: ($mouth | unique | length), expected: 5},
     arkit: {total: ($wanted | length),
             resolved: ($resolved | length),
@@ -598,7 +683,35 @@ check_skinned_mesh() {
     record "skinned_mesh" "fail" "no mesh is bound to a skeleton, so the avatar cannot play motions"
     return 1
   fi
+  local unweighted
+  unweighted=$(analysis '.unweighted_skinned_nodes | length')
+  if [ "$unweighted" -gt 0 ]; then
+    record "skinned_mesh" "fail" \
+      "skinned node $(analysis '.unweighted_skinned_nodes[0]') has a mesh primitive without JOINTS_0/WEIGHTS_0, which the avatar runtime cannot load ($unweighted node(s))"
+    return 1
+  fi
   record "skinned_mesh" "pass" "$skinned skinned mesh node(s)"
+}
+
+check_node_constraints() {
+  local bad_sources count
+  bad_sources=$(analysis '.node_constraints.bad_sources | length')
+  if [ "$bad_sources" -gt 0 ]; then
+    record "node_constraints" "fail" \
+      "$(analysis '.node_constraints.bad_sources[0] | "the \(.kind) constraint on \(.node) has source \(.source | tojson), which is not a node in this file"')"
+    return 1
+  fi
+  if [ "$(analysis '.node_constraints.loop != null')" = "true" ]; then
+    record "node_constraints" "fail" \
+      "node constraints depend on each other in a loop ($(analysis '.node_constraints.loop | join(" -> ")')), which the avatar runtime refuses to load"
+    return 1
+  fi
+  count=$(analysis '.node_constraints.count')
+  if [ "$count" -eq 0 ]; then
+    record "node_constraints" "pass" "no node constraints"
+  else
+    record "node_constraints" "pass" "$count node constraint(s), none in a loop"
+  fi
 }
 
 # The only check that never blocks an upload: a model without expression data
@@ -639,6 +752,7 @@ run_checks() {
   check_vrm_extension || return 1
   check_embedded_resources || return 1
   check_skinned_mesh || return 1
+  check_node_constraints || return 1
   check_expressions
 }
 
