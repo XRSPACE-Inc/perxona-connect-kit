@@ -1,5 +1,6 @@
 {
   "name": "perxona-connect",
+  "displayName": "Perxona Connect",
   "version": "1.0.0",
   "description": "Give your AI agent a face: build talking 3D avatar apps with Perxona Connect Kit (<sv-presenter> and the Connect API).",
   "author": {
