@@ -1,0 +1,19 @@
+{
+  "name": "perxona",
+  "owner": {
+    "name": "XRSPACE",
+    "url": "https://perxona.ai"
+  },
+  "metadata": {
+    "description": "Perxona Connect Kit plugins for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "perxona-connect",
+      "source": "./integrations/claude/plugin",
+      "description": "Build talking 3D avatar apps and give AI agents a face with Perxona Connect Kit.",
+      "version": "1.0.0",
+      "category": "development"
+    }
+  ]
+}

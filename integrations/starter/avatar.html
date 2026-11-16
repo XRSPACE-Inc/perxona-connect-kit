@@ -1,0 +1,173 @@
+<!doctype html>
+<!--
+  Perxona Connect Kit: browser-only starter
+
+  One file, no server. A talking 3D avatar driven by the PUBLISHABLE Connect key, which is
+  the key meant to be readable by the browser. This is the pattern for hosts that have no
+  backend of their own (Lovable, a static site, a hackathon prototype).
+
+  What this file can do with only the publishable key:
+    - read the catalog (avatars, scenes, voices)
+    - speak any text with lip-sync: presenter.present(text)
+
+  What it cannot do, and must never try to: talk to a Perxona chatbot, manage chatbots,
+  read credit usage. Those need the SECRET key, which lives only on a server
+  (see ../lovable/supabase/functions/perxona-chat/index.ts for a serverless one).
+
+  Before you share the page: in the Perxona Console, restrict the publishable key's
+  allowed domains to where this page is served (for Lovable: *.lovable.app and
+  *.lovableproject.com, plus your custom domain). Anyone can read this key
+  off the page, and presenting speech bills your organization.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Perxona Avatar Starter</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; display: grid; place-items: center; min-height: 100vh; background: #0b1020; color: #eef; }
+      main { width: min(720px, 100% - 32px); display: grid; gap: 12px; }
+      sv-presenter { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; background: #000; }
+      form { display: flex; gap: 8px; }
+      input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #445; background: #151a30; color: inherit; }
+      button { padding: 12px 18px; border-radius: 10px; border: 0; background: #004aff; color: #fff; cursor: pointer; }
+      button:disabled { opacity: 0.5; cursor: default; }
+      #status { font-size: 14px; opacity: 0.75; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <sv-presenter></sv-presenter>
+      <p id="status">Loading avatar…</p>
+      <form id="chat">
+        <input id="text" placeholder="Type something, then press Talk" autocomplete="off" />
+        <button id="talk" disabled>Talk</button>
+      </form>
+    </main>
+
+    <script type="module">
+      // ── 1. Configure ───────────────────────────────────────────────────────────
+      const PERXONA = {
+        // "asia" or "eu": the region of your Perxona Console account. Both the API and the
+        // presenter engine must be in that same region.
+        region: "asia",
+        // The PUBLISHABLE key (Console → avatar menu → Management → Integration →
+        // Connect API keys). Never paste the secret key here.
+        publishableKey: "pxc_YOUR_PUBLISHABLE_KEY",
+        // Optional. Leave blank to use the first avatar, scene and voice in your catalog.
+        avatarId: "",
+        sceneId: "",
+        voiceId: "",
+      };
+
+      // ── 2. Give it a brain ─────────────────────────────────────────────────────
+      // Replace this with your agent: an LLM call through your backend, a Lovable AI edge
+      // function, a Perxona chatbot behind a server, a scripted tour… The avatar only
+      // needs the reply text.
+      async function getReply(userText) {
+        return `You said: ${userText}`;
+      }
+
+      // ── Everything below is the integration itself ─────────────────────────────
+      const API = `https://console.perxona.ai/${PERXONA.region}/api/v1/connect`;
+      const PRESENTER_URL = `https://cdn.perxona.ai/${PERXONA.region}/prod/connect/latest/widget/entry/presenter.js`;
+
+      const presenter = document.querySelector("sv-presenter");
+      const statusEl = document.querySelector("#status");
+      const form = document.querySelector("#chat");
+      const input = document.querySelector("#text");
+      const talkBtn = document.querySelector("#talk");
+      let audioUnlocked = false;
+
+      // Catalog reads accept the publishable key. Never send it together with an
+      // Authorization header: the API rejects both at once with 400.
+      async function firstId(path, idField) {
+        const res = await fetch(`${API}${path}?size=1`, {
+          headers: { "X-Connect-Key": PERXONA.publishableKey },
+        });
+        if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
+        const id = (await res.json()).items?.[0]?.[idField];
+        if (!id) throw new Error(`${path} returned no items`);
+        return id;
+      }
+
+      async function loadPresenterEngine() {
+        await new Promise((resolve, reject) => {
+          const s = Object.assign(document.createElement("script"), {
+            type: "module",
+            src: PRESENTER_URL,
+            onload: resolve,
+            onerror: () => reject(new Error(`Presenter engine failed to load: ${PRESENTER_URL}`)),
+          });
+          document.head.append(s);
+        });
+      }
+
+      // Ready and Failed only ever arrive as events, so listen before initializing.
+      // Failed comes AFTER initializeWithConnectKey() has resolved: the stage could not come up
+      // (for example, an avatar that will not load), and e.detail.message says why.
+      presenter.addEventListener("PRESENTER_STATUS", (e) => {
+        if (e.detail?.status === "Failed") {
+          statusEl.textContent = `Avatar failed to start: ${e.detail.message ?? "unknown reason"}. Reload to try again.`;
+          talkBtn.disabled = true;
+          return;
+        }
+        if (e.detail?.status !== "Ready") return;
+        statusEl.textContent = "Ready. Your first message also turns the sound on.";
+        talkBtn.disabled = false;
+      });
+      // A rejected key never recovers by retrying: it is revoked, expired, or restricted to
+      // other domains. Fix it in the Console, then reload.
+      presenter.addEventListener("CONNECT_KEY_REJECTED", () => {
+        statusEl.textContent =
+          "The Connect key was rejected. Check that it is the publishable key and that this domain is allowed.";
+        talkBtn.disabled = true;
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        talkBtn.disabled = true;
+        try {
+          // Browsers allow audio only after a user gesture, and this submit is one.
+          // Until this has run once, present() fails with AUDIO_CONTEXT_UNAVAILABLE.
+          if (!audioUnlocked) {
+            await presenter.resumeAudioPlayback();
+            audioUnlocked = true;
+          }
+          presenter.setThinking?.(true);
+          const reply = await getReply(text);
+          presenter.setThinking?.(false);
+          // present() never rejects: check result.success.
+          const result = await presenter.present(reply);
+          if (!result.success) statusEl.textContent = `Could not speak: ${result.code} ${result.message ?? ""}`;
+        } catch (err) {
+          presenter.setThinking?.(false);
+          statusEl.textContent = `Something went wrong: ${err.message}`;
+        } finally {
+          talkBtn.disabled = false;
+          input.focus();
+        }
+      });
+
+      try {
+        // An avatar and a scene go together; present() needs a voice.
+        const [avatarId, sceneId, voiceId] = await Promise.all([
+          PERXONA.avatarId || firstId("/assets/avatars", "avatar_id"),
+          PERXONA.sceneId || firstId("/assets/scenes", "scene_id"),
+          PERXONA.voiceId || firstId("/voices", "id"),
+        ]);
+        await loadPresenterEngine();
+        // The engine registers <sv-presenter> a moment after its script loads. Until then the
+        // element is a plain HTMLElement and initializeWithConnectKey is undefined.
+        await customElements.whenDefined("sv-presenter");
+        await presenter.initializeWithConnectKey(PERXONA.publishableKey, { avatarId, sceneId, voiceId });
+      } catch (err) {
+        statusEl.textContent = `Avatar failed to start: ${err.message}`;
+      }
+    </script>
+  </body>
+</html>
