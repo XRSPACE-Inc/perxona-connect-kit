@@ -43,13 +43,21 @@ jobs:
       # The sample ships no linter or type checker of its own, so that
       # `npm install` stays small for someone who clones it. CI brings its own.
       - name: Install CI tooling
-        run: npm ci --prefix .github/ci
+        run: npm ci --ignore-scripts --prefix .github/ci
 
       # Installs the version of @perxona/presenter-types pinned by the
       # lockfile, which is the presenter contract the type check below reads.
       - name: Install the sample
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: samples/express
+
+      # Lives outside the sample so that only a code owner can change what it
+      # checks (see .github/CODEOWNERS). Both installs above skip install
+      # scripts and nothing else from the pull request runs before it, so
+      # nothing a pull request adds can rewrite it first. The steps after it
+      # run code the pull request may change.
+      - name: Run the guard
+        run: node --test .github/guards/*.test.mjs
 
       - name: Check syntax
         working-directory: samples/express
@@ -67,6 +75,12 @@ jobs:
           .github/ci/node_modules/.bin/tsc --noEmit --checkJs --allowJs
           --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck
           samples/express/public/demos/*/app.js
+
+      # Starts server.mjs against a fake Connect API on the runner; no key and
+      # no network needed.
+      - name: Run the sample's tests
+        working-directory: samples/express
+        run: npm test
 
   vrm-uploader:
     # macOS is not redundant: the script is written to bash 3.2 because that is

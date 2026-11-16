@@ -25,6 +25,7 @@ it: start from [`AGENTS.md`](AGENTS.md) and the sample's own `README.md` instead
 | --- | --- |
 | `docs/en/`, `docs/zh-tw/`, `docs/ja/`, `llms.txt`, `llms-full.txt` | Generated from the handbook at <https://connect.perxona.ai> by [`tools/handbook-to-markdown/`](tools/handbook-to-markdown/) |
 | `samples/express/docs/openapi.yaml` | A copy of the Connect API contract, kept as read-only reference |
+| `.github/guards/openapi.pinned.yaml` | A copy of the live contract at <https://connect.perxona.ai/openapi.yaml>; any pull request may refresh it from there, and a code owner approves |
 
 The handbook and the Connect API contract are maintained by Perxona outside this repository. If
 one of them is wrong, [open an issue](https://github.com/XRSPACE-Inc/perxona-connect-kit/issues)
@@ -37,8 +38,8 @@ rather than patching the copy here.
 3. Open a pull request against `main`. Say what behaviour changed, list the commands you ran, and
    attach a screenshot or recording for anything visible under `public/`.
 4. CI must be green before the pull request can merge. No approving review is required, with one
-   exception: a change to `.github/workflows/` or `.github/CODEOWNERS` needs an approval from a
-   code owner. A maintainer merges pull requests that come from a fork.
+   exception: a change to `.github/workflows/`, `.github/guards/` or `.github/CODEOWNERS` needs an
+   approval from a code owner. A maintainer merges pull requests that come from a fork.
 
 Use a conventional prefix in commit subjects (`feat:`, `fix:`, `docs:`, `chore:`) and refer to
 issues in this repository as `#N`.
@@ -60,9 +61,12 @@ npm ci --prefix .github/ci
 .github/ci/node_modules/.bin/tsc --noEmit --checkJs --allowJs \
   --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck \
   samples/express/public/demos/*/app.js
+
+node --test .github/guards/*.test.mjs
+(cd samples/express && npm test)
 ```
 
-The last command checks every demo's calls into `<sv-presenter>` against
+The `tsc` command checks every demo's calls into `<sv-presenter>` against
 `@perxona/presenter-types`, and an event's payload where the handler names the event type.
 `PRESENTER_STATUS` handlers are typed `any` for now, because the demos handle the `Failed` status
 and the published types do not include it yet. The command also type-checks the rest of each
@@ -71,6 +75,23 @@ way the existing demos do.
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.
+
+**When you change `server.mjs`, add or update a test in `samples/express/tests/`.** A new route
+also goes in the route list at the top of `tests/routes.test.mjs`. The tests run against a fake
+Connect API on your own machine, so they need no key; [`samples/express/tests/README.md`](samples/express/tests/README.md) shows how to run one and how
+to add one.
+
+**Pull request checks never use the network.** A scheduled check that compares the sample with
+the live Connect API is planned; it will run separately and will be allowed to.
+
+`node --test .github/guards/*.test.mjs` runs the guard in [`.github/guards/`](.github/guards/). It
+checks that the secret key never reaches a browser, that every call carries the right key, and
+that every call is in the Connect API contract. It finds every route in `server.mjs` and checks
+its responses for the secret key, but it only has a working request for the routes it lists, so
+a new route is fully checked once a maintainer adds it there: name any new route in your pull
+request. If the guard fails because the sample calls something the live contract now has,
+refresh `openapi.pinned.yaml` from the live contract in the same pull request; a code owner
+approves it.
 
 VRM uploader, from `tools/vrm-uploader/`:
 
