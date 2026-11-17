@@ -72,9 +72,10 @@ Two deliberate limits:
 doing so — looser and a model the runtime refuses goes up, stricter and a working one is turned
 away:
 
-- Constraints are read only when `extensionsUsed` lists the extension, only with a `specVersion`
-  of `1.0` or `1.0-beta`, and with roll ahead of aim ahead of rotation when one node carries
-  several.
+- Constraints are skipped only when `extensionsUsed` is present and does not list the extension;
+  a file with no `extensionsUsed` at all still has them read. They are read only with a
+  `specVersion` of `1.0` or `1.0-beta`, and with roll ahead of aim ahead of rotation when one node
+  carries several.
 - A constraint depends on every constraint on its source or on an ancestor of its source, and an
   aim constraint also on its own node's parent chain. A loop in that graph, a constraint that is
   its own source included, fails the check, and so does a source that is not a node in the file:

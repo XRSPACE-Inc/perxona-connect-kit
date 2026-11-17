@@ -250,14 +250,18 @@ describe("skin weights", () => {
  * Put VRMC_node_constraint on the fixture's nodes. The fixture's tree is
  * Root(0) -> { J_Bip_C_Hips(1), Body(2) }.
  */
-function withConstraints(constraints, { declared = true, specVersion = "1.0" } = {}) {
+function withConstraints(
+  constraints,
+  { extensionsUsed = ["VRMC_vrm", "VRMC_node_constraint"], specVersion = "1.0" } = {},
+) {
   const document = vrm1Document();
   for (const [node, constraint] of Object.entries(constraints)) {
     document.nodes[node].extensions = {
       VRMC_node_constraint: { specVersion, constraint },
     };
   }
-  if (declared) document.extensionsUsed = ["VRMC_vrm", "VRMC_node_constraint"];
+  // null leaves extensionsUsed out of the document entirely.
+  if (extensionsUsed !== null) document.extensionsUsed = extensionsUsed;
   return document;
 }
 
@@ -328,13 +332,25 @@ describe("node constraints", () => {
     expect(checkMessage(json, "node_constraints")).toContain("99");
   });
 
-  it("ignores constraints when the extension is not declared used", async () => {
+  it("ignores constraints when extensionsUsed does not list the extension", async () => {
     const { json } = await checkConstraints(
       "constraints-undeclared.vrm",
-      withConstraints({ 2: { rotation: { source: 2 } } }, { declared: false }),
+      withConstraints({ 2: { rotation: { source: 2 } } }, { extensionsUsed: ["VRMC_vrm"] }),
     );
 
     expect(checkStatus(json, "node_constraints")).toBe("pass");
+  });
+
+  // The runtime skips the extension only when extensionsUsed is present and
+  // leaves it out; with no extensionsUsed at all it reads the constraints.
+  it("reads constraints when the file has no extensionsUsed", async () => {
+    const { code, json } = await checkConstraints(
+      "constraints-no-extensions-used.vrm",
+      withConstraints({ 2: { rotation: { source: 2 } } }, { extensionsUsed: null }),
+    );
+
+    expect(code).toBe(EXIT_INVALID);
+    expect(checkStatus(json, "node_constraints")).toBe("fail");
   });
 
   it("ignores a constraint with an unknown specVersion", async () => {

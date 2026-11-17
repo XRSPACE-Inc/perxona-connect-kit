@@ -589,11 +589,15 @@ def loop_from($deps; $rest):
              and ($primitives | any(.[]; type == "object" and (has_skin_weights | not))))
     | node_label($nodes; $i)]) as $unweighted
 
-# Node constraints, read the way the avatar runtime reads them: only when the
-# extension is declared used, only a known specVersion, and roll before aim
-# before rotation when a node carries more than one.
-| ((($doc.extensionsUsed // []) | if type == "array" then . else [] end)
-   | any(.[]; . == "VRMC_node_constraint")) as $constraints_used
+# Node constraints, read the way the avatar runtime reads them: skipped only
+# when extensionsUsed is present and does not list the extension (a file with
+# no extensionsUsed at all still has them read), only a known specVersion, and
+# roll before aim before rotation when a node carries more than one.
+| ($doc.extensionsUsed
+   | if . == null then true
+     elif type == "array" then any(.[]; . == "VRMC_node_constraint")
+     else false
+     end) as $constraints_used
 | (if $constraints_used then
      [range(0; $node_count) as $i
       | ((($nodes[$i] | objects | .extensions) // {}) | objects | .VRMC_node_constraint) as $declared
