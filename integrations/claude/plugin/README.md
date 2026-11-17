@@ -1,4 +1,4 @@
-# Perxona Connect
+# Perxona Connect Kit
 
 Give your AI agent a face. This plugin teaches Claude to build apps with a talking 3D avatar from
 [Perxona Connect Kit](https://github.com/XRSPACE-Inc/perxona-connect-kit): the `<sv-presenter>`

@@ -12,7 +12,7 @@
       "name": "perxona-connect",
       "source": "./integrations/claude/plugin",
       "description": "Build talking 3D avatar apps and give AI agents a face with Perxona Connect Kit.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "category": "development"
     }
   ]
