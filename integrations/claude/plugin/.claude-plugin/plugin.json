@@ -8,6 +8,7 @@
     "url": "https://perxona.ai"
   },
   "homepage": "https://connect.perxona.ai",
+  "documentationUrl": "https://github.com/XRSPACE-Inc/perxona-connect-kit/tree/main/integrations/claude",
   "repository": "https://github.com/XRSPACE-Inc/perxona-connect-kit",
   "license": "Apache-2.0",
   "keywords": ["avatar", "3d", "lip-sync", "tts", "web-component", "agent", "perxona"]
