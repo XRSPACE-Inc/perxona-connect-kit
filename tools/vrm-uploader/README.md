@@ -37,6 +37,7 @@ Checking my-avatar.vrm
   OK    vrm_extension       VRM 1.0 (VRMC_vrm)
   OK    embedded_resources  all buffers and images are embedded
   OK    skinned_mesh        3 skinned mesh node(s)
+  OK    node_constraints    no node constraints
   OK    expressions         5/5 mouth presets bound; ARKit 0/52
 
 lipsync_mode: wlipsync (ARKit-52 does not resolve (0/52 found), so the VRM mouth presets drive the mouth)
@@ -81,15 +82,16 @@ Neither is an option, so your key never lands in your shell history or in the ou
 
 Any of these stops the upload:
 
-| Check                | What it means                                                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `file_readable`      | The file exists and can be read.                                                                                                                       |
-| `file_size`          | 50 MB or under, which is the API's own limit.                                                                                                          |
-| `glb_container`      | It is a well-formed GLB. A `.vrm` **is** a GLB, just with a different extension, so nothing else can be read until this holds.                         |
-| `json_chunk`         | The glTF document inside parses.                                                                                                                       |
-| `vrm_extension`      | It carries VRM data. Both VRM 1.0 and 0.x are accepted; the version is reported, not judged.                                                           |
-| `embedded_resources` | No buffer or image points at a file outside the `.vrm`. Only this one file is uploaded, so anything external would be missing once the avatar is live. |
-| `skinned_mesh`       | At least one mesh is bound to a skeleton. Without that the bones move and the body does not follow, so motions do not play.                            |
+| Check                | What it means                                                                                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `file_readable`      | The file exists and can be read.                                                                                                                                                                                                     |
+| `file_size`          | 50 MB or under, which is the API's own limit.                                                                                                                                                                                        |
+| `glb_container`      | It is a well-formed GLB. A `.vrm` **is** a GLB, just with a different extension, so nothing else can be read until this holds.                                                                                                       |
+| `json_chunk`         | The glTF document inside parses.                                                                                                                                                                                                     |
+| `vrm_extension`      | It carries VRM data. Both VRM 1.0 and 0.x are accepted; the version is reported, not judged.                                                                                                                                         |
+| `embedded_resources` | No buffer or image points at a file outside the `.vrm`. Only this one file is uploaded, so anything external would be missing once the avatar is live.                                                                               |
+| `skinned_mesh`       | At least one mesh is bound to a skeleton, and every primitive of a skinned mesh carries `JOINTS_0`/`WEIGHTS_0`. Without a skeleton the bones move and the body does not follow; a skinned mesh without weights does not load at all. |
+| `node_constraints`   | Node constraints (`VRMC_node_constraint`) do not depend on each other in a loop, and each one's source is a node in the file. The avatar runtime refuses to load a model whose constraints loop.                                     |
 
 One check only ever warns:
 

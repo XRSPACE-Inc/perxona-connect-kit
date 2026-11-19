@@ -63,6 +63,10 @@ export function checkStatus(json, id) {
   return json?.checks?.find((check) => check.id === id)?.status ?? null;
 }
 
+export function checkMessage(json, id) {
+  return json?.checks?.find((check) => check.id === id)?.message ?? null;
+}
+
 let workDir = null;
 
 export async function makeWorkDir() {
