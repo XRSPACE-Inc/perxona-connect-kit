@@ -21,7 +21,7 @@ sh integrations/chatgpt/build-uploads.sh
 ```
 
 This writes `integrations/chatgpt/uploads/` (git-ignored): `perxona-connect.zip` for the skill,
-`project/` with five files for a Project, and `perxona-connect-plugin.zip` for the
+`project/` with five files for a Project, and `perxona-connect-kit-plugin.zip` for the
 [public listing](#public-listing-in-the-plugins-directory).
 
 ## Option 1 · Skill (recommended)
@@ -81,8 +81,9 @@ To submit it, or an update:
 2. Run `build-uploads.sh`.
 3. In the [OpenAI plugin portal](https://platform.openai.com/plugins), choose the XRSPACE
    organization, select **Upload new or existing plugin**, and upload
-   `uploads/perxona-connect-plugin.zip`. You need to be an owner of that organization, or have
-   Apps Management write access, and the organization needs a completed business verification.
+   `uploads/perxona-connect-kit-plugin.zip`. You need to be an owner of that organization, or
+   have Apps Management write access, and the organization needs a completed business
+   verification.
 4. Fix any findings, then select **Submit for review**. After approval, select **Publish plugin**.
 
 See [Upload and submit your plugin](https://developers.openai.com/plugins/deploy/submission) for
