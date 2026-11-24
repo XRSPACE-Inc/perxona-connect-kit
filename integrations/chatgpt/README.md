@@ -34,9 +34,11 @@ Skills are available on Business, Enterprise and Edu plans. Enterprise and Edu a
 turn them on.
 
 The skill ([`plugin/skills/perxona-connect/SKILL.md`](plugin/skills/perxona-connect/SKILL.md)) is
-a copy of Claude's ([`SKILL.md`](../claude/plugin/skills/perxona-connect/SKILL.md)). They differ
-only where OpenAI asks for it: no Claude product names, and the model never asks the user for a
-key. When you change one, make the same change in the other.
+a copy of Claude's ([`SKILL.md`](../claude/plugin/skills/perxona-connect/SKILL.md)). This copy
+has no Claude product names and never asks the user for a key. It also gives existing web
+apps, Lovable and a Perxona chatbot their own paths, and adds a "First-time setup" section that
+walks a new user from sign-up to each key's place. When you change one, make the same change in
+the other.
 
 ## Option 2 · Project
 
