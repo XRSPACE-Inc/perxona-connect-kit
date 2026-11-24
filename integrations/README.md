@@ -17,7 +17,8 @@ Use Perxona Connect Kit from the AI tool you already use, with or without code.
 | [`lovable/PerxonaAvatar.tsx`](lovable/PerxonaAvatar.tsx) | The same, as a React component (Lovable, Vite, Next.js client components) |
 | [`lovable/supabase/functions/perxona-chat/`](lovable/supabase/functions/perxona-chat/index.ts) | Serverless relay to a Perxona chatbot; holds the secret key |
 | [`lovable/knowledge.md`](lovable/knowledge.md) | Rules for Lovable's project Knowledge |
-| [`claude/plugin/`](claude/plugin/skills/perxona-connect/SKILL.md) | The `perxona-connect` skill, shared by Claude and ChatGPT, and the Claude Code plugin ([marketplace](../.claude-plugin/marketplace.json)) |
+| [`claude/plugin/`](claude/plugin/skills/perxona-connect/SKILL.md) | The `perxona-connect` skill and the Claude Code plugin ([marketplace](../.claude-plugin/marketplace.json)) |
+| [`chatgpt/plugin/`](chatgpt/plugin/plugin.json) | ChatGPT's copy of the skill, packaged as a plugin for OpenAI's Plugins directory |
 | [`chatgpt/project-instructions.md`](chatgpt/project-instructions.md) | Instructions for a Perxona Avatar Builder ChatGPT Project |
 
 ## Why no server is needed
