@@ -13,6 +13,8 @@
  * Zero dependencies, plain ESM, no build step.
  */
 
+/** @typedef {import('@perxona/presenter-types').PresenterStatusEvent} PresenterStatusEvent */
+
 /** @type {HTMLElement & import('@perxona/presenter-types').IPresentationWidget} */
 const presenter = document.querySelector("sv-presenter");
 const $ = (s) => document.querySelector(s);
@@ -333,7 +335,7 @@ const escapeHtml = (s) =>
   );
 
 // ── presenter events: Ready gate + latency capture ─────────────────────────
-presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ e) => {
+presenter.addEventListener("PRESENTER_STATUS", (/** @type {CustomEvent<PresenterStatusEvent>} */ e) => {
   const status = e.detail?.status;
   if (status !== "Ready" && status !== "Failed") return;
   state.stageFailed = status === "Failed";
@@ -367,7 +369,7 @@ const READY_TIMEOUT_MS = 15000;
  */
 const waitForNextReady = () =>
   new Promise((resolve, reject) => {
-    const onStatus = (e) => {
+    const onStatus = (/** @type {CustomEvent<PresenterStatusEvent>} */ e) => {
       const status = e.detail?.status;
       if (status !== "Ready" && status !== "Failed") return;
       clearTimeout(timer);

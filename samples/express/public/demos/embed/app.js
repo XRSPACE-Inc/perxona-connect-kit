@@ -8,6 +8,8 @@
  * Zero dependencies — plain ESM, no build step required.
  */
 
+/** @typedef {import('@perxona/presenter-types').PresenterStatusEvent} PresenterStatusEvent */
+
 /** @type {HTMLElement & import('@perxona/presenter-types').IPresentationWidget} */
 const presenter = document.querySelector("sv-presenter");
 /** @type {HTMLFormElement} */
@@ -109,7 +111,7 @@ function showStageError(reason) {
 
 // Attach before initializing: Ready is only ever an event, never readable state.
 // Failed is too: initializeWithConnectKey() settles before the stage is up.
-presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ event) => {
+presenter.addEventListener("PRESENTER_STATUS", (/** @type {CustomEvent<PresenterStatusEvent>} */ event) => {
   if (event.detail?.status === "Failed") showStageError(event.detail.message);
   if (event.detail?.status !== "Ready") return;
   document.getElementById("stage-loading")?.remove();

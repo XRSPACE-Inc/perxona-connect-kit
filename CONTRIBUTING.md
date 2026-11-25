@@ -63,11 +63,9 @@ npm ci --prefix .github/ci
 ```
 
 The last command checks every demo's calls into `<sv-presenter>` against
-`@perxona/presenter-types`, and an event's payload where the handler names the event type.
-`PRESENTER_STATUS` handlers are typed `any` for now, because the demos handle the `Failed` status
-and the published types do not include it yet. The command also type-checks the rest of each
-`app.js`, so annotate a DOM lookup when you use a property that only a specific element has, the
-way the existing demos do.
+`@perxona/presenter-types`, and an event's payload where the handler names the event type. The
+command also type-checks the rest of each `app.js`, so annotate a DOM lookup when you use a
+property that only a specific element has, the way the existing demos do.
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.
