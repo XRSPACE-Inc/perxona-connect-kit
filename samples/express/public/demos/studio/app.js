@@ -252,6 +252,7 @@ const debugClearBtn = /** @type {HTMLButtonElement} */ (
 
 /** @typedef {import('@perxona/presenter-types').PerformanceStateEvent} PerformanceStateEvent */
 /** @typedef {import('@perxona/presenter-types').PlayingSpeechTextEvent} PlayingSpeechTextEvent */
+/** @typedef {import('@perxona/presenter-types').PresenterStatusEvent} PresenterStatusEvent */
 
 /** @type {HTMLElement & import('@perxona/presenter-types').IPresentationWidget} */
 const presenter = document.querySelector("sv-presenter");
@@ -530,7 +531,7 @@ const STATUS_LABELS = {
   Failed: "Failed",
 };
 
-presenter.addEventListener("PRESENTER_STATUS", (/** @type {any} */ e) => {
+presenter.addEventListener("PRESENTER_STATUS", (/** @type {CustomEvent<PresenterStatusEvent>} */ e) => {
   const { status, message } = e.detail;
   setStatus(
     status === "Failed" && message
