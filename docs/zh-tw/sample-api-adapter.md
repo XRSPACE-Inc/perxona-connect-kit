@@ -202,5 +202,5 @@ POST/api/chat
 
 **完整合約：**上方列出的是 Express demo 的 proxy
 API。如需 Connect API 本身精確的欄位格式與 schema，請參考
-OpenAPI spec：[`/openapi.yaml`](/openapi.yaml)。如需 TypeScript presenter 型別，請安裝
+OpenAPI spec：[`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml)。如需 TypeScript presenter 型別，請安裝
 `@perxona/presenter-types@latest`。

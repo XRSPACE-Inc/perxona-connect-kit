@@ -1,6 +1,6 @@
 ## Studio
 
-![Perxona Connect Kit: Studio demo example](assets/images/studio-example.png)
+![Perxona Connect Kit: Studio demo example](https://connect.perxona.ai/assets/images/studio-example.png)
 
 The `demos/studio/` demo is the other end of the
 range: you are building the application itself. On top of the

@@ -1,6 +1,6 @@
 ## VRM Uploader
 
-![Perxona Connect Kit：VRM 1.0 角色上傳功能正式推出](assets/images/connect-vrm-support.jpeg)
+![Perxona Connect Kit：VRM 1.0 角色上傳功能正式推出](https://connect.perxona.ai/assets/images/connect-vrm-support.jpeg)
 
 Perxona Connect Kit 讓你用一支 script 自己把
 **VRM** 角色加進 Avatar

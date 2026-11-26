@@ -34,8 +34,8 @@ AI コーディングアシスタントに渡してください。
 
 ### デモ
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ Motion Browser を新しいタブで開く](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ Motion Browser を新しいタブで開く](https://connect.perxona.ai/motion-browser/)
 
 ### 機能
 

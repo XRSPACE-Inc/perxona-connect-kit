@@ -223,7 +223,7 @@ POST/api/chat
 のプロキシ API です。Connect API
 を直接呼び出す場合の正確なフィールド形式とスキーマは、OpenAPI
 spec
-[`/openapi.yaml`](/openapi.yaml)
+[`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml)
 を参照してください。TypeScript の presenter 型は
 `@perxona/presenter-types@latest`
 をインストールしてください。

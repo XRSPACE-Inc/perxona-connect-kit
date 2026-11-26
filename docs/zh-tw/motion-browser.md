@@ -32,8 +32,8 @@ Script Composer 上有一個
 
 ### 示範
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ 開啟完整版 Motion Browser](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ 開啟完整版 Motion Browser](https://connect.perxona.ai/motion-browser/)
 
 ### 功能
 

@@ -38,8 +38,8 @@ project.
 
 ### Demo
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ Open the live Motion Browser](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ Open the live Motion Browser](https://connect.perxona.ai/motion-browser/)
 
 ### Features
 

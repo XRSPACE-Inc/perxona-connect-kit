@@ -50,7 +50,7 @@ API
 | チャットボットの管理（作成・更新・削除） | ✓ | — |
 | credit 利用量の読み取り | ✓ | — |
 
-![Perxona コンソール：Management → Integration → Connect API keys ページ](assets/images/integration-page.png)
+![Perxona コンソール：Management → Integration → Connect API keys ページ](https://connect.perxona.ai/assets/images/integration-page.png)
 
 ⚠️
 

@@ -51,7 +51,7 @@ console 登入頁的重設流程。
 | 管理 chatbot（建立、更新、刪除） | ✓ | — |
 | 查詢 credit 用量 | ✓ | — |
 
-![Perxona Console：Management → Integration → Connect API keys 頁面](assets/images/integration-page.png)
+![Perxona Console：Management → Integration → Connect API keys 頁面](https://connect.perxona.ai/assets/images/integration-page.png)
 
 ⚠️
 

@@ -1,6 +1,6 @@
 ## VRM Uploader
 
-![Perxona Connect Kit: VRM 1.0 Character Upload Now Available](assets/images/connect-vrm-support.jpeg)
+![Perxona Connect Kit: VRM 1.0 Character Upload Now Available](https://connect.perxona.ai/assets/images/connect-vrm-support.jpeg)
 
 Perxona Connect Kit lets you add your own
 **VRM** characters to the avatar catalog yourself,

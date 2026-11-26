@@ -1,6 +1,6 @@
 # Perxona Connect Kit — full handbook (English)
 
-Source: https://connect.perxona.ai (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook2md.py.
+Source: https://connect.perxona.ai (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook-to-markdown/handbook2md.py.
 
 <!-- section: overview -->
 ## What Can You Build?
@@ -956,7 +956,7 @@ you create it — the same breakdown is below:
 | Manage chat bots (create, update, delete) | ✓ | — |
 | Read credit usage | ✓ | — |
 
-![Perxona Console: Management → Integration → Connect API keys page](assets/images/integration-page.png)
+![Perxona Console: Management → Integration → Connect API keys page](https://connect.perxona.ai/assets/images/integration-page.png)
 
 ⚠️
 
@@ -1041,8 +1041,8 @@ project.
 
 ### Demo
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ Open the live Motion Browser](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ Open the live Motion Browser](https://connect.perxona.ai/motion-browser/)
 
 ### Features
 
@@ -1128,7 +1128,7 @@ before relying on it.
 <!-- section: vrm-uploader -->
 ## VRM Uploader
 
-![Perxona Connect Kit: VRM 1.0 Character Upload Now Available](assets/images/connect-vrm-support.jpeg)
+![Perxona Connect Kit: VRM 1.0 Character Upload Now Available](https://connect.perxona.ai/assets/images/connect-vrm-support.jpeg)
 
 Perxona Connect Kit lets you add your own
 **VRM** characters to the avatar catalog yourself,
@@ -1606,7 +1606,7 @@ when it triggers `initializeWithConnectKey()` and
 <!-- section: embed -->
 ## Embed
 
-![Perxona Connect Kit: Embed demo example](assets/images/embed-sample.png)
+![Perxona Connect Kit: Embed demo example](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 The `demos/embed/` demo is what the Connect Kit looks
 like once it is live: a product site with an avatar answering
@@ -1667,7 +1667,7 @@ lifecycle:
 <!-- section: studio -->
 ## Studio
 
-![Perxona Connect Kit: Studio demo example](assets/images/studio-example.png)
+![Perxona Connect Kit: Studio demo example](https://connect.perxona.ai/assets/images/studio-example.png)
 
 The `demos/studio/` demo is the other end of the
 range: you are building the application itself. On top of the
@@ -2120,7 +2120,7 @@ empty or absent.
 **Full contract:** The endpoints above are the
 Express demo's proxy API. For the exact field shapes and
 schemas of the underlying Connect API, see the OpenAPI spec at
-[`/openapi.yaml`](/openapi.yaml). For TypeScript presenter types, install
+[`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml). For TypeScript presenter types, install
 `@perxona/presenter-types@latest`.
 
 <!-- section: limitations -->
@@ -2291,7 +2291,7 @@ Once either demo is running, here are natural paths forward:
   on `localhost`.
 - **Explore the full API contract.** See the
   OpenAPI spec for the underlying Connect API at
-  [`/openapi.yaml`](/openapi.yaml), and install
+  [`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml), and install
   `@perxona/presenter-types@latest` for presenter
   type declarations.
 - **Build from Embed, not from Studio.**

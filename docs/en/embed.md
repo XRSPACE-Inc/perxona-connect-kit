@@ -1,6 +1,6 @@
 ## Embed
 
-![Perxona Connect Kit: Embed demo example](assets/images/embed-sample.png)
+![Perxona Connect Kit: Embed demo example](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 The `demos/embed/` demo is what the Connect Kit looks
 like once it is live: a product site with an avatar answering

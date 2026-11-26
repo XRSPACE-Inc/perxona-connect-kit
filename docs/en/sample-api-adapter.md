@@ -245,5 +245,5 @@ empty or absent.
 **Full contract:** The endpoints above are the
 Express demo's proxy API. For the exact field shapes and
 schemas of the underlying Connect API, see the OpenAPI spec at
-[`/openapi.yaml`](/openapi.yaml). For TypeScript presenter types, install
+[`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml). For TypeScript presenter types, install
 `@perxona/presenter-types@latest`.

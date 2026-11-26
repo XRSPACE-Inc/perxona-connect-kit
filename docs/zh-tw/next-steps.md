@@ -18,7 +18,7 @@
   來源即可使用。請注意這個路由沒有身分驗證，而且會花掉這把 key
   的錢——請只在 `localhost` 使用。
 - **探索完整 API 合約。**參考 Connect API OpenAPI
-  spec [`/openapi.yaml`](/openapi.yaml)，並安裝 `@perxona/presenter-types@latest` 取得
+  spec [`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml)，並安裝 `@perxona/presenter-types@latest` 取得
   presenter 型別宣告。
 - **從 Embed 開始做，不要從 Studio。**`demos/embed/` 是模板——精簡的
   `app.js`，加上一份幾乎都是填充文案的

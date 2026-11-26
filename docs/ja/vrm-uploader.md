@@ -1,6 +1,6 @@
 ## VRM アップローダー
 
-![Perxona Connect Kit：VRM 1.0 キャラクターアップロード機能が登場](assets/images/connect-vrm-support.jpeg)
+![Perxona Connect Kit：VRM 1.0 キャラクターアップロード機能が登場](https://connect.perxona.ai/assets/images/connect-vrm-support.jpeg)
 
 Perxona Connect Kit では、スクリプト 1 本で自分の
 **VRM**

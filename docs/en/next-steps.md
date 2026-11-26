@@ -20,7 +20,7 @@ Once either demo is running, here are natural paths forward:
   on `localhost`.
 - **Explore the full API contract.** See the
   OpenAPI spec for the underlying Connect API at
-  [`/openapi.yaml`](/openapi.yaml), and install
+  [`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml), and install
   `@perxona/presenter-types@latest` for presenter
   type declarations.
 - **Build from Embed, not from Studio.**

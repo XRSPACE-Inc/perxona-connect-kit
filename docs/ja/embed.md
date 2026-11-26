@@ -1,6 +1,6 @@
 ## Embed
 
-![Perxona Connect Kit：Embed デモの例](assets/images/embed-sample.png)
+![Perxona Connect Kit：Embed デモの例](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 `demos/embed/` デモは、Connect Kit
 が本番で動いている姿です：アバターが質問に答えている製品サイト。カタログもピッカーも設定パネルもなく、そして意図的に**ページ上のどこにも自身の設定について書かれていません**。実際のサイトは訪問者に自分の設定を説明しないので、これもしません。widget

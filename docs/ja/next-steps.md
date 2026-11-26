@@ -16,7 +16,7 @@
   でのみ使用してください。
 - **完全な API コントラクトを探索。**Connect API
   OpenAPI spec
-  [`/openapi.yaml`](/openapi.yaml)
+  [`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml)
   を参照し、presenter 型宣告には
   `@perxona/presenter-types@latest`
   をインストールしてください。

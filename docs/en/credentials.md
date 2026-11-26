@@ -55,7 +55,7 @@ you create it — the same breakdown is below:
 | Manage chat bots (create, update, delete) | ✓ | — |
 | Read credit usage | ✓ | — |
 
-![Perxona Console: Management → Integration → Connect API keys page](assets/images/integration-page.png)
+![Perxona Console: Management → Integration → Connect API keys page](https://connect.perxona.ai/assets/images/integration-page.png)
 
 ⚠️
 

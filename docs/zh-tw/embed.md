@@ -1,6 +1,6 @@
 ## Embed
 
-![Perxona Connect Kit：Embed demo 範例](assets/images/embed-sample.png)
+![Perxona Connect Kit：Embed demo 範例](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 `demos/embed/` demo 展示 Connect Kit
 上線之後的樣子：一個產品網站，虛擬人在上面回答問題。沒有
