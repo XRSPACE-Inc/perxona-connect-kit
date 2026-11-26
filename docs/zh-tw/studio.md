@@ -1,6 +1,6 @@
 ## Studio
 
-![Perxona Connect Kit：Studio demo 範例](assets/images/studio-example.png)
+![Perxona Connect Kit：Studio demo 範例](https://connect.perxona.ai/assets/images/studio-example.png)
 
 `demos/studio/` demo
 是光譜的另一端：你要做的是應用程式本身。在前面的共用整合基礎上，它加上了

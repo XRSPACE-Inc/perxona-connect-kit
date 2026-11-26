@@ -1,6 +1,6 @@
 # Perxona Connect Kit — full handbook (English)
 
-Source: https://connect.perxona.ai (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook2md.py.
+Source: https://connect.perxona.ai (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook-to-markdown/handbook2md.py.
 
 <!-- section: overview -->
 ## What Can You Build?
@@ -19,9 +19,9 @@ to deploy the moment you pick your configuration.
 
 #### Avatar Catalog
 
-Curated cast of realistic humans, cartoon characters, and
-VRM avatars. Pick one from the catalog and it's on-screen
-in minutes.
+Upload your own VRM avatar and pick it from the catalog —
+it's on-screen in minutes. Built-in avatars will follow on
+a date announced separately.
 
 🎙️
 
@@ -61,8 +61,9 @@ conversation.
 
 #### Bring Your Own Voice
 
-Pass your own audio (an `ArrayBuffer` from any
-TTS service or pre-recorded clip) directly via
+Pass your own audio (an `ArrayBuffer` holding a
+complete WAV or MP3 file, from any TTS service or a
+pre-recorded clip) via
 `presenter.presentWithAudio()`. The avatar
 lip-syncs to your audio and the Motion Director still
 drives gestures and expressions from the text — no Perxona
@@ -74,8 +75,17 @@ TTS required.
 
 Upload a VRM 1.0 character to match your brand or audience
 and make it speak.
-Uploading is on hold for now — see
-[VRM Uploader](https://connect.perxona.ai/#vrm-uploader).
+
+⚡
+
+#### Compose Your Own Performance
+
+`presenter.presentDirect()` plays your audio
+with motions you supply: from the Connect API's
+`/motion-suggestion` or
+`/presentation`, or generated yourself. Split
+and queue the lines however suits your app. See
+[Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example).
 
 3 — Presentation Engine
 
@@ -194,8 +204,11 @@ Your backend                          Browser
    `presenter.initializeWithConnectKey(connectKey, { avatarId,
    sceneId, voiceId })`.
 5. When the component reports `Ready`, call
-   `presenter.present(content)` or
-   `presenter.presentWithAudio(audio, content)`.
+   `presenter.present(content)`,
+   `presenter.presentWithAudio(audio, content)`, or
+   `presenter.presentDirect(payload)`, which plays
+   your own audio with motions you supply (see
+   [Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)).
 
 ⚠️
 
@@ -247,15 +260,19 @@ really is used by a browser.
 `<sv-presenter>` is the browser runtime for a
 Connect avatar. Load the approved Presenter module, add the
 element to the DOM, then interact with its JavaScript API. The
-component accepts a publishable Connect API key and selected
-asset IDs; your application backend owns how it supplies those
-values.
+component starts in one of two modes: Catalog mode loads the
+avatar and scene you pick from the Perxona catalog by ID, and
+Direct mode loads avatar, scene and motion files you supply
+yourself — see
+[Two Ways to Initialize](https://connect.perxona.ai/#presenter-modes).
 
 ### Load the Component
 
 Read `PRESENTER_URL` from trusted application
 configuration supplied by your server or Perxona, then inject it
-once as a module script. The URL is not a credential.
+once as a module script. The URL is not a credential, but the
+module runs with your page's full rights, so check that its host
+is Perxona's CDN before injecting it.
 
 index.html
 
@@ -270,6 +287,16 @@ app.js
 // Read this from trusted application configuration; it is not a secret.
 const presenterUrl = getPresenterUrlFromAppConfig();
 
+// The module runs with this page's full rights: load it only from a host listed
+// here, over https. A build you serve on localhost may use http. Own CDN? Add it.
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
+const ALLOWED_PRESENTER_HOSTS = new Set(['cdn.perxona.ai', ...LOCAL_HOSTS]);
+const { hostname, protocol } = new URL(presenterUrl);
+const local = LOCAL_HOSTS.has(hostname) && protocol === 'http:';
+if (!ALLOWED_PRESENTER_HOSTS.has(hostname) || (protocol !== 'https:' && !local)) {
+  throw new Error(`Refusing the presenter engine from ${protocol}//${hostname}: see ALLOWED_PRESENTER_HOSTS`);
+}
+
 // Load the Presenter module once before reading the custom element.
 await new Promise((resolve, reject) => {
   const script = document.createElement('script');
@@ -283,7 +310,39 @@ await new Promise((resolve, reject) => {
 const presenter = document.querySelector('sv-presenter');
 ```
 
-### Full Initialization Flow
+### Legacy Presenter
+
+Integrations built before Connect Kit 1.0 load the Presenter
+from `prod/latest/`. This legacy Presenter keeps
+receiving updates until it is retired. Retirement is planned for
+the end of 2026, once built-in avatars are available in the
+current Presenter; the exact date will be announced separately.
+New integrations use `prod/connect/latest/`.
+
+- `https://cdn.perxona.ai/asia/prod/latest/widget/entry/presenter.js`
+
+The legacy Presenter already sends
+`X-Legacy-Presenter: 1` on its own requests. If your
+server calls the Connect API itself — the catalog,
+`/presentation` or `/motion-suggestion` —
+send the same header, so the response uses assets the legacy
+Presenter can load.
+
+### Two Ways to Initialize
+
+Pick the mode by where your assets live. An element runs in one
+mode for its whole life: once it has initialized, calling the
+other mode's initializer fails, so create a new
+`<sv-presenter>` to switch.
+
+|  | Catalog mode | Direct mode |
+| --- | --- | --- |
+| Assets | Avatar, scene and motions hosted by Perxona, chosen by ID | Your own files: a VRM avatar, an image scene, VRMA motions |
+| Initialize | `initializeWithConnectKey` | `initializeDirectWithBlobs` |
+| Present | `present` / `presentWithAudio` / `playMotion`. `presentDirect` also works here, with motions you supply (see [Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)). | `presentDirect`, together with the Connect API's [`/motion-suggestion`](https://connect.perxona.ai/#api-reference). `presentDirect` also works on a Catalog element. |
+| Speech | Perxona TTS, or your own audio | Your own audio |
+
+### Catalog Mode Flow
 
 ```js
 // Your backend serves the publishable key. It never serves the secret one.
@@ -294,7 +353,7 @@ const getConnectKeyFromYourBackend = async () => {
 
 // Listen for state changes before launching the component.
 presenter.addEventListener('PRESENTER_STATUS', (e) => {
-  // e.detail.status: 'Uninitialized' | 'Initializing' | 'Ready'
+  // e.detail.status: 'Uninitialized' | 'Initializing' | 'Ready' | 'Failed'
   console.log('Presenter status:', e.detail.status);
 });
 
@@ -325,17 +384,248 @@ presenter.addEventListener('CONNECT_KEY_REJECTED', () => {
 presenter.interruptPresentation();
 ```
 
+### Direct Mode Flow
+
+Direct mode boots from files you already hold and never looks
+anything up for you, so each line is presented with
+`presentDirect`: your own audio, plus the motion
+marks and motion assets that the Connect API's
+[`/motion-suggestion`](https://connect.perxona.ai/#api-reference)
+returns for that line.
+
+```js
+// The avatar's body; /motion-suggestion needs the same values to pick motions for it.
+const GENDER = 'female'; // 'male' | 'female'
+const HEADS_TALL = 6; // 3 | 6 | 8 heads tall
+
+launchButton.addEventListener('click', async () => {
+  // Must run inside a direct user gesture to unlock autoplay.
+  await presenter.resumeAudioPlayback();
+
+  // Subscribe before initializing; loading has no deadline, so show progress.
+  presenter.addEventListener('ASSET_LOADING_PROGRESS', (e) => {
+    showProgress(e.detail.assetType, e.detail.progress); // 0 to 1 per asset type
+  });
+
+  // Files picked by the user or fetched by your app, e.g. from <input type="file">.
+  const result = await presenter.initializeDirectWithBlobs({
+    avatar: vrmFile, // VRM 1.0
+    gender: GENDER,
+    headsTall: HEADS_TALL,
+    scene: backgroundImage, // optional; omit it for a transparent background
+    // VRMA clips per state; an empty idle or talking state uses built-in motions.
+    motions: {
+      idle: [idleVrma],
+      listening: [listeningVrma],
+    },
+  });
+  if (!result.success) console.warn(result.code, result.message);
+});
+
+// Map a /motion-suggestion response onto the payload presentDirect() takes.
+const ASSET_TYPE_TO_DIRECT_MOTION_TYPE = { motion: 'body', facial_motion: 'face' };
+const toDirectPresentation = (text, suggestion, audio) => ({
+  audio, // a complete WAV or MP3 file, not raw PCM
+  displayText: text, // reported by PLAYING_SPEECH_TEXT
+  presentationScript: suggestion.markup, // its [MOTION] marks time each motion
+  motions: Object.entries(suggestion.performance_manifest)
+    // Skip entries without a URL and entries that are not motions.
+    .filter(([, entry]) => entry.lod0 && ASSET_TYPE_TO_DIRECT_MOTION_TYPE[entry.type])
+    .map(([id, entry]) => ({
+      id,
+      type: ASSET_TYPE_TO_DIRECT_MOTION_TYPE[entry.type],
+      assetUrl: entry.lod0,
+      // configs is grouped by asset type; a motion's own config is configs.motion.
+      runtimeConfig: entry.configs?.motion ?? null,
+    })),
+});
+
+const speak = async (text) => {
+  // Your own calls: the Connect API's /motion-suggestion, and your TTS.
+  // From the browser, call /motion-suggestion with the publishable key only;
+  // the secret key stays on your server.
+  // Neither depends on the other, so run them in parallel.
+  const [suggestion, audio] = await Promise.all([
+    getMotionSuggestion({ text, gender: GENDER, heads_tall: HEADS_TALL }),
+    synthesizeWithYourTts(text),
+  ]);
+
+  // Resolves once queued, not once played, and never rejects.
+  const payload = toDirectPresentation(text, suggestion, audio);
+  const result = await presenter.presentDirect(payload);
+  if (!result.success) console.warn(result.code, result.message);
+};
+```
+
+### Example: Gemini Live
+
+`presentDirect` works in both Catalog and Direct mode
+and does not depend on the Connect API for its motions: you hand
+it a line's audio, its text with motion marks, and the motion
+assets. Take them from `/motion-suggestion`, from
+[`POST /presentation`](https://connect.perxona.ai/#api-reference)
+without `voice_id` (BYO TTS mode, for a Catalog
+avatar), or generate them yourself, and decide how to split the
+speech into lines and when to queue each one. Calls play in the
+order you make them.
+
+This example drives a Catalog avatar from the
+[Gemini Live API](https://ai.google.dev/gemini-api/docs/live). Its native-audio models stream raw 16-bit PCM at 24 kHz and,
+with `outputAudioTranscription` enabled, the text of
+what they say. The example cuts a line at the first pause after
+each sentence end in that text, requests its motions at once,
+and queues it.
+
+- `presentDirect` takes a complete WAV or MP3 file,
+  not raw PCM, so each line's PCM gets a WAV header first.
+- The transcription runs a few tenths of a second ahead of its
+  audio, so a line is cut at the first pause (150 ms of silence)
+  after its sentence ends, not the moment the sentence end
+  arrives.
+- Your Gemini API key must not reach the browser: connect with
+  an
+  [ephemeral token](https://ai.google.dev/gemini-api/docs/ephemeral-tokens)
+  or through your server.
+- For a Direct avatar, request the motions from
+  `/motion-suggestion` as in the Direct Mode Flow
+  above.
+
+```js
+// Catalog avatar: motions from POST /presentation without voice_id (BYO TTS mode).
+// Call it from the browser with the publishable key, as with /motion-suggestion, or
+// from your server with the secret key. Each call is one billed motion request.
+// toDirectPresentation is the mapper in the Direct Mode Flow above; getPresentation
+// (your POST /presentation call), base64ToArrayBuffer and pcm16ToWav are your own.
+// Give getPresentation a timeout (for example AbortSignal.timeout on its fetch):
+// lines play in order, so a slow reply holds up every line after it.
+const SENTENCE_END = /[.!?。！？]\s*$/; // the simplest test; an abbreviation only adds a cut
+const QUIET_RMS = 400; // 16-bit PCM quieter than this counts as silence
+const PAUSE_SAMPLES = 24000 * 0.15; // 150 ms of silence at 24 kHz is a pause
+// The transcription puts spaces between Chinese or Japanese words; drop them.
+const CJK_SPACE = /(?<=[\u3000-\u30ff\u3400-\u9fff\uff00-\uffef])\s+(?=[\u3000-\u30ff\u3400-\u9fff\uff00-\uffef])/g;
+let lineText = '';
+let textAfterSentenceEnd = ''; // arrives after a sentence end but before its pause
+let linePcm = [];
+let sentenceEnded = false;
+let spoke = false; // the line's PCM has sound in it, not only the previous pause
+let quietSamples = 0; // length of the silence at the end of the PCM so far
+let interruptionCount = 0; // lines queued before the latest interruption are dropped
+let enqueueChain = Promise.resolve(); // settles once each line is queued, not played
+
+const isQuiet = (samples) =>
+  Math.sqrt(samples.reduce((sum, x) => sum + x * x, 0) / (samples.length || 1)) < QUIET_RMS;
+
+// Start collecting the next line from the given text.
+const startLine = (text) => {
+  [lineText, textAfterSentenceEnd, linePcm, spoke] = [text, '', [], false];
+  sentenceEnded = SENTENCE_END.test(lineText); // carried-over text may end a sentence
+};
+
+// Queue the line collected so far. Its motion request starts now; presentDirect
+// runs after the previous line's call, so lines play in order.
+const queueLine = () => {
+  const text = lineText.replace(CJK_SPACE, '').trim();
+  const pcm = linePcm;
+  const interruptionCountAtQueue = interruptionCount;
+  startLine(textAfterSentenceEnd);
+  if (!text) return;
+  const audio = pcm16ToWav(pcm, 24000); // join the PCM and add a WAV header
+  const suggestion = getPresentation({ avatar_id: selectedAvatarId, message: text }).then(
+    (response) => ({ markup: response.presentation, performance_manifest: response.performance_manifest }),
+    () => ({ markup: text, performance_manifest: {} }) // no motions, but the line still plays
+  );
+  enqueueChain = enqueueChain
+    .then(async () => {
+      const motions = await suggestion;
+      if (interruptionCountAtQueue !== interruptionCount) return; // interrupted while it waited
+      const result = await presenter.presentDirect(toDirectPresentation(text, motions, audio));
+      if (!result.success) console.warn(result.code, result.message);
+    })
+    .catch((error) => console.warn(error)); // a failed line must not stop the ones after it
+};
+
+// Messages of a Gemini Live session opened with responseModalities: [Modality.AUDIO]
+// and outputAudioTranscription: {}. The transcription runs a little ahead of its
+// audio, so a line is cut at the first pause after its sentence ends.
+const onGeminiMessage = ({ serverContent: content }) => {
+  if (!content) return;
+  if (content.interrupted) {
+    interruptionCount += 1;
+    startLine('');
+    presenter.interruptPresentation();
+    return;
+  }
+  const piece = content.outputTranscription?.text ?? '';
+  if (sentenceEnded) textAfterSentenceEnd += piece;
+  else {
+    lineText += piece;
+    sentenceEnded = SENTENCE_END.test(lineText);
+  }
+  for (const part of content.modelTurn?.parts ?? []) {
+    if (!part.inlineData?.data) continue;
+    const pcm = base64ToArrayBuffer(part.inlineData.data);
+    const quiet = isQuiet(new Int16Array(pcm));
+    quietSamples = quiet ? quietSamples + pcm.byteLength / 2 : 0;
+    spoke ||= !quiet;
+    linePcm.push(pcm);
+    if (sentenceEnded && spoke && quietSamples >= PAUSE_SAMPLES) queueLine();
+  }
+  if (content.generationComplete) {
+    lineText += textAfterSentenceEnd; // no pause came after the last sentence end
+    textAfterSentenceEnd = '';
+    queueLine();
+  }
+};
+```
+
 ### API Members
+
+#### Catalog Mode
 
 | Member | Description |
 | --- | --- |
-| `initializeWithConnectKey(connectKey, target)` | Boot the presenter. Resolves `target` (avatarId/sceneId/voiceId) against the Connect API and mints a speech token. Returns a Promise — awaiting it means the presenter is ready. |
-| `resumeAudioPlayback()` | Unlock browser autoplay policy. **Must be called from a direct user gesture.** Returns a Promise. Call this before `initializeWithConnectKey()` in your click handler. |
-| `present(content)` | Synthesize `content` into speech and play it on the avatar. Returns `PresentationResult { success: boolean, code: string, message?: string }`. **Never rejects** — always check `result.success`. |
-| `presentWithAudio(audio, content)` | Play caller-supplied audio on the avatar, bypassing Perxona TTS. Pass an `ArrayBuffer` from any TTS service or pre-recorded clip. The Motion Director still runs — gestures and expressions are driven by `content`. Returns `PresentationResult`. **Never rejects.** |
+| `initializeWithConnectKey(connectKey, target)` | Boot the presenter. Resolves `target` (avatarId/sceneId/voiceId) against the Connect API and mints a speech token. Returns a Promise — awaiting it means the presenter is ready. Rejects if the element was already initialized with `initializeDirectWithBlobs`; create a new element instead. Add `personalityTrait` to `target` to choose the personality the avatar plays; see [Personality trait](https://connect.perxona.ai/#personality-trait). |
+| `present(content, options?)` | Synthesize `content` into speech and play it on the avatar. `options.emotion` and `options.intensity` set the line's tone, which picks its facial expression. Returns `PresentationResult { success: boolean, code: string, message?: string }`. **Never rejects** — always check `result.success`. |
+| `presentWithAudio(audio, content, options?)` | Play caller-supplied audio on the avatar, bypassing Perxona TTS. Pass an `ArrayBuffer` from any TTS service or pre-recorded clip. The Motion Director still runs — gestures and expressions are driven by `content`. `options.emotion` and `options.intensity` set the line's tone, which picks its facial expression, as in `present`. Returns `PresentationResult`. **Never rejects.** |
+| `playMotion(motionId)` | Play one body motion by ID, outside the speech queue. Resolves once the motion is sent to the avatar, not when it finishes; concurrent calls do not keep their order, so await each one when order matters. Returns `PresentationResult`. **Never rejects.** |
+
+#### Direct Mode
+
+| Member | Description |
+| --- | --- |
+| `initializeDirectWithBlobs(config)` | Boot the presenter from files you supply as `Blob`s. `config`:  - `avatar`: a VRM 1.0 file. - `gender`: `'male'` |   `'female'`. - `headsTall`: `3` |   `6` | `8` (heads tall). - `scene` (optional): an image drawn behind   the avatar; leave it out for a transparent   background. - `motions`: VRMA clips keyed by state —   `idle`, `talking`,   `listening` (played by   `setListening(true)`),   `loading` (played by   `setThinking(true)`). An empty   `idle` or `talking` is filled   with built-in motions matched to   `gender` and `headsTall`; an   empty `listening` or   `loading` plays nothing. The type also   accepts `error`, which is reserved: the   presenter does not play it yet.  Resolves with `PresentationResult` once the assets are loaded. There is no loading deadline, so show progress from `ASSET_LOADING_PROGRESS`. `INITIALIZATION_CONFLICT` means the element was already initialized, in either mode; create a new element to retry. A file that fails to load is not reported as a failure: the presenter may reach ready without it, or this call may stay pending. Rejects only when this presenter version cannot load from `Blob`s. |
+| `presentDirect(payload)` | Play your own audio with motions you have already resolved, usually from the Connect API's `/motion-suggestion`. `payload`:  - `audio`: an   `ArrayBuffer` holding a complete WAV or   MP3 file, not raw PCM. - `displayText`: the text to show; reported   by `PLAYING_SPEECH_TEXT`. - `presentationScript`: the text with   `[MOTION id:priority]` marks that time   each motion. - `motions`:   `{ id, type: 'body' | 'face', assetUrl,   runtimeConfig }[]`, the assets the marks refer to.  Calls share one queue and play in call order. Resolves with `PresentationResult` once queued, not once played. **Never rejects.** |
+
+#### Both Modes
+
+| Member | Description |
+| --- | --- |
+| `resumeAudioPlayback()` | Unlock browser autoplay policy. **Must be called from a direct user gesture.** Returns a Promise. Call this in your click handler before initializing; until it has run once, `present`, `presentWithAudio` and `presentDirect` fail with `AUDIO_CONTEXT_UNAVAILABLE`. |
 | `interruptPresentation()` | Stop the current performance and clear the queue immediately. |
-| event `PRESENTER_STATUS` | Fired as state changes. `e.detail.status`: `"Uninitialized"` → `"Initializing"` → `"Ready"`. |
-| event `CONNECT_KEY_REJECTED` | Fired when the Connect API refuses the key: revoked, expired, restricted to other domains, or never granted the scope. **There is nothing to retry** — the same key fails the same way. Reissue it in the console, then initialize again. |
+| `setListening(isListening)` | Pass `true` to have the avatar act as if listening — for example, while the user speaks — and `false` to stop. |
+| `setThinking(isThinking)` | Pass `true` to have the avatar act as if thinking — for example, while your app waits for a reply — and `false` to stop. |
+| `muteAudio(muted)` | Mute or unmute the speech audio. |
+| `updateCameraAngle(angle)` | Frame the avatar `'fullbody'` or `'halfbody'`. |
+| `updateCameraFOV(offsets)` | Fine-tune the framing from `updateCameraAngle` by moving the camera. Each value is a step from −10 to +10; 0 keeps the framing as it is.  - `distance`: positive pulls the camera   back, negative moves it closer. - `horizontal`: positive moves the camera   right, negative left. - `vertical`: positive raises the camera,   negative lowers it.  Example: `presenter.updateCameraFOV({ distance: -3, horizontal: 0, vertical: 2 })`. Calling `updateCameraAngle` resets all three to 0. |
+| `setCameraOrbit(orbit | null)` | Place the camera freely around the avatar, overriding `updateCameraAngle` and `updateCameraFOV`. Pass `null` to return to the default framing; a later `updateCameraAngle` or `updateCameraFOV` call does the same. `orbit`:  - `target` (required): what the camera   circles — a bone such as   `{ bone: 'head' }`, which the camera   keeps following as the avatar moves, or a fixed   point `{ point: [x, y, z] }` in metres,   with the avatar at the origin facing +Z. - `distance`, `yaw`,   `pitch`: how far from the target, in   metres, and the angle around and above it, in   degrees. - `lookAt`: what the camera faces, given   like `target`; defaults to   `target`. - `screenOffset`, `fov`,   `roll`: optional fine-tuning of the shot.  Bone names are VRM humanoid bone names, such as `hips`, `head` or `leftHand`. Example: `presenter.setCameraOrbit({ target: { bone: 'head' }, distance: 0.8, yaw: 30 })`. |
+| `getCameraOrbit()` | The current orbit, or `null` when the camera is on the default framing. Read it to adjust the shot from where it is, such as turning `yaw` a little further. |
+| `getBoneTransform(bone)` | A bone's current position, `{ position: [x, y, z] }`, in the same coordinates as `setCameraOrbit` — for example, to aim the camera at the midpoint between both hands. Returns `null` if the avatar is not loaded yet or has no such bone. To keep the camera on a bone, pass the bone to `setCameraOrbit` instead of reading its position every frame. |
+| `setExpressionWeight(name, weight)` | Sets how strongly an expression shows, from 0 (off) to 1 (full). Use a VRM preset name such as `happy`, `sad`, `aa` or `blink`, or any other expression the avatar has.  Once any expression is above 0, you control the whole face and its animation no longer moves it. Set everything back to 0 and the animation takes over again. Blinking is the exception: the avatar keeps blinking as usual until you set a blink yourself.  Lip sync still plays on top while the avatar speaks. The eyes work the same way: setting `lookUp`, `lookDown`, `lookLeft` or `lookRight` sets where the avatar looks, but the avatar mostly looks at the camera, so your gaze shows only some of the time. Changing the avatar clears every weight. Example: `presenter.setExpressionWeight('happy', 0.8)` |
+| `getExpressionWeight(name)` | Returns the weight you last set for this expression, or 0 if you haven't set it. This is your setting, not necessarily what the face shows right now (while the avatar speaks, for example). Returns `null` if the presenter isn't ready yet or the avatar doesn't have this expression. |
+| `resetExpressionWeights()` | Sets every expression back to 0 and returns the face to its animation. |
+
+#### Events
+
+| Member | Description |
+| --- | --- |
+| event `PRESENTER_STATUS` | Fired as state changes. `e.detail.status`: `"Uninitialized"` → `"Initializing"` → `"Ready"`, or `"Failed"` when the stage cannot come up, with the reason in `e.detail.message`. Call `initializeWithConnectKey` again to retry. |
+| event `ASSET_LOADING_PROGRESS` | Fired while assets load. `e.detail.assetType`: `"Avatar"` | `"Motion"` | `"Scene"`; `e.detail.progress`: how far that asset type has loaded, from 0 to 1. Subscribe before calling `initialize*`. |
+| event `AUDIO_PLAYBACK_STATE` | Fired when the audio context changes state. `e.detail.state`: `"suspended"` | `"running"` | `"closed"`. |
+| event `PERFORMANCE_STATE` | Fired when the avatar's visible state changes. `e.detail.state`: `"Idle"` | `"Listening"` | `"Thinking"` | `"Talking"`. |
+| event `PERFORMANCE_START` / `PERFORMANCE_END` | Fired as each queued line starts and stops playing. |
+| event `ALL_PERFORMANCE_FINISHED` | Fired once the whole queue has drained, not once per line. |
+| event `PLAYING_SPEECH_TEXT` | Fired when a line starts playing. `e.detail.text`: the text being spoken, for subtitles or a chat bubble — in Direct mode, the `displayText` you passed. |
+| event `CONNECT_KEY_REJECTED` | **Catalog mode only.** Fired when the Connect API refuses the key: revoked, expired, restricted to other domains, or never granted the scope. **There is nothing to retry** — the same key fails the same way. Reissue it in the console, then initialize again. |
 
 ### Transparent Background
 
@@ -345,9 +635,9 @@ the 3D view on a transparent canvas and your page shows through
 behind the avatar; a scene without the tag renders its own
 built-in background instead, and nothing shows through.
 
-The scene decides it: there is no method and no attribute that
-switches transparency on, so whether you get it follows from
-which `sceneId` you pass to
+In Catalog mode the scene decides it: there is no method and no
+attribute that switches transparency on, so whether you get it
+follows from which `sceneId` you pass to
 `initializeWithConnectKey`. Both
 `/assets/scenes` and
 `/assets/scenes/{scene_id}` return each scene's
@@ -355,6 +645,11 @@ which `sceneId` you pass to
 transparent. When you pick one of those, whatever should show
 behind the avatar belongs on the element's own container — the
 presenter paints no background of its own.
+
+In Direct mode, `initializeDirectWithBlobs` decides
+it by its `scene`: pass an image and it is drawn
+behind the avatar; leave `scene` out and the
+background is transparent.
 
 <!-- section: api-reference -->
 ## Connect API Reference
@@ -390,8 +685,8 @@ create one.
 **Never send both headers on one request.** The
 API rejects `X-Connect-Key` and
 `Authorization: Bearer` together with
-`400`, whether you are migrating off the legacy
-header or testing both.
+`400`, whether you are migrating off
+`Authorization: Bearer` or testing both.
 
 ### Usage and Subscription
 
@@ -486,10 +781,10 @@ both.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/assets/avatars` | List active avatars available to the authenticated organization. |
-| GET | `/assets/avatars/{avatar_id}` | Read avatar detail, including its runtime configuration. |
+| GET | `/assets/avatars/{avatar_id}` | Read avatar detail, including its runtime configuration. Add `include=default_motions` to also get `default_motions`: the default motions for `idle`, `talking`, `listening` and `loading`, plus the default `facial_motions`. Every key is always present; a group with no motion is an empty list. `personality_trait` picks the default motions and `lower_body_pool` for a personality; see [Personality trait](https://connect.perxona.ai/#personality-trait). |
 | GET | `/assets/avatars/{avatar_id}/motions` | List motions compatible with the avatar; filter by `pose_tag` or `motion_ids` when needed. |
 | GET | `/assets/scenes` `/assets/scenes/{scene_id}` | List active scenes or read one scene's detail. |
-| POST | `/assets/vrm/upload` | Upload a `.vrm` file as multipart form data and publish it as an active avatar. Requires a **secret** key. Fields: `vrm_file`, `skeleton_type`, and optionally `avatar_name` and `lipsync_mode`. Returns the new `avatar_id`. See [VRM Uploader](https://connect.perxona.ai/#vrm-uploader) for the script that checks a file before sending it. **Uploading is on hold for now** — that section explains why. |
+| POST | `/assets/vrm/upload` | Upload a `.vrm` file as multipart form data and publish it as an active avatar. Requires a **secret** key. Fields: `vrm_file`, `gender` (`male` or `female`), `heads_tall` (`3`, `6` or `8`), and optionally `avatar_name` and `lipsync_mode`. Returns the new `avatar_id`. See [VRM Uploader](https://connect.perxona.ai/#vrm-uploader) for the script that checks a file before sending it. |
 
 ### Voices and Presentation
 
@@ -497,7 +792,52 @@ both.
 | --- | --- | --- |
 | GET | `/voices` `/voices/{voice_id}` | List custom voices or read a voice's public synthesis details. Each voice carries a `languages` array of the languages it speaks, as short codes (`en`, `ja`, … — never locales like `en-US`). The list supports `language` and `provider` filters; see the callout below this table. |
 | POST | `/voice-tokens/tts` | Issue a provider TTS token for JSON body `{ voice_id }`. Normal `<sv-presenter>` speech manages this runtime step for you. |
-| POST | `/presentation` | Generate a one-shot presentation payload. Send `avatar_id` and `message`; `voice_id`, `emotion`, and `intensity` are optional. |
+| POST | `/presentation` | Generate a one-shot presentation payload. Send `avatar_id` and `message`; `voice_id`, `emotion`, `intensity`, and `personality_trait` are optional. Without `voice_id` it synthesizes no speech (BYO TTS mode; see [Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)). |
+| POST | `/motion-suggestion` | Suggest motions for a line of text without an avatar. Send `gender`, `heads_tall`, and `text`, and optionally `personality_trait`; returns the text with motion marks and the motion assets they refer to. |
+
+🎭
+
+**Personality trait.**
+`GET /assets/avatars/{avatar_id}` (a query
+parameter), `POST /presentation` and
+`POST /motion-suggestion` (a body field) take an
+optional `personality_trait`:
+`Casual`, `Energetic` or
+`Professional`. Omitted, it is
+`Casual`. Write the value capitalized exactly as
+listed: unlike `emotion` and
+`intensity`, which are lowercase,
+`casual` or `PROFESSIONAL` is refused
+with `422`.
+
+With `<sv-presenter>`, set
+`personalityTrait` on the `target` of
+`initializeWithConnectKey`; the presenter sends
+it with the avatar detail and with every
+`/presentation` call. An app that calls
+`/motion-suggestion` itself sends its own
+`personality_trait`, the same value it gives the
+presenter.
+
+Each result narrows to the trait differently, so a motion
+outside it is not always a bug:
+
+- `default_motions`: each group keeps the motions
+  with that trait, and keeps all of its motions when none
+  has it. With `Professional`, the avatar may
+  still idle in a motion that is not Professional.
+- `lower_body_pool`, the motions the presenter
+  may play under gestures as a shared lower body: only the
+  motions with that trait. When none has it, the list is
+  empty. An empty list can also mean no motion fits the
+  avatar's skeleton, or the organization has lower-body
+  blending off; gestures then play their full body.
+- The gestures `/presentation` and
+  `/motion-suggestion` suggest: only motions with
+  that trait; a motion with no trait is left out too. Some
+  avatars therefore get no gesture at all for a trait.
+
+`facial_motions` do not depend on the trait.
 
 💡
 
@@ -592,8 +932,9 @@ password recovery is on its sign-in page.
 
 ### Create Your Two API Keys
 
-Sign in to the Perxona console with that account and open
-**[Management → Integration → Connect API keys (open the avatar menu, top right)](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**. Create **two** keys — they are not
+Sign in to the Perxona console with that account, open the
+avatar menu (top right), then go to
+**[Management → Integration → Connect API keys](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**. Create **two** keys — they are not
 interchangeable, and the form shows what each type can do before
 you create it — the same breakdown is below:
 
@@ -615,7 +956,7 @@ you create it — the same breakdown is below:
 | Manage chat bots (create, update, delete) | ✓ | — |
 | Read credit usage | ✓ | — |
 
-![Perxona Console: Management → Integration → Connect API keys (open the avatar menu, top right) page](assets/images/integration-page.png)
+![Perxona Console: Management → Integration → Connect API keys page](https://connect.perxona.ai/assets/images/integration-page.png)
 
 ⚠️
 
@@ -673,6 +1014,11 @@ wires the whole thing into your own project — Motion Browser's
 own code is never part of what you ship; see "Exporting to an AI
 Coding Assistant" below for how that handoff works.
 
+Motion Browser does not send `X-Legacy-Presenter`, so
+it lists assets for the current Presenter, not the legacy one.
+For the legacy Presenter, see
+[Legacy Presenter](https://connect.perxona.ai/#legacy-presenter).
+
 The **core idea**: the
 `<sv-presenter>` Web Component understands
 inline motion tags. Drop a `[MOTION id:1]` chip
@@ -695,8 +1041,8 @@ project.
 
 ### Demo
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ Open the live Motion Browser](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ Open the live Motion Browser](https://connect.perxona.ai/motion-browser/)
 
 ### Features
 
@@ -782,6 +1128,8 @@ before relying on it.
 <!-- section: vrm-uploader -->
 ## VRM Uploader
 
+![Perxona Connect Kit: VRM 1.0 Character Upload Now Available](https://connect.perxona.ai/assets/images/connect-vrm-support.jpeg)
+
 Perxona Connect Kit lets you add your own
 **VRM** characters to the avatar catalog yourself,
 with one script and no extra infrastructure. This is the fastest
@@ -789,34 +1137,12 @@ path from a `.vrm` file to a live, speaking avatar —
 whether it's a branded mascot, a digital presenter, or a
 personal project.
 
-⏸️
-
-**Uploading is on hold:** please do not upload a
-VRM yet. An uploaded VRM becomes a Three.js avatar, and
-Connect is not serving those yet: by default the avatar
-catalog does not return it, and
-`<sv-presenter>`'s Three.js renderer has not
-been released. The upload itself succeeds, but you cannot
-list, select or display the result. Until this notice is
-removed, run `upload-vrm.sh` with
-`--validate-only` only. The checks are unaffected,
-so you can still get your file ready. The rest of this section
-describes how uploading works once it opens again.
-
 🪆
 
 Uploaded avatars are scoped to your Perxona organization
 account. Any member of the same org can select them from the
 Connect Kit avatar dropdown immediately after upload — no
 redeploy needed.
-
-⚠️
-
-**Beta notice:** Connect Kit is currently in
-closed beta. VRM avatars uploaded today are expected to expire
-after one month and will no longer be maintained. Perxona
-reserves the right to remove them. We will maintain VRM files
-uploaded after a future Connect Kit release.
 
 ### Uploading Your VRM
 
@@ -845,13 +1171,9 @@ secret key may upload an asset.
    without it still loads and plays motions.
 3. #### Upload it
 
-   **On hold for now** — see the notice at the
-   top of this section. Do not run this step until that
-   notice is removed.
-
    ```bash
    export PERXONA_CONNECT_SECRET_KEY=pxc_...
-   ./upload-vrm.sh --skeleton-type female my-avatar.vrm
+   ./upload-vrm.sh --gender female --heads-tall 8 my-avatar.vrm
    ```
 
    The script talks to
@@ -861,12 +1183,14 @@ secret key may upload an asset.
    first — a key issued in one region is not accepted in
    another, and the refusal never mentions regions.
 
-   `--skeleton-type` picks the motion style your
-   avatar draws its gestures from: `male`,
-   `female`, `male_three_head` or
-   `female_three_head`. Clips are retargeted onto
-   your own rig, so the wrong choice gives you gestures in
-   the wrong style rather than a playback failure. Add
+   `--gender` (`male` or
+   `female`) and
+   `--heads-tall` (`3`,
+   `6` or `8`, the body's height in
+   heads) together pick the motion set your avatar draws its
+   gestures from. Clips are retargeted onto your own rig, so
+   the wrong choice gives you gestures in the wrong style
+   rather than a playback failure. Add
    `--avatar-name "My Avatar"` to set the display
    name; without it the file name is used.
 
@@ -940,22 +1264,29 @@ will not lip-sync or emote. Provide at least one of:
   `oh`; emotions `happy`,
   `angry`, `sad`, `relaxed`,
   `surprised`; plus `neutral`, blink and
-  look-at presets.
+  look-at presets. To lip-sync with these presets, the model
+  needs all five mouth shapes.
 - **ARKit-52 blendshapes**: morph targets named
   with the standard ARKit names (such as `jawOpen`,
-  `eyeBlinkLeft`). Standard names are what to aim
-  for, but a decorated spelling such as
-  `Face.jawOpen` is recognised too — names are
-  matched without regard to case or surrounding whitespace, an
-  exact match first and a containing one second.
+  `eyeBlinkLeft`), all 52 of them — a partial set
+  does not count. Standard names are what to aim for, but a
+  decorated spelling such as `Face.jawOpen` is
+  recognised too — names are matched without regard to case or
+  surrounding whitespace, an exact match first and a containing
+  one second.
 
-🚧
+💡
 
-**Facial animation is not live yet.** The engine
-that renders Connect-uploaded models does not yet drive
-lip-sync or facial expressions. Prepare the expression data
-above so your model is ready the moment it ships; a model
-without it still loads and plays motions either way.
+**What each kind of data gives you.** With the
+five mouth-shape presets, the avatar lip-syncs while it
+speaks. With all 52 ARKit blendshapes, it lip-syncs and also
+plays the facial animation that comes with its motions. A
+model with only some of the ARKit names plays no facial
+animation. If it also lacks any of the five mouth shapes, it
+does not lip-sync. Whichever data it has, you can set any of
+its expressions yourself with `setExpressionWeight`
+(see
+[Presenter Component Reference](https://connect.perxona.ai/#sdk-set-expression-weight)).
 
 Want the full picture of the format itself? See the official
 [VRM 1.0 documentation](https://vrm.dev/en/vrm1/)
@@ -1005,6 +1336,129 @@ Join first via
 [this invite link](https://discord.gg/dywx2nJRE)
 — the channel link above only opens for members.
 
+<!-- section: vibe-coder -->
+## Vibe Coder & Beginner Guide
+
+Building with an AI coding editor (such as
+**Cursor**, **Windsurf**,
+**VS Code + GitHub Copilot**, or
+**Claude Code**) without a traditional software
+engineering background? This guide translates every technical
+term into plain language, shows how to download and configure
+the project without memorizing terminal commands, and gives you
+ready-to-copy AI prompts.
+
+### 1. Three Core Concepts in Plain Language
+
+| Term you will see | What it actually means |
+| --- | --- |
+| **GitHub & `Clone`** | **GitHub** is where the starter code lives online. **Cloning** simply means making a full copy of this project folder on your own computer so you can edit and experiment freely without affecting the original template. |
+| **Environment Variables & `.env`** | Think of `.env` as your project's **private settings file** that stays only on your computer. Your API keys are like passwords — if you paste them directly into webpage code and share your project, anyone can take them. Putting them in `.env` keeps them out of GitHub (`.gitignore` automatically blocks `.env` from being uploaded).   **Why is there a `.env.example`?** The repository includes `.env.example` as a blank form template. You duplicate it, rename the copy to `.env`, and fill in your own keys. |
+| **Two API Keys (`Secret` vs `Publishable`)** | An **API key** is a digital pass that connects the app to your Perxona account. This kit uses **two** keys on opposite sides of the trust boundary: `PERXONA_CONNECT_SECRET_KEY` stays **only on your local server**, while `PERXONA_CONNECT_PUBLISHABLE_KEY` is handed to the **web browser**. See [Get API Credentials](https://connect.perxona.ai/#credentials) above for what each key can do and how to create them. |
+
+### 2. Zero-GitHub Setup Tips
+
+1. #### Install two free tools (one-time setup)
+
+   1. **An AI code editor**: Download
+   [Cursor](https://www.cursor.com/)
+   or
+   [VS Code](https://code.visualstudio.com/).  
+   2. **Node.js (version 22 or newer)**:
+   Download the installer from
+   [nodejs.org](https://nodejs.org/). Not sure if you already have it? Ask your AI editor:
+   `"Check if Node.js 22 or newer is installed on my
+   computer."`
+2. #### Get the project onto your computer (Pick any 1 of 3 ways)
+
+   You don't need to memorize terminal commands — pick
+   whichever option feels easiest:
+
+   - **Option A — Ask your AI editor to do it for you
+     (Recommended):**
+     Paste this into Cursor, Windsurf, or Claude Code:
+     ```text
+     Please clone https://github.com/XRSPACE-Inc/perxona-connect-kit.git, go into the samples/express directory, copy .env.example to .env, and run npm install for me.
+     ```
+   - **Option B — Use the editor button:** Click
+     **Clone Git Repository...** on the welcome
+     screen of Cursor / VS Code, paste
+     `https://github.com/XRSPACE-Inc/perxona-connect-kit.git`, pick a folder on your computer, and then open the
+     `samples/express` subfolder inside it.
+   - **Option C — Download ZIP from GitHub:** On
+     the
+     [GitHub repository page](https://github.com/XRSPACE-Inc/perxona-connect-kit), click the green **<> Code** button
+     → **Download ZIP**, unzip it, and open the
+     `samples/express` folder inside it.
+
+   📁
+
+   **Check your folder:** The runnable web app
+   lives inside `samples/express/`, not the
+   top-level folder. Always open or run commands inside
+   `samples/express/`.
+3. #### Find and edit `.env`, then run the sample
+
+   Follow [Get API Credentials](https://connect.perxona.ai/#credentials) to
+   create your two keys, and
+   [Run the Express Sample](https://connect.perxona.ai/#quickstart) below to
+   fill in `.env` and start the server.
+
+   💡
+
+   **Can't see `.env` in Finder or File
+   Explorer?**
+   Files starting with a dot (`.`) are hidden by
+   default on macOS and Windows. Look in the
+   **left file sidebar of Cursor / VS Code**
+   — it always shows `.env` files. Make sure
+   there are no spaces around `=`, no quotes,
+   and that the file is named `.env` (not
+   `.env.txt`), then save (`Cmd+S` /
+   `Ctrl+S`).
+
+### 3. How to Vibe Code Your Own App (Ready-to-Copy AI Prompts)
+
+This repository ships with built-in AI context files (`AGENTS.md`
+and `CLAUDE.md`). When you open the project in
+Cursor, Windsurf, Claude Code, or VS Code Copilot, your AI
+assistant automatically knows the SDK contract and project
+structure.
+
+🎯
+
+**The Golden Rule: Build from `demos/embed/`, not
+from `demos/studio/`.**
+Use **Studio** in your browser to browse avatars
+and create your chatbot, but always ask your AI editor to
+modify `samples/express/public/demos/embed/` (a
+clean, minimal product-page template) rather than
+`demos/studio/` (a full developer console with
+catalog pickers, CRUD forms, and debug tools).
+
+Copy and paste any of these prompts straight into your AI
+editor:
+
+**Prompt 1 — Redesign the product page around the
+avatar:**
+
+```text
+Look at samples/express/public/demos/embed/. Keep the <sv-presenter> avatar initialization and chat logic in app.js intact, but redesign index.html and style.css into a modern [e.g. AI hotel concierge / virtual language tutor / brand ambassador] website.
+```
+
+**Prompt 2 — Pin your chosen Avatar, Scene, Voice, and Chatbot
+in `.env`:**
+
+```text
+Read the auto-selected Avatar, Scene, Voice, and Chatbot IDs from my local server's startup log (or use the IDs I selected in Studio) and update DEMO_FIXED_AVATAR_ID, DEMO_FIXED_SCENE_ID, DEMO_FIXED_VOICE_ID, and DEMO_FIXED_CHATBOT_ID in samples/express/.env so the Embed demo uses my chosen character. Do not read or output PERXONA_CONNECT_SECRET_KEY, do not expose local /api/* routes as public APIs, and do not hardcode credentials or responses in frontend code.
+```
+
+**Prompt 3 — Add clickable starter question chips:**
+
+```text
+In samples/express/public/demos/embed/, add 3 clickable starter question buttons above the chat input box so visitors can click a question to immediately send it to the chatbot and have the avatar speak the answer.
+```
+
 <!-- section: quickstart -->
 ## Run the Express Sample
 
@@ -1029,7 +1483,9 @@ Get from clone to a talking avatar in
 **5–15 minutes**. You need
 **Node `>=22`** and two Connect API
 keys — see
-[Get Your API Credentials](https://connect.perxona.ai/#credentials).
+[Get Your API Credentials](https://connect.perxona.ai/#credentials). New to
+GitHub, `.env` files, or terminal commands? Start
+with the [Vibe Coder Guide](https://connect.perxona.ai/#vibe-coder) above.
 
 1. #### Clone the sample
 
@@ -1101,7 +1557,7 @@ in `.gitignore`.
 | `PERXONA_CONNECT_SECRET_KEY` | ✅ | — | Secret Connect API key. Authenticates the server on every upstream call; never served to a browser. **Leave its allowed domains empty** — a server sends no `Origin`, so any domain restriction refuses every call. |
 | `PERXONA_CONNECT_PUBLISHABLE_KEY` | ✅ | — | Publishable Connect API key. Served to the browser on `GET /api/connect-key` and passed to the presenter. Reads the catalog, generates presentations, and mints speech tokens (the last two bill your organization); it cannot reach the chatbot routes. |
 | `PORT` | — | `8083` | Port the server listens on. |
-| `PRESENTER_URL` | — | `cdn.perxona.ai/…/presenter.js` | Presenter engine CDN URL. Override only if your Perxona contact provides a specific URL. |
+| `PRESENTER_URL` | — | `https://cdn.perxona.ai/prod/connect/latest/widget/entry/presenter.js` | Presenter engine CDN URL. The default is region-neutral; set `https://cdn.perxona.ai/{eu,asia}/prod/connect/latest/widget/entry/presenter.js` to pin a region, or a URL your Perxona contact provides. |
 | `LLM_API_KEY` | — | — | Set to enable the chat panel. Any OpenAI-compatible key works, including local Ollama via `LLM_BASE_URL`. |
 | `LLM_BASE_URL` | — | `https://api.openai.com/v1` | LLM endpoint URL (override for Ollama or other providers). |
 | `LLM_MODEL` | — | `gpt-4o-mini` | LLM model name passed to the chat endpoint. |
@@ -1150,7 +1606,7 @@ when it triggers `initializeWithConnectKey()` and
 <!-- section: embed -->
 ## Embed
 
-![Perxona Connect Kit: Embed demo example](assets/images/embed-sample.png)
+![Perxona Connect Kit: Embed demo example](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 The `demos/embed/` demo is what the Connect Kit looks
 like once it is live: a product site with an avatar answering
@@ -1174,8 +1630,15 @@ lifecycle:
    setup at all; set them to pin your own, which is what a real
    integration does. Which of the two happened is reported in the
    server's startup log, never on the page. Live credentials are
-   required and the account needs at least one chatbot — mock
-   mode can supply neither.
+   required, and the account needs at least one chatbot Embed can
+   pick: auto-pick skips a **disabled** one (it
+   rejects every message) and an
+   **app-managed** one, named with the
+   `"[app] "` prefix
+   `GET /api/config` reports as
+   `appManagedChatbotPrefix` — an app built on the kit
+   creates it for its own use, such as InterviewCoach's JSON-only
+   bot. Mock mode can supply neither.
 2. **Initialize on page load.**
    `app.js` fetches that config and
    `GET /api/connect-key`, then calls
@@ -1204,7 +1667,7 @@ lifecycle:
 <!-- section: studio -->
 ## Studio
 
-![Perxona Connect Kit: Studio demo example](assets/images/studio-example.png)
+![Perxona Connect Kit: Studio demo example](https://connect.perxona.ai/assets/images/studio-example.png)
 
 The `demos/studio/` demo is the other end of the
 range: you are building the application itself. On top of the
@@ -1441,13 +1904,19 @@ calls Connect itself and bypasses this server entirely.
 POST/api/v1/connect/presentation
 
 Generate a one-shot presentation payload. Call the Connect
-API directly from your server with your
-**secret** key as an
-`X-Connect-Key` header; this route is not proxied
-by the Express sample server. Required fields:
+API directly with either key as an
+`X-Connect-Key` header: the
+**publishable** key from the browser, or the
+**secret** key from your server. This route is
+not proxied by the Express sample server. Required fields:
 `avatar_id` and `message`. Optional
-fields: `voice_id`, `emotion`, and
-`intensity`.
+fields: `voice_id`, `emotion`,
+`intensity`, and
+`personality_trait` (see
+[Personality trait](https://connect.perxona.ai/#personality-trait)). Without
+`voice_id` it synthesizes no speech (BYO TTS mode;
+see
+[Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)).
 
 ```bash
 curl -X POST "$CONNECT_API_BASE/presentation" \
@@ -1478,6 +1947,39 @@ Supported `emotion` values: `joy`,
 `realization`, and `confusion`.
 Supported `intensity` values: `low`,
 `neutral`, and `high`.
+
+POST/api/v1/connect/motion-suggestion
+
+Suggest motions for a line of text when you have no avatar in
+the catalog to name: describe the body instead. Required
+fields: `gender` (`male` or
+`female`), `heads_tall` (`3`,
+`6`, or `8`, the body's height in
+heads), and `text`, which must not already contain
+motion marks. Optional: `personality_trait` (see
+[Personality trait](https://connect.perxona.ai/#personality-trait)). The
+response carries `markup`, the text with a
+`[MOTION id:priority]` mark where each suggested
+motion starts, and `performance_manifest`, the
+motion assets those marks refer to. `markup` can be
+sent as the `message` of
+`/presentation` unchanged. When no motion fits,
+`markup` equals `text` and the manifest
+is empty. Any key that can generate presentations can call
+this route; it shares that route's rate limit and bills usage
+the same way. It is not proxied by the Express sample
+server.
+
+```bash
+curl -X POST "$CONNECT_API_BASE/motion-suggestion" \
+  -H "X-Connect-Key: pxc_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gender": "female",
+    "heads_tall": 6,
+    "text": "Welcome to our hackathon demo!"
+  }'
+```
 
 ### Health & Config
 
@@ -1618,8 +2120,7 @@ empty or absent.
 **Full contract:** The endpoints above are the
 Express demo's proxy API. For the exact field shapes and
 schemas of the underlying Connect API, see the OpenAPI spec at
-`docs/openapi.yaml` inside the sample directory.
-For TypeScript presenter types, install
+[`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml). For TypeScript presenter types, install
 `@perxona/presenter-types@latest`.
 
 <!-- section: limitations -->
@@ -1697,9 +2198,32 @@ Avatar doesn't appear after clicking Launch
 
 Check the browser console for errors. Common causes: the
 presenter engine failed to load (CORS error — verify
-`PRESENTER_URL` with your Perxona contact), or
+`PRESENTER_URL` with your Perxona contact — or a
+refusal from the demo's `app.js`: one naming
+`ALLOWED_PRESENTER_HOSTS` means the URL's host is
+not on that list, and one saying the engine must load over
+https means the URL uses http on a host other than
+`localhost`), or
 `initializeWithConnectKey()` rejected because the
-selected avatar/scene IDs don't exist in your account.
+selected avatar/scene IDs don't exist in your account. IDs
+copied from an integration built before Connect Kit 1.0 belong
+to the [legacy Presenter](https://connect.perxona.ai/#legacy-presenter) and do
+not load in the current one — list the catalog again without
+`X-Legacy-Presenter` to get IDs for it. If the IDs
+stay the same, or an uploaded avatar does not appear in the
+catalog, your organization has not been switched to the
+current Presenter's assets yet — ask your Perxona
+contact.
+
+The avatar catalog is empty
+
+The current Presenter has no built-in avatars yet; they will
+follow on a date announced separately. Until then,
+[upload your own VRM avatar](https://connect.perxona.ai/#vrm-uploader) to use
+it from the catalog. If an uploaded avatar does not appear in
+the catalog, your organization has not been switched to the
+current Presenter's assets yet — ask your Perxona
+contact.
 
 Avatar appears but doesn't speak
 
@@ -1767,18 +2291,18 @@ Once either demo is running, here are natural paths forward:
   on `localhost`.
 - **Explore the full API contract.** See the
   OpenAPI spec for the underlying Connect API at
-  `docs/openapi.yaml` inside the sample directory,
-  and install `@perxona/presenter-types@latest` for
-  presenter type declarations.
+  [`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml), and install
+  `@perxona/presenter-types@latest` for presenter
+  type declarations.
 - **Build from Embed, not from Studio.**
-  `demos/embed/` is the template — 170 lines of
+  `demos/embed/` is the template — a minimal
   `app.js` and an `index.html` that is
   mostly filler copy. Copy it, replace the layout, keep the
-  widget. Studio is a tool rather than a starting point: 1 200
-  lines of catalog pickers, chatbot CRUD and a debug timeline
-  you would spend your first hour deleting. Use it to browse the
-  catalog and create a chatbot, pin what you chose with
-  `DEMO_FIXED_*`, then build from Embed.
+  widget. Studio is a tool rather than a starting point: a full
+  developer console of catalog pickers, chatbot CRUD and a debug
+  timeline you would spend your first hour deleting. Use it to
+  browse the catalog and create a chatbot, pin what you chose
+  with `DEMO_FIXED_*`, then build from Embed.
 - **Follow updates and contribute.** Star and watch
   the repository below to track new features and bugfixes.
 

@@ -13,7 +13,8 @@
 
 クローンからしゃべるアバターまで
 **5〜15 分**。**Node `>=22`**
-と 2 つの Connect API キーが必要です——[API 認証情報を取得](https://connect.perxona.ai/#credentials)を参照してください。
+と 2 つの Connect API キーが必要です——[API 認証情報を取得](https://connect.perxona.ai/#credentials)を参照してください。GitHub や
+`.env`、ターミナル操作に慣れていない方は、上の[Vibe Coder 入門ガイド](https://connect.perxona.ai/#vibe-coder)からご覧ください。
 
 1. #### サンプルをクローン
 

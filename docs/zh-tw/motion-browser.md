@@ -7,6 +7,10 @@ Motion Browser 是一個獨立的開發者工具，讓你自訂 Avatar
 自己的程式碼不會出現在你要出貨的東西裡；這個交接的具體做法見下方「匯出給
 AI 開發助手」。
 
+Motion Browser 不會帶
+`X-Legacy-Presenter`，所以列出的是目前 Presenter
+的資產，不是舊版的。使用舊版 Presenter 請見[舊版 Presenter](https://connect.perxona.ai/#legacy-presenter)。
+
 **核心概念**：`<sv-presenter>` Web
 Component 支援行內動作標籤。在腳本文字中任意插入
 `[MOTION id:1]`，Avatar
@@ -28,8 +32,8 @@ Script Composer 上有一個
 
 ### 示範
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ 開啟完整版 Motion Browser](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ 開啟完整版 Motion Browser](https://connect.perxona.ai/motion-browser/)
 
 ### 功能
 

@@ -45,9 +45,32 @@ Avatar doesn't appear after clicking Launch
 
 Check the browser console for errors. Common causes: the
 presenter engine failed to load (CORS error — verify
-`PRESENTER_URL` with your Perxona contact), or
+`PRESENTER_URL` with your Perxona contact — or a
+refusal from the demo's `app.js`: one naming
+`ALLOWED_PRESENTER_HOSTS` means the URL's host is
+not on that list, and one saying the engine must load over
+https means the URL uses http on a host other than
+`localhost`), or
 `initializeWithConnectKey()` rejected because the
-selected avatar/scene IDs don't exist in your account.
+selected avatar/scene IDs don't exist in your account. IDs
+copied from an integration built before Connect Kit 1.0 belong
+to the [legacy Presenter](https://connect.perxona.ai/#legacy-presenter) and do
+not load in the current one — list the catalog again without
+`X-Legacy-Presenter` to get IDs for it. If the IDs
+stay the same, or an uploaded avatar does not appear in the
+catalog, your organization has not been switched to the
+current Presenter's assets yet — ask your Perxona
+contact.
+
+The avatar catalog is empty
+
+The current Presenter has no built-in avatars yet; they will
+follow on a date announced separately. Until then,
+[upload your own VRM avatar](https://connect.perxona.ai/#vrm-uploader) to use
+it from the catalog. If an uploaded avatar does not appear in
+the catalog, your organization has not been switched to the
+current Presenter's assets yet — ask your Perxona
+contact.
 
 Avatar appears but doesn't speak
 

@@ -1,6 +1,6 @@
 ## Studio
 
-![Perxona Connect Kit：Studio デモの例](assets/images/studio-example.png)
+![Perxona Connect Kit：Studio デモの例](https://connect.perxona.ai/assets/images/studio-example.png)
 
 `demos/studio/`
 デモはもう一方の端です：アプリケーション自体を作る場合の姿です。上記の共通統合に加えて、カタログのピッカー、chatbot

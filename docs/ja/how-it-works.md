@@ -45,9 +45,12 @@ presentation サービスを担い、`<sv-presenter>`
    sceneId, voiceId })`
    を呼びます。
 5. コンポーネントが `Ready` を報告したら、
-   `presenter.present(content)` または
+   `presenter.present(content)`、
    `presenter.presentWithAudio(audio, content)`
-   を呼びます。
+   または
+   `presenter.presentDirect(payload)`
+   を呼びます。`presentDirect`
+   は、自分の音声を指定したモーションで再生します（[例：Gemini Live との統合](https://connect.perxona.ai/#gemini-live-example)を参照）。
 
 ⚠️
 

@@ -29,13 +29,19 @@ calls Connect itself and bypasses this server entirely.
 POST/api/v1/connect/presentation
 
 Generate a one-shot presentation payload. Call the Connect
-API directly from your server with your
-**secret** key as an
-`X-Connect-Key` header; this route is not proxied
-by the Express sample server. Required fields:
+API directly with either key as an
+`X-Connect-Key` header: the
+**publishable** key from the browser, or the
+**secret** key from your server. This route is
+not proxied by the Express sample server. Required fields:
 `avatar_id` and `message`. Optional
-fields: `voice_id`, `emotion`, and
-`intensity`.
+fields: `voice_id`, `emotion`,
+`intensity`, and
+`personality_trait` (see
+[Personality trait](https://connect.perxona.ai/#personality-trait)). Without
+`voice_id` it synthesizes no speech (BYO TTS mode;
+see
+[Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)).
 
 ```bash
 curl -X POST "$CONNECT_API_BASE/presentation" \
@@ -66,6 +72,39 @@ Supported `emotion` values: `joy`,
 `realization`, and `confusion`.
 Supported `intensity` values: `low`,
 `neutral`, and `high`.
+
+POST/api/v1/connect/motion-suggestion
+
+Suggest motions for a line of text when you have no avatar in
+the catalog to name: describe the body instead. Required
+fields: `gender` (`male` or
+`female`), `heads_tall` (`3`,
+`6`, or `8`, the body's height in
+heads), and `text`, which must not already contain
+motion marks. Optional: `personality_trait` (see
+[Personality trait](https://connect.perxona.ai/#personality-trait)). The
+response carries `markup`, the text with a
+`[MOTION id:priority]` mark where each suggested
+motion starts, and `performance_manifest`, the
+motion assets those marks refer to. `markup` can be
+sent as the `message` of
+`/presentation` unchanged. When no motion fits,
+`markup` equals `text` and the manifest
+is empty. Any key that can generate presentations can call
+this route; it shares that route's rate limit and bills usage
+the same way. It is not proxied by the Express sample
+server.
+
+```bash
+curl -X POST "$CONNECT_API_BASE/motion-suggestion" \
+  -H "X-Connect-Key: pxc_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gender": "female",
+    "heads_tall": 6,
+    "text": "Welcome to our hackathon demo!"
+  }'
+```
 
 ### Health & Config
 
@@ -206,6 +245,5 @@ empty or absent.
 **Full contract:** The endpoints above are the
 Express demo's proxy API. For the exact field shapes and
 schemas of the underlying Connect API, see the OpenAPI spec at
-`docs/openapi.yaml` inside the sample directory.
-For TypeScript presenter types, install
+[`/openapi.yaml`](https://connect.perxona.ai/openapi.yaml). For TypeScript presenter types, install
 `@perxona/presenter-types@latest`.

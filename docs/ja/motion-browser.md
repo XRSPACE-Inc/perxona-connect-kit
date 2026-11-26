@@ -6,6 +6,12 @@ Motion Browser
 自体のコードが出荷物に含まれることはありません。この受け渡しの具体的な流れは、下の「AI
 コーディングアシスタントへのエクスポート」を参照してください。
 
+Motion Browser は
+`X-Legacy-Presenter`
+を付けないため、表示するのは現行の Presenter
+のアセットで、レガシー Presenter のものではありません。レガシー
+Presenter については[レガシー Presenter](https://connect.perxona.ai/#legacy-presenter)を参照してください。
+
 **中核となる考え方**：`<sv-presenter>`
 Web コンポーネントはインラインモーションタグを理解します。
 スクリプトテキストのどこにでも
@@ -28,8 +34,8 @@ AI コーディングアシスタントに渡してください。
 
 ### デモ
 
-[](assets/videos/motion-browser-demo.mp4)
-[↗ Motion Browser を新しいタブで開く](/motion-browser/)
+[](https://connect.perxona.ai/assets/videos/motion-browser-demo.mp4)
+[↗ Motion Browser を新しいタブで開く](https://connect.perxona.ai/motion-browser/)
 
 ### 機能
 

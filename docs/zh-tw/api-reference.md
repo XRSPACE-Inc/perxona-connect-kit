@@ -22,8 +22,10 @@ URL，例如
 
 ⚠️
 
-**絕不可在同一個請求同時送出兩種 header。**不論是正在從舊版 header 遷移、還是同時測試兩者，API 都會以
-`400` 拒絕同時帶著 `X-Connect-Key` 與
+**絕不可在同一個請求同時送出兩種 header。**不論是正在從
+`Authorization: Bearer` 遷移、還是同時測試兩者，API
+都會以 `400` 拒絕同時帶著
+`X-Connect-Key` 與
 `Authorization: Bearer` 的請求。
 
 ### 用量與訂閱
@@ -104,10 +106,10 @@ curl -X GET "$CONNECT_API_BASE/credit" \
 | Method | Path | 用途 |
 | --- | --- | --- |
 | GET | `/assets/avatars` | 列出驗證組織可用的啟用中 Avatar。 |
-| GET | `/assets/avatars/{avatar_id}` | 取得 Avatar 詳細資料，包含執行期設定。 |
+| GET | `/assets/avatars/{avatar_id}` | 取得 Avatar 詳細資料，包含執行期設定。加上 `include=default_motions` 會多回傳 `default_motions`：`idle`、`talking`、`listening`、`loading` 四組預設動作，以及預設表情 `facial_motions`。每個鍵一定都在，沒有動作的組回傳空陣列。`personality_trait` 依個性特質挑選預設動作與 `lower_body_pool`，見[個性特質](https://connect.perxona.ai/#personality-trait)。 |
 | GET | `/assets/avatars/{avatar_id}/motions` | 列出與 Avatar 相容的 Motion；需要時可用 `pose_tag` 或 `motion_ids` 篩選。 |
 | GET | `/assets/scenes` `/assets/scenes/{scene_id}` | 列出啟用中的 Scene，或讀取單一 Scene 詳情。 |
-| POST | `/assets/vrm/upload` | 以 multipart form data 上傳 `.vrm` 檔案並發佈成啟用中的 Avatar。需要 **secret** 金鑰。欄位：`vrm_file`、`skeleton_type`，以及選填的 `avatar_name` 與 `lipsync_mode`。回傳新的 `avatar_id`。送出前先檢查檔案的 script 見[VRM Uploader](https://connect.perxona.ai/#vrm-uploader)。**目前暫停上傳**，原因見該章節。 |
+| POST | `/assets/vrm/upload` | 以 multipart form data 上傳 `.vrm` 檔案並發佈成啟用中的 Avatar。需要 **secret** 金鑰。欄位：`vrm_file`、`gender`（`male` 或 `female`）、`heads_tall`（`3`、`6` 或 `8`），以及選填的 `avatar_name` 與 `lipsync_mode`。回傳新的 `avatar_id`。送出前先檢查檔案的 script 見[VRM Uploader](https://connect.perxona.ai/#vrm-uploader)。 |
 
 ### Voice 與 Presentation
 
@@ -115,7 +117,46 @@ curl -X GET "$CONNECT_API_BASE/credit" \
 | --- | --- | --- |
 | GET | `/voices` `/voices/{voice_id}` | 列出 custom voice，或讀取 voice 的公開合成設定。每個 voice 都帶 `languages` 欄位，列出它支援的語言，值是短碼 （`en`、`ja`⋯，不是 `en-US` 這種 locale）。列表支援 `language` 與 `provider` 篩選；詳見表格下方的說明。 |
 | POST | `/voice-tokens/tts` | 為 JSON 主體 `{ voice_id }` 發行 provider TTS Token。一般的 `<sv-presenter>` 語音會自行處理此執行期步驟。 |
-| POST | `/presentation` | 產生單次 presentation payload。傳入 `avatar_id` 與 `message`；`voice_id`、`emotion` 與 `intensity` 為選填。 |
+| POST | `/presentation` | 產生單次 presentation payload。傳入 `avatar_id` 與 `message`；`voice_id`、`emotion`、`intensity` 與 `personality_trait` 為選填。不帶 `voice_id` 時不合成語音（BYO TTS mode；見 [範例：整合 Gemini Live](https://connect.perxona.ai/#gemini-live-example)）。 |
+| POST | `/motion-suggestion` | 不需要 avatar，為一段文字建議動作。傳入 `gender`、`heads_tall` 與 `text`，`personality_trait` 為選填；回傳插入動作標記的文字，以及標記所指的動作 asset。 |
+
+🎭
+
+**個性特質。**
+`GET /assets/avatars/{avatar_id}`（query
+參數）、`POST /presentation` 與
+`POST /motion-suggestion`（body
+欄位）都接受選填的
+`personality_trait`：`Casual`、`Energetic`
+或 `Professional`。省略時為
+`Casual`。值要照列出的大小寫寫（首字大寫）：和小寫的
+`emotion`、`intensity` 不同，寫成
+`casual` 或 `PROFESSIONAL` 會回
+`422`。
+
+使用 `<sv-presenter>` 時，在
+`initializeWithConnectKey` 的
+`target` 設定 `personalityTrait`
+即可，presenter 取得 avatar detail 與每次呼叫
+`/presentation` 時都會帶上。自己呼叫
+`/motion-suggestion` 的 app 要自己帶
+`personality_trait`，值與交給 presenter 的相同。
+
+三種結果套用個性特質的方式不同，出現不符的動作不一定是 bug：
+
+- `default_motions`：每一組只留帶該個性特質的動作；該組一支都沒有時，回該組的全部動作。所以帶
+  `Professional` 仍可能播到不是 Professional 的
+  idle。
+- `lower_body_pool`（presenter
+  在手勢下共用的下半身動作）：只留帶該個性特質的動作；一支都沒有時為空陣列。空陣列也可能是沒有動作符合
+  avatar
+  的骨架，或組織關閉了下半身混合；這時手勢會播全身動作。
+- `/presentation` 與
+  `/motion-suggestion`
+  建議的手勢：只選帶該個性特質的動作，沒有標個性特質的動作也排除。因此某些
+  avatar 在某個個性特質下可能完全沒有手勢。
+
+`facial_motions` 不受個性特質影響。
 
 💡
 

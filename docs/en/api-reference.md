@@ -31,8 +31,8 @@ create one.
 **Never send both headers on one request.** The
 API rejects `X-Connect-Key` and
 `Authorization: Bearer` together with
-`400`, whether you are migrating off the legacy
-header or testing both.
+`400`, whether you are migrating off
+`Authorization: Bearer` or testing both.
 
 ### Usage and Subscription
 
@@ -127,10 +127,10 @@ both.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/assets/avatars` | List active avatars available to the authenticated organization. |
-| GET | `/assets/avatars/{avatar_id}` | Read avatar detail, including its runtime configuration. |
+| GET | `/assets/avatars/{avatar_id}` | Read avatar detail, including its runtime configuration. Add `include=default_motions` to also get `default_motions`: the default motions for `idle`, `talking`, `listening` and `loading`, plus the default `facial_motions`. Every key is always present; a group with no motion is an empty list. `personality_trait` picks the default motions and `lower_body_pool` for a personality; see [Personality trait](https://connect.perxona.ai/#personality-trait). |
 | GET | `/assets/avatars/{avatar_id}/motions` | List motions compatible with the avatar; filter by `pose_tag` or `motion_ids` when needed. |
 | GET | `/assets/scenes` `/assets/scenes/{scene_id}` | List active scenes or read one scene's detail. |
-| POST | `/assets/vrm/upload` | Upload a `.vrm` file as multipart form data and publish it as an active avatar. Requires a **secret** key. Fields: `vrm_file`, `skeleton_type`, and optionally `avatar_name` and `lipsync_mode`. Returns the new `avatar_id`. See [VRM Uploader](https://connect.perxona.ai/#vrm-uploader) for the script that checks a file before sending it. **Uploading is on hold for now** — that section explains why. |
+| POST | `/assets/vrm/upload` | Upload a `.vrm` file as multipart form data and publish it as an active avatar. Requires a **secret** key. Fields: `vrm_file`, `gender` (`male` or `female`), `heads_tall` (`3`, `6` or `8`), and optionally `avatar_name` and `lipsync_mode`. Returns the new `avatar_id`. See [VRM Uploader](https://connect.perxona.ai/#vrm-uploader) for the script that checks a file before sending it. |
 
 ### Voices and Presentation
 
@@ -138,7 +138,52 @@ both.
 | --- | --- | --- |
 | GET | `/voices` `/voices/{voice_id}` | List custom voices or read a voice's public synthesis details. Each voice carries a `languages` array of the languages it speaks, as short codes (`en`, `ja`, … — never locales like `en-US`). The list supports `language` and `provider` filters; see the callout below this table. |
 | POST | `/voice-tokens/tts` | Issue a provider TTS token for JSON body `{ voice_id }`. Normal `<sv-presenter>` speech manages this runtime step for you. |
-| POST | `/presentation` | Generate a one-shot presentation payload. Send `avatar_id` and `message`; `voice_id`, `emotion`, and `intensity` are optional. |
+| POST | `/presentation` | Generate a one-shot presentation payload. Send `avatar_id` and `message`; `voice_id`, `emotion`, `intensity`, and `personality_trait` are optional. Without `voice_id` it synthesizes no speech (BYO TTS mode; see [Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)). |
+| POST | `/motion-suggestion` | Suggest motions for a line of text without an avatar. Send `gender`, `heads_tall`, and `text`, and optionally `personality_trait`; returns the text with motion marks and the motion assets they refer to. |
+
+🎭
+
+**Personality trait.**
+`GET /assets/avatars/{avatar_id}` (a query
+parameter), `POST /presentation` and
+`POST /motion-suggestion` (a body field) take an
+optional `personality_trait`:
+`Casual`, `Energetic` or
+`Professional`. Omitted, it is
+`Casual`. Write the value capitalized exactly as
+listed: unlike `emotion` and
+`intensity`, which are lowercase,
+`casual` or `PROFESSIONAL` is refused
+with `422`.
+
+With `<sv-presenter>`, set
+`personalityTrait` on the `target` of
+`initializeWithConnectKey`; the presenter sends
+it with the avatar detail and with every
+`/presentation` call. An app that calls
+`/motion-suggestion` itself sends its own
+`personality_trait`, the same value it gives the
+presenter.
+
+Each result narrows to the trait differently, so a motion
+outside it is not always a bug:
+
+- `default_motions`: each group keeps the motions
+  with that trait, and keeps all of its motions when none
+  has it. With `Professional`, the avatar may
+  still idle in a motion that is not Professional.
+- `lower_body_pool`, the motions the presenter
+  may play under gestures as a shared lower body: only the
+  motions with that trait. When none has it, the list is
+  empty. An empty list can also mean no motion fits the
+  avatar's skeleton, or the organization has lower-body
+  blending off; gestures then play their full body.
+- The gestures `/presentation` and
+  `/motion-suggestion` suggest: only motions with
+  that trait; a motion with no trait is left out too. Some
+  avatars therefore get no gesture at all for a trait.
+
+`facial_motions` do not depend on the trait.
 
 💡
 

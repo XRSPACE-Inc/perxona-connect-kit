@@ -1,6 +1,6 @@
 ## Embed
 
-![Perxona Connect Kit：Embed デモの例](assets/images/embed-sample.png)
+![Perxona Connect Kit：Embed デモの例](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 `demos/embed/` デモは、Connect Kit
 が本番で動いている姿です：アバターが質問に答えている製品サイト。カタログもピッカーも設定パネルもなく、そして意図的に**ページ上のどこにも自身の設定について書かれていません**。実際のサイトは訪問者に自分の設定を説明しないので、これもしません。widget
@@ -14,8 +14,14 @@
    `fixedTarget`（avatar・scene・voice）と
    `chatbotId` を報告します。`DEMO_FIXED_*`
    をすべて空のままにすると、サーバーがアカウント内の最初のものをそれぞれ選ぶため、クローンしただけの状態で設定なしに動きます。自分のものを固定したい場合は設定してください。実際の統合ではこちらです。どちらだったかはサーバーの起動ログにのみ出力され、ページには出ません。実際の資格情報が必要で、アカウントに
-   chatbot が最低 1 つ必要です——mock
-   モードはどちらも提供できません。
+   Embed が選べる chatbot が最低 1
+   つ必要です。自動選択は**無効（disabled）**の
+   chatbot（すべてのメッセージを拒否します）と、**app-managed**
+   の chatbot をスキップします。app-managed とは、名前が
+   `GET /api/config` の
+   `appManagedChatbotPrefix`（`"[app] "`）で始まり、kit 上のアプリが自分用に作成した chatbot
+   のことで、InterviewCoach の JSON だけを返す chatbot
+   がその例です。mock モードはどちらも提供できません。
 2. **ページ読み込み時に初期化。**`app.js` がその config と
    `GET /api/connect-key` を取得し、`presenter.initializeWithConnectKey(key,
    config.fixedTarget)`

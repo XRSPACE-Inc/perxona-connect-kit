@@ -39,8 +39,11 @@
    `presenter.initializeWithConnectKey(connectKey, { avatarId,
    sceneId, voiceId })`。
 5. 元件回報 `Ready` 後，呼叫
-   `presenter.present(content)` 或
-   `presenter.presentWithAudio(audio, content)`。
+   `presenter.present(content)`、
+   `presenter.presentWithAudio(audio, content)` 或
+   `presenter.presentDirect(payload)`。`presentDirect`
+   播放你自己的音訊，搭配你提供的動作（見
+   [範例：整合 Gemini Live](https://connect.perxona.ai/#gemini-live-example)）。
 
 ⚠️
 

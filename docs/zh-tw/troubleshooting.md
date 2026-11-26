@@ -34,9 +34,25 @@ secret 金鑰留在瀏覽器裡。檢查
 
 檢查瀏覽器控制台的錯誤。常見原因：presenter
 引擎載入失敗（CORS 錯誤——向 Perxona 聯絡人確認
-`PRESENTER_URL`），或
+`PRESENTER_URL`；或是 demo 的
+`app.js` 拒絕載入：訊息提到
+`ALLOWED_PRESENTER_HOSTS`，代表 URL 的 host
+不在那份清單裡；訊息說必須經由 https 載入，代表 URL 在
+`localhost` 以外的 host 用了 http），或
 `initializeWithConnectKey()` 因所選 avatar/scene ID
-在你的帳號中不存在而失敗。
+在你的帳號中不存在而失敗。從 Connect Kit 1.0 以前的整合沿用的
+ID 屬於[舊版 Presenter](https://connect.perxona.ai/#legacy-presenter)，目前的
+Presenter 載入不了——不帶
+`X-Legacy-Presenter` 重新列出 catalog 取得新的
+ID。如果重新列出後 ID 沒變，或上傳的角色沒出現在
+catalog，代表你的組織還沒切換到目前 Presenter 的資產，請洽
+Perxona 聯絡人。
+
+Avatar 目錄是空的
+
+目前的 Presenter 還沒有內建角色，時程另行公告。在那之前，請[上傳你自己的 VRM 角色](https://connect.perxona.ai/#vrm-uploader)，就能從 catalog 使用。如果上傳的角色沒出現在
+catalog，代表你的組織還沒切換到目前 Presenter 的資產，請洽
+Perxona 聯絡人。
 
 Avatar 出現但不說話
 

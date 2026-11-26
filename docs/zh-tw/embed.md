@@ -1,6 +1,6 @@
 ## Embed
 
-![Perxona Connect Kit：Embed demo 範例](assets/images/embed-sample.png)
+![Perxona Connect Kit：Embed demo 範例](https://connect.perxona.ai/assets/images/embed-sample.png)
 
 `demos/embed/` demo 展示 Connect Kit
 上線之後的樣子：一個產品網站，虛擬人在上面回答問題。沒有
@@ -17,7 +17,13 @@ console。開啟
    留空，伺服器會各挑你帳號裡的第一個，所以剛 clone
    下來完全不用設定就能跑；要釘住自己的就填進去，這才是真實整合的做法。到底是哪一種，只會出現在伺服器的啟動
    log，不會出現在頁面上。這需要真實憑證，而且帳號裡至少要有一個
-   chatbot——mock 模式兩者都提供不了。
+   Embed 挑得到的
+   chatbot：自動挑選會略過**停用（disabled）**的
+   chatbot（它會拒絕每一則訊息），也會略過
+   **app-managed** 的 chatbot，也就是名稱以
+   `GET /api/config` 回報的
+   `appManagedChatbotPrefix`（`"[app] "`）開頭、由 kit 上的 app 自己建立與使用的 chatbot，例如
+   InterviewCoach 只回 JSON 的那一個。mock 模式兩者都提供不了。
 2. **頁面載入即初始化。**`app.js` 取得該
    config 與 `GET /api/connect-key`，接著呼叫
    `presenter.initializeWithConnectKey(key,
