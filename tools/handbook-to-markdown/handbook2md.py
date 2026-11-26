@@ -43,8 +43,9 @@ def section_md(sec, lang):
         d.decompose()
     md = conv.convert(str(s))
     md = re.sub(r"\n{3,}", "\n\n", md).strip()
-    # internal anchors -> site anchors
+    # internal anchors and site paths -> absolute site URLs
     md = md.replace("](#", f"]({SITE}/#")
+    md = md.replace("](/", f"]({SITE}/").replace("](assets/", f"]({SITE}/assets/")
     return md
 
 def title_of(md):
@@ -69,7 +70,7 @@ lines = ["# Perxona Connect Kit", "",
  "> Add a talking 3D AI avatar to any web app. The Perxona Connect API (REST) plus the `<sv-presenter>` avatar Web Component (Presenter SDK): pick an avatar, scene and voice, call `present(text)`, and it speaks with lip-sync and emotion. Samples and tools live in this repo; the full handbook is at " + SITE + ".", "",
  "Key facts for agents:", "",
  "- The Presenter SDK is loaded once as a module script from a `PRESENTER_URL` your server supplies (not a secret) and registers the `<sv-presenter>` custom element. There is no bundled npm SDK yet; `@perxona/presenter-types` on npm provides TypeScript types only.",
- "- Bringing your own voice from a realtime voice API (Gemini Live, OpenAI Realtime)? Use `presenter.presentDirect()`, in Catalog or Direct mode, with motions from `POST /presentation` without `voice_id` or from `POST /motion-suggestion`. Its audio is always a complete WAV or MP3 file, never raw PCM. `presentWithAudio()` only fetches motions after it has the whole audio. See " + SITE + "/#gemini-live-example.",
+ "- Bringing your own voice from a realtime voice API (Gemini Live, OpenAI Realtime)? Prefer `presenter.presentDirect()` over `presentWithAudio()`: `presentWithAudio()` fetches motions only after it has the whole audio, so every line waits for the full clip. Get the motions from `POST /presentation` without `voice_id` (Catalog avatars only) or from `POST /motion-suggestion` (the only source for Direct avatars). `presentDirect()` takes a complete WAV or MP3 file, never raw PCM. See " + SITE + "/#gemini-live-example.",
  "- Two keys: a **secret** Connect API key (server side only) and a **publishable** key (browser). Create both in the Perxona Console under the organization management page, Integration, Connect API keys.",
  "- Fastest path: `git clone` this repo, `cd samples/express`, copy `.env.example` to `.env`, `npm install`, `npm run dev`, open http://localhost:8083.",
  "- Usage is metered in organization credits (`GET /credit`); when they run out, metered calls fail with HTTP 400 and `code: 1003`.", "",
@@ -90,7 +91,7 @@ lines += ["", "## Samples and tools", "",
 (out / "llms.txt").write_text("\n".join(lines), encoding="utf-8")
 
 full = ["# Perxona Connect Kit — full handbook (English)", "",
-        f"Source: {SITE} (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook2md.py.", ""]
+        f"Source: {SITE} (single-page handbook, split per section). Generated from the public page; regenerate with tools/handbook-to-markdown/handbook2md.py.", ""]
 for sid, t, md in en:
     full += [f"<!-- section: {sid} -->", md, ""]
 (out / "llms-full.txt").write_text("\n".join(full), encoding="utf-8")
