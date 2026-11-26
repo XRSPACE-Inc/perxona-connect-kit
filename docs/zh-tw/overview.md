@@ -11,8 +11,8 @@
 
 #### Avatar 目錄
 
-精選的寫實人物、卡通風格、VRM
-角色，從目錄挑選一個，幾分鐘內就在螢幕上。
+上傳你自己的 VRM
+角色，從目錄挑選後幾分鐘內就在螢幕上。內建角色時程另行公告。
 
 🎙️
 
@@ -51,18 +51,26 @@ Chrome、Safari、Edge
 
 透過
 `presenter.presentWithAudio()`
-直接傳入自己的音訊（任何 TTS 服務或預錄音檔的
-`ArrayBuffer`）。 Avatar 對你的音訊做
-口型同步，Motion Director
+傳入自己的音訊（任何 TTS 服務或預錄音檔，內容為完整 WAV 或
+MP3 檔的 `ArrayBuffer`）。Avatar
+對你的音訊做口型同步，Motion Director
 仍根據文字驅動肢體動作與表情——不需要 Perxona TTS。
 
 🪆
 
 #### 接入你的 Avatar（VRM 1.0）
 
-上傳 VRM 1.0
-角色，讓你的產品更貼近你的品牌與客戶需求。目前暫停上傳，詳見
-[VRM Uploader](https://connect.perxona.ai/#vrm-uploader)。
+上傳 VRM 1.0 角色，讓你的產品更貼近你的品牌與客戶需求。
+
+⚡
+
+#### 自行組合表演
+
+`presenter.presentDirect()`
+播放你的音訊，搭配你提供的動作：可以來自 Connect API 的
+`/motion-suggestion` 或
+`/presentation`，也可以自己產生。怎麼切段、怎麼排隊由你決定。見
+[範例：整合 Gemini Live](https://connect.perxona.ai/#gemini-live-example)。
 
 3 — 表演引擎
 

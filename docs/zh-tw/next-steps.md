@@ -17,15 +17,13 @@
   **Own LLM**
   來源即可使用。請注意這個路由沒有身分驗證，而且會花掉這把 key
   的錢——請只在 `localhost` 使用。
-- **探索完整 API 合約。**參考 sample 目錄下的
-  Connect API OpenAPI spec
-  `docs/openapi.yaml`，並安裝
-  `@perxona/presenter-types@latest` 取得 presenter
-  型別宣告。
-- **從 Embed 開始做，不要從 Studio。**`demos/embed/` 是模板——170 行的
+- **探索完整 API 合約。**參考 Connect API OpenAPI
+  spec [`/openapi.yaml`](/openapi.yaml)，並安裝 `@perxona/presenter-types@latest` 取得
+  presenter 型別宣告。
+- **從 Embed 開始做，不要從 Studio。**`demos/embed/` 是模板——精簡的
   `app.js`，加上一份幾乎都是填充文案的
   `index.html`。複製它、換掉版面、留下 widget。Studio
-  是工具而不是起點：1200 行的 catalog 選單、chatbot CRUD 與
+  是工具而不是起點：包含完整的 catalog 選單、chatbot CRUD 與
   debug timeline，你的第一個小時會全花在刪掉它們。用它瀏覽
   catalog、建立 chatbot，把選好的用
   `DEMO_FIXED_*` 釘住，然後從 Embed 開始做。

@@ -14,9 +14,9 @@ to deploy the moment you pick your configuration.
 
 #### Avatar Catalog
 
-Curated cast of realistic humans, cartoon characters, and
-VRM avatars. Pick one from the catalog and it's on-screen
-in minutes.
+Upload your own VRM avatar and pick it from the catalog —
+it's on-screen in minutes. Built-in avatars will follow on
+a date announced separately.
 
 🎙️
 
@@ -56,8 +56,9 @@ conversation.
 
 #### Bring Your Own Voice
 
-Pass your own audio (an `ArrayBuffer` from any
-TTS service or pre-recorded clip) directly via
+Pass your own audio (an `ArrayBuffer` holding a
+complete WAV or MP3 file, from any TTS service or a
+pre-recorded clip) via
 `presenter.presentWithAudio()`. The avatar
 lip-syncs to your audio and the Motion Director still
 drives gestures and expressions from the text — no Perxona
@@ -69,8 +70,17 @@ TTS required.
 
 Upload a VRM 1.0 character to match your brand or audience
 and make it speak.
-Uploading is on hold for now — see
-[VRM Uploader](https://connect.perxona.ai/#vrm-uploader).
+
+⚡
+
+#### Compose Your Own Performance
+
+`presenter.presentDirect()` plays your audio
+with motions you supply: from the Connect API's
+`/motion-suggestion` or
+`/presentation`, or generated yourself. Split
+and queue the lines however suits your app. See
+[Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example).
 
 3 — Presentation Engine
 

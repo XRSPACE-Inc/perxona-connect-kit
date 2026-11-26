@@ -38,9 +38,29 @@ Launch をクリックしてもアバターが表示されない
 
 ブラウザのコンソールでエラーを確認してください。よくある原因：presenter
 エンジンの読み込み失敗（CORS エラー——`PRESENTER_URL`
-を Perxona 担当者に確認）、または選択した avatar/scene ID
+を Perxona 担当者に確認。demo の
+`app.js` による拒否なら、`ALLOWED_PRESENTER_HOSTS`
+を含むメッセージは URL の host がそのリストにないこと、https
+での読み込みが必要というメッセージは
+`localhost` 以外の host で http
+を使っていることを示します）、または選択した avatar/scene ID
 がアカウントに存在しないため
-`initializeWithConnectKey()` が失敗した。
+`initializeWithConnectKey()` が失敗した。Connect
+Kit 1.0 より前の統合から引き継いだ ID は[レガシー Presenter](https://connect.perxona.ai/#legacy-presenter)のもので、現行の Presenter では読み込めません——`X-Legacy-Presenter`
+を付けずに catalog を取得し直して、新しい ID
+を使ってください。取得し直しても ID
+が変わらない場合や、アップロードしたアバターが catalog
+に表示されない場合は、組織がまだ現行の Presenter
+のアセットに切り替わっていません。Perxona
+担当者にお問い合わせください。
+
+アバターカタログが空になっている
+
+現行の Presenter
+にはまだ組み込みのアバターがありません。提供時期は別途お知らせします。それまでは[自分の VRM アバターをアップロード](https://connect.perxona.ai/#vrm-uploader)すると、catalog から使えます。アップロードしたアバターが
+catalog に表示されない場合は、組織がまだ現行の Presenter
+のアセットに切り替わっていません。Perxona
+担当者にお問い合わせください。
 
 アバターは表示されるがしゃべらない
 

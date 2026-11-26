@@ -14,19 +14,18 @@
   **Own LLM**
   ソースが使えるようになります。このルートは認証がなく、そのキーの費用を消費する点に注意してください——`localhost`
   でのみ使用してください。
-- **完全な API コントラクトを探索。**sample
-  ディレクトリ内の Connect API OpenAPI spec
-  `docs/openapi.yaml`
+- **完全な API コントラクトを探索。**Connect API
+  OpenAPI spec
+  [`/openapi.yaml`](/openapi.yaml)
   を参照し、presenter 型宣告には
   `@perxona/presenter-types@latest`
   をインストールしてください。
-- **Studio ではなく Embed から作り始める。**`demos/embed/` がテンプレートです——`app.js`
-  が 170 行、`index.html`
-  はほぼダミーのコピー。これを複製し、レイアウトを差し替え、widget
+- **Studio ではなく Embed から作り始める。**`demos/embed/` がテンプレートです——最小限の
+  `app.js` と、ほぼダミーのコピーである
+  `index.html`。これを複製し、レイアウトを差し替え、widget
   だけ残してください。Studio
   は出発点ではなく道具です：カタログのピッカー、chatbot の
-  CRUD、デバッグタイムラインで 1200
-  行あり、最初の一時間はその削除に費やすことになります。カタログの閲覧と
+  CRUD、デバッグタイムラインを備えた開発者コンソールであり、最初の一時間はその削除に費やすことになります。カタログの閲覧と
   chatbot の作成に使い、選んだものを
   `DEMO_FIXED_*` で固定してから、Embed
   で作り始めてください。

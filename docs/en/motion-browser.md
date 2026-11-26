@@ -11,6 +11,11 @@ wires the whole thing into your own project — Motion Browser's
 own code is never part of what you ship; see "Exporting to an AI
 Coding Assistant" below for how that handoff works.
 
+Motion Browser does not send `X-Legacy-Presenter`, so
+it lists assets for the current Presenter, not the legacy one.
+For the legacy Presenter, see
+[Legacy Presenter](https://connect.perxona.ai/#legacy-presenter).
+
 The **core idea**: the
 `<sv-presenter>` Web Component understands
 inline motion tags. Drop a `[MOTION id:1]` chip

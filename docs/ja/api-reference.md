@@ -24,8 +24,9 @@ Connect API は Connect Kit
 ⚠️
 
 **1
-つのリクエストで両方のヘッダーを送らないでください。**レガシーヘッダーから移行中でも、両方を試している最中でも、API
-は `X-Connect-Key` と
+つのリクエストで両方のヘッダーを送らないでください。**`Authorization: Bearer`
+から移行中でも、両方を試している最中でも、API は
+`X-Connect-Key` と
 `Authorization: Bearer`
 を同時に含むリクエストを `400` で拒否します。
 
@@ -114,10 +115,10 @@ curl -X GET "$CONNECT_API_BASE/credit" \
 | Method | Path | 用途 |
 | --- | --- | --- |
 | GET | `/assets/avatars` | 認証済み組織で利用できる有効な Avatar を一覧します。 |
-| GET | `/assets/avatars/{avatar_id}` | 実行時設定を含む Avatar 詳細を取得します。 |
+| GET | `/assets/avatars/{avatar_id}` | 実行時設定を含む Avatar 詳細を取得します。`include=default_motions` を付けると `default_motions` も返します：`idle`・`talking`・`listening`・`loading` の既定 Motion と、既定の表情 `facial_motions` です。キーは常にすべて含まれ、Motion がないグループは空の配列になります。`personality_trait` で、性格タイプに合わせて既定 Motion と `lower_body_pool` を選びます。[性格タイプ](https://connect.perxona.ai/#personality-trait) を参照してください。 |
 | GET | `/assets/avatars/{avatar_id}/motions` | Avatar と互換性のある Motion を一覧します。必要に応じて `pose_tag` または `motion_ids` で絞り込みます。 |
 | GET | `/assets/scenes` `/assets/scenes/{scene_id}` | 有効な Scene を一覧するか、1 件の Scene 詳細を取得します。 |
-| POST | `/assets/vrm/upload` | `.vrm` ファイルを multipart form data としてアップロードし、有効な Avatar として公開します。**secret** キーが必要です。フィールドは `vrm_file`、`skeleton_type`、任意で `avatar_name` と `lipsync_mode`。新しい `avatar_id` を返します。送信前にファイルを確認するスクリプトは[VRM Uploader](https://connect.perxona.ai/#vrm-uploader)を参照してください。**現在アップロードは一時停止中です**。理由は同セクションをご覧ください。 |
+| POST | `/assets/vrm/upload` | `.vrm` ファイルを multipart form data としてアップロードし、有効な Avatar として公開します。**secret** キーが必要です。フィールドは `vrm_file`、`gender`（`male` または `female`）、`heads_tall`（`3`、`6`、`8` のいずれか）、任意で `avatar_name` と `lipsync_mode`。新しい `avatar_id` を返します。送信前にファイルを確認するスクリプトは[VRM Uploader](https://connect.perxona.ai/#vrm-uploader)を参照してください。 |
 
 ### Voice と Presentation
 
@@ -125,7 +126,54 @@ curl -X GET "$CONNECT_API_BASE/credit" \
 | --- | --- | --- |
 | GET | `/voices` `/voices/{voice_id}` | custom voice を一覧するか、voice の公開合成設定を取得します。各 voice には対応言語を短縮コード（`en`、`ja` など — `en-US` のようなロケールではありません）で列挙する `languages` フィールドが含まれます。一覧は `language` と `provider` で絞り込めます。詳細は表の下の説明を参照してください。 |
 | POST | `/voice-tokens/tts` | JSON body `{ voice_id }` に対する provider TTS Token を発行します。通常の `<sv-presenter>` 発話では、この実行時処理はコンポーネントが行います。 |
-| POST | `/presentation` | 単発の presentation payload を生成します。`avatar_id` と `message` を渡し、`voice_id`、`emotion`、`intensity` は任意です。 |
+| POST | `/presentation` | 単発の presentation payload を生成します。`avatar_id` と `message` を渡し、`voice_id`、`emotion`、`intensity`、`personality_trait` は任意です。`voice_id` を省略すると音声は合成されません（BYO TTS mode。[例：Gemini Live との統合](https://connect.perxona.ai/#gemini-live-example)を参照）。 |
+| POST | `/motion-suggestion` | avatar なしで、テキストに合うモーションを提案します。`gender`、`heads_tall`、`text` を渡すと（`personality_trait` は任意）、モーションマーク付きのテキストと、マークが指すモーション asset を返します。 |
+
+🎭
+
+**性格タイプ。**
+`GET /assets/avatars/{avatar_id}`（query
+パラメーター）、`POST /presentation`、`POST /motion-suggestion`（body フィールド）は任意の
+`personality_trait`
+を受け付けます：`Casual`、`Energetic`、`Professional`
+のいずれかです。省略すると `Casual`
+になります。値は記載どおりの大文字・小文字（先頭が大文字）で書いてください。小文字の
+`emotion`・`intensity`
+とは異なり、`casual` や
+`PROFESSIONAL` は `422`
+になります。
+
+`<sv-presenter>` を使う場合は、`initializeWithConnectKey`
+の `target` に
+`personalityTrait`
+を設定するだけで、Presenter が avatar detail
+を取得するときと、`/presentation`
+を呼び出すたびに付けます。`/motion-suggestion`
+を自分で呼び出す app は、Presenter に渡したものと同じ値の
+`personality_trait` を自分で付けてください。
+
+結果ごとに性格タイプの絞り込み方が異なるため、合わない
+Motion が出ても必ずしも不具合ではありません：
+
+- `default_motions`：各グループはその性格タイプの
+  Motion だけを残し、1 つもない場合はそのグループの Motion
+  をすべて返します。そのため `Professional`
+  でも、Professional ではない idle
+  が再生されることがあります。
+- `lower_body_pool`（presenter
+  がジェスチャーの下で共通の下半身として再生する
+  Motion）：その性格タイプの Motion だけです。1
+  つもない場合は空の配列になります。Avatar
+  のスケルトンに合う Motion
+  がない場合や、組織で下半身ブレンドがオフの場合も空になり、ジェスチャーは全身で再生されます。
+- `/presentation` と
+  `/motion-suggestion`
+  が提案するジェスチャー：その性格タイプの Motion
+  だけを選び、性格タイプのない Motion
+  も除外します。そのため、性格タイプによってはジェスチャーがまったくない
+  avatar もあります。
+
+`facial_motions` は性格タイプの影響を受けません。
 
 💡
 

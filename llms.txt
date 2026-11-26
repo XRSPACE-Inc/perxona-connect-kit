@@ -5,6 +5,7 @@
 Key facts for agents:
 
 - The Presenter SDK is loaded once as a module script from a `PRESENTER_URL` your server supplies (not a secret) and registers the `<sv-presenter>` custom element. There is no bundled npm SDK yet; `@perxona/presenter-types` on npm provides TypeScript types only.
+- Bringing your own voice from a realtime voice API (Gemini Live, OpenAI Realtime)? Use `presenter.presentDirect()`, in Catalog or Direct mode, with motions from `POST /presentation` without `voice_id` or from `POST /motion-suggestion`. Its audio is always a complete WAV or MP3 file, never raw PCM. `presentWithAudio()` only fetches motions after it has the whole audio. See https://connect.perxona.ai/#gemini-live-example.
 - Two keys: a **secret** Connect API key (server side only) and a **publishable** key (browser). Create both in the Perxona Console under the organization management page, Integration, Connect API keys.
 - Fastest path: `git clone` this repo, `cd samples/express`, copy `.env.example` to `.env`, `npm install`, `npm run dev`, open http://localhost:8083.
 - Usage is metered in organization credits (`GET /credit`); when they run out, metered calls fail with HTTP 400 and `code: 1003`.
@@ -19,6 +20,7 @@ Key facts for agents:
 - [Get Your API Credentials](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/credentials.md): https://connect.perxona.ai/#credentials
 - [Motion Browser](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/motion-browser.md): https://connect.perxona.ai/#motion-browser
 - [VRM Uploader](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/vrm-uploader.md): https://connect.perxona.ai/#vrm-uploader
+- [Vibe Coder & Beginner Guide](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/vibe-coder.md): https://connect.perxona.ai/#vibe-coder
 - [Run the Express Sample](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/quickstart.md): https://connect.perxona.ai/#quickstart
 - [Sample Configuration](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/configuration.md): https://connect.perxona.ai/#configuration
 - [Demo Walkthrough: Presenter basics](https://github.com/XRSPACE-Inc/perxona-connect-kit/blob/main/docs/en/demo-walkthrough.md): https://connect.perxona.ai/#demo-walkthrough

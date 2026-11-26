@@ -26,7 +26,9 @@ API
 
 ### 2 つの API キーを作成する
 
-そのアカウントで Perxona コンソールにサインインし、**[Management → Integration → Connect API keys (open the avatar menu, top right)](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**
+そのアカウントで Perxona
+コンソールにサインインし、右上のアバターメニューから
+**[Management → Integration → Connect API keys](https://console.perxona.ai/asia/organization/integration/connect-api-keys/)**
 を開きます。**2 つ**のキーを作成してください——
 交換はできません。作成前にフォームが各タイプの権限を表示します。同じ内容を下の表にもまとめています：
 
@@ -48,7 +50,7 @@ API
 | チャットボットの管理（作成・更新・削除） | ✓ | — |
 | credit 利用量の読み取り | ✓ | — |
 
-![Perxona コンソール：Management → Integration → Connect API keys (open the avatar menu, top right) ページ](assets/images/integration-page.png)
+![Perxona コンソール：Management → Integration → Connect API keys ページ](assets/images/integration-page.png)
 
 ⚠️
 

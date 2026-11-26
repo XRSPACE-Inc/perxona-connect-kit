@@ -18,13 +18,16 @@ Connect API 本身。你的瀏覽器連的是
 
 POST/api/v1/connect/presentation
 
-產生單次 presentation payload。請從你的伺服器，以
-**secret** 金鑰作為
+產生單次 presentation payload。以任一把金鑰作為
 `X-Connect-Key` header 直接呼叫 Connect
-API；Express 範例伺服器不會代理此路由。必填欄位：
-`avatar_id` 與 `message`；選填欄位：
-`voice_id`、`emotion` 與
-`intensity`。
+API：從瀏覽器用
+**publishable** 金鑰，從你的伺服器用
+**secret** 金鑰。Express
+範例伺服器不會代理此路由。必填欄位： `avatar_id` 與
+`message`；選填欄位：
+`voice_id`、`emotion`、`intensity`
+與 `personality_trait`（見[個性特質](https://connect.perxona.ai/#personality-trait)）。不帶 `voice_id` 時不合成語音（BYO TTS mode；見
+[範例：整合 Gemini Live](https://connect.perxona.ai/#gemini-live-example)）。
 
 ```bash
 curl -X POST "$CONNECT_API_BASE/presentation" \
@@ -53,6 +56,35 @@ curl -X POST "$CONNECT_API_BASE/presentation" \
 `realization` 與 `confusion`；支援的
 `intensity` 值為：`low`、
 `neutral` 與 `high`。
+
+POST/api/v1/connect/motion-suggestion
+
+當 catalog 裡沒有可指定的 avatar
+時，改以描述身形的方式為一段文字建議動作。必填欄位：
+`gender`（`male` 或
+`female`）、`heads_tall`（`3`、`6`
+或 `8`，身高為幾頭身）與
+`text`（不可已含動作標記）；選填
+`personality_trait`（見[個性特質](https://connect.perxona.ai/#personality-trait)）。回應包含 `markup`：在每個建議動作開始處插入
+`[MOTION id:priority]` 標記的文字；以及
+`performance_manifest`：這些標記所指的動作
+asset。`markup` 可原封不動作為
+`/presentation` 的
+`message` 送出。找不到合適動作時，`markup`
+與 `text` 相同，manifest 為空。能產生 presentation
+的金鑰都能呼叫此路由；流量限制與該路由相同，用量計費方式也相同。Express
+範例伺服器不會代理此路由。
+
+```bash
+curl -X POST "$CONNECT_API_BASE/motion-suggestion" \
+  -H "X-Connect-Key: pxc_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gender": "female",
+    "heads_tall": 6,
+    "text": "Welcome to our hackathon demo!"
+  }'
+```
 
 ### 健康檢查與設定
 
@@ -170,7 +202,5 @@ POST/api/chat
 
 **完整合約：**上方列出的是 Express demo 的 proxy
 API。如需 Connect API 本身精確的欄位格式與 schema，請參考
-sample 目錄下的 OpenAPI
-spec：`docs/openapi.yaml`。如需 TypeScript
-presenter 型別，請安裝
+OpenAPI spec：[`/openapi.yaml`](/openapi.yaml)。如需 TypeScript presenter 型別，請安裝
 `@perxona/presenter-types@latest`。

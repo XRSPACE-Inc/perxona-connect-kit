@@ -24,8 +24,15 @@ lifecycle:
    setup at all; set them to pin your own, which is what a real
    integration does. Which of the two happened is reported in the
    server's startup log, never on the page. Live credentials are
-   required and the account needs at least one chatbot — mock
-   mode can supply neither.
+   required, and the account needs at least one chatbot Embed can
+   pick: auto-pick skips a **disabled** one (it
+   rejects every message) and an
+   **app-managed** one, named with the
+   `"[app] "` prefix
+   `GET /api/config` reports as
+   `appManagedChatbotPrefix` — an app built on the kit
+   creates it for its own use, such as InterviewCoach's JSON-only
+   bot. Mock mode can supply neither.
 2. **Initialize on page load.**
    `app.js` fetches that config and
    `GET /api/connect-key`, then calls

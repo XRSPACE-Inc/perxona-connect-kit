@@ -1,34 +1,17 @@
 ## VRM Uploader
 
+![Perxona Connect Kit：VRM 1.0 角色上傳功能正式推出](assets/images/connect-vrm-support.jpeg)
+
 Perxona Connect Kit 讓你用一支 script 自己把
 **VRM** 角色加進 Avatar
 目錄，不需要額外架設任何基礎設施。無論你想為產品打造品牌吉祥物、為受眾建立專屬的數位主持人，或是為個人專案製作原創角色，這都是從
 `.vrm` 檔案到上線說話 Avatar 的最快路徑。
-
-⏸️
-
-**暫停上傳：**請先不要上傳 VRM。上傳的 VRM 會成為
-Three.js Avatar，而 Connect 目前還沒有提供這類
-Avatar：預設情況下 Avatar 目錄不會回傳它，`<sv-presenter>`
-的 Three.js renderer
-也尚未釋出。上傳本身會成功，但之後你無法列出、選取或顯示這個角色。在這則提醒移除之前，`upload-vrm.sh`
-請只搭配
-`--validate-only`
-使用；檢查功能不受影響，你仍然可以先把檔案準備好。本章節其餘內容說明的是重新開放後的上傳方式。
 
 🪆
 
 上傳的 Avatar 僅對你的 Perxona
 組織帳號可見。同組織的成員在上傳完成後即可立即在 Connect Kit
 Avatar 下拉選單中選取——無需重新部署。
-
-⚠️
-
-**封測提醒：**Connect Kit
-目前仍處於封測階段。今日上傳的 VRM
-角色預計將於一個月後失效，且不再維護；Perxona
-保留移除這些角色的權利。未來 Connect Kit
-版本更新後，才會維護新上傳的 VRM 檔案。
 
 ### 上傳你的 VRM
 
@@ -54,11 +37,9 @@ Avatar 下拉選單中選取——無需重新部署。
    的就不會上傳。唯一只會提示、不會擋的那一項是表情資料——沒有表情資料的模型一樣載得進來、也能做動作。
 3. #### 上傳
 
-   **目前暫停**——請見本章節開頭的提醒。在該提醒移除之前，請不要執行這個步驟。
-
    ```bash
    export PERXONA_CONNECT_SECRET_KEY=pxc_...
-   ./upload-vrm.sh --skeleton-type female my-avatar.vrm
+   ./upload-vrm.sh --gender female --heads-tall 8 my-avatar.vrm
    ```
 
    不特別指定的話，script 會打
@@ -66,9 +47,11 @@ Avatar 下拉選單中選取——無需重新部署。
    `PERXONA_API_BASE_URL` 指向你自己的 base
    URL——某一區發出的金鑰在另一區不被接受，而且拒絕訊息不會提到「區域」兩個字。
 
-   `--skeleton-type`
-   是選這隻 Avatar
-   的動作風格：`male`、`female`、`male_three_head`、`female_three_head`。動作會重定向到你自己的骨架上，所以選錯只是風格不對，不會播不出來。想自訂顯示名稱就加
+   `--gender`（`male` 或
+   `female`）與
+   `--heads-tall`（`3`、`6`
+   或 `8`，身高為幾頭身）一起決定這隻 Avatar
+   的動作組。動作會重定向到你自己的骨架上，所以選錯只是風格不對，不會播不出來。想自訂顯示名稱就加
    `--avatar-name "My Avatar"`；不加就用檔名。
 
 成功後 script 會印出新 Avatar 的 id，這隻角色也會出現在
@@ -123,17 +106,23 @@ Avatar 下拉選單中選取——無需重新部署。
   `aa`、`ih`、`ou`、`ee`、
   `oh`；情緒 `happy`、`angry`、
   `sad`、`relaxed`、`surprised`；加上
-  `neutral`、眨眼與視線 preset。
+  `neutral`、眨眼與視線 preset。用這些 preset
+  對嘴時，五個嘴型都要有。
 - **ARKit-52 blendshape**：morph target 用標準
   ARKit 名稱命名（例如
-  `jawOpen`、`eyeBlinkLeft`）。建議用標準名稱，但
+  `jawOpen`、`eyeBlinkLeft`），52
+  個都要有，只有一部分不算數。建議用標準名稱，但
   `Face.jawOpen`
   這類帶前綴的寫法也認得——比對時不分大小寫、忽略前後空白，先找完全相同的，再找包含的。
 
-🚧
+💡
 
-**表情驅動尚未開放。**目前渲染 Connect
-上傳模型的引擎還不會播放對嘴與臉部表情。先備妥上面的表情資料，功能開放時你的模型就能直接使用；缺少表情資料的模型一樣能載入、能做動作。
+**不同表情資料能做到的事。**有五個嘴型
+preset，avatar 說話時會對嘴。有完整的 52 個 ARKit
+blendshape，除了對嘴，還會播放動作附帶的臉部動畫。ARKit
+名稱只有一部分的模型不會播放臉部動畫；如果五個嘴型也沒有湊齊，就不會對嘴。不論是哪一種資料，都可以用
+`setExpressionWeight`
+自己設定 avatar 的任何表情（見[Presenter 元件參考](https://connect.perxona.ai/#sdk-set-expression-weight)）。
 
 想深入了解 VRM 格式本身？請參考
 [VRM 1.0 官方文件](https://vrm.dev/en/vrm1/)，也有

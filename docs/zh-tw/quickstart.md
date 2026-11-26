@@ -15,7 +15,9 @@ demo。以下步驟帶你從 clone 到說話的虛擬人。
 
 從 clone 到說話的虛擬人只需 **5–15 分鐘**。需要
 **Node `>=22`** 與兩把 Connect API
-金鑰——見[取得 API 憑證](https://connect.perxona.ai/#credentials)。
+金鑰——見[取得 API 憑證](https://connect.perxona.ai/#credentials)。若你不熟悉
+GitHub、`.env`
+環境變數或終端機指令，建議先看上方的[Vibe Coder 新手指南](https://connect.perxona.ai/#vibe-coder)。
 
 1. #### Clone 範例
 

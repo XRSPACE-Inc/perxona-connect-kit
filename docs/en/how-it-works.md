@@ -44,8 +44,11 @@ Your backend                          Browser
    `presenter.initializeWithConnectKey(connectKey, { avatarId,
    sceneId, voiceId })`.
 5. When the component reports `Ready`, call
-   `presenter.present(content)` or
-   `presenter.presentWithAudio(audio, content)`.
+   `presenter.present(content)`,
+   `presenter.presentWithAudio(audio, content)`, or
+   `presenter.presentDirect(payload)`, which plays
+   your own audio with motions you supply (see
+   [Example: Gemini Live](https://connect.perxona.ai/#gemini-live-example)).
 
 ⚠️
 

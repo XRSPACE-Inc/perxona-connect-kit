@@ -10,7 +10,7 @@
 | `PERXONA_CONNECT_SECRET_KEY` | ✅ | — | Secret Connect API 金鑰。伺服器每次呼叫上游都帶著它，絕不下放瀏覽器。**允許網域請留空**——伺服器不會送出 `Origin`，設了網域限制會讓每次呼叫都被拒絕。 |
 | `PERXONA_CONNECT_PUBLISHABLE_KEY` | ✅ | — | Publishable Connect API 金鑰。經 `GET /api/connect-key` 送給瀏覽器並交給 presenter。可讀取 catalog、產生 presentation、發放語音 token（後兩者會對組織計費）；碰不到 chatbot 路由。 |
 | `PORT` | — | `8083` | 伺服器監聽的連接埠。 |
-| `PRESENTER_URL` | — | `cdn.perxona.ai/…/presenter.js` | Presenter 引擎 CDN URL。僅在 Perxona 聯絡人提供特定 URL 時覆蓋。 |
+| `PRESENTER_URL` | — | `https://cdn.perxona.ai/prod/connect/latest/widget/entry/presenter.js` | Presenter 引擎 CDN URL。預設值不分 region；要指定 region 就設成 `https://cdn.perxona.ai/{eu,asia}/prod/connect/latest/widget/entry/presenter.js`，或填 Perxona 聯絡人提供的 URL。 |
 | `LLM_API_KEY` | — | — | 設定以啟用聊天面板。支援任何 OpenAI 相容金鑰，包括透過 `LLM_BASE_URL` 的本地 Ollama。 |
 | `LLM_BASE_URL` | — | `https://api.openai.com/v1` | LLM 端點 URL（Ollama 或其他供應商時覆蓋）。 |
 | `LLM_MODEL` | — | `gpt-4o-mini` | 傳遞給聊天端點的 LLM 模型名稱。 |

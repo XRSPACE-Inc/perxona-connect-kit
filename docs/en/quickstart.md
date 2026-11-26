@@ -21,7 +21,9 @@ Get from clone to a talking avatar in
 **5–15 minutes**. You need
 **Node `>=22`** and two Connect API
 keys — see
-[Get Your API Credentials](https://connect.perxona.ai/#credentials).
+[Get Your API Credentials](https://connect.perxona.ai/#credentials). New to
+GitHub, `.env` files, or terminal commands? Start
+with the [Vibe Coder Guide](https://connect.perxona.ai/#vibe-coder) above.
 
 1. #### Clone the sample
 

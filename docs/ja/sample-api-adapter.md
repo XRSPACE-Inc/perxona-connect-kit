@@ -24,15 +24,17 @@ Express サーバーは以下のルートを公開します。すべての
 POST/api/v1/connect/presentation
 
 ワンショットの presentation payload
-を生成します。自分のサーバーから
-**secret** キーを
+を生成します。どちらのキーでも
 `X-Connect-Key` ヘッダーとして付け、Connect API
-を直接呼び出してください。このルートは Express
+を直接呼び出せます。ブラウザからは
+**publishable** キー、自分のサーバーからは
+**secret** キーを使います。このルートは Express
 サンプルサーバーではプロキシされません。必須フィールドは
 `avatar_id` と
 `message`、任意フィールドは
-`voice_id`、`emotion`、`intensity`
-です。
+`voice_id`、`emotion`、`intensity`、`personality_trait`（[性格タイプ](https://connect.perxona.ai/#personality-trait)
+を参照）です。`voice_id`
+を省略すると音声は合成されません（BYO TTS mode。[例：Gemini Live との統合](https://connect.perxona.ai/#gemini-live-example)を参照）。
 
 ```bash
 curl -X POST "$CONNECT_API_BASE/presentation" \
@@ -60,6 +62,38 @@ curl -X POST "$CONNECT_API_BASE/presentation" \
 `realization`、`confusion` です。
 `intensity` の値は `low`、
 `neutral`、`high` です。
+
+POST/api/v1/connect/motion-suggestion
+
+catalog に指定できる avatar
+がないときに、体型を指定してテキストに合うモーションを提案します。必須フィールドは
+`gender`（`male` または
+`female`）、`heads_tall`（`3`、`6`、`8`
+のいずれか。何頭身か）、`text`（モーションマークを含まないこと）です。`personality_trait`
+は任意です（[性格タイプ](https://connect.perxona.ai/#personality-trait)
+を参照）。レスポンスには、提案された各モーションの開始位置に
+`[MOTION id:priority]` マークを挿入したテキスト
+`markup` と、マークが指すモーション asset の
+`performance_manifest`
+が含まれます。`markup` はそのまま
+`/presentation` の
+`message`
+として送信できます。合うモーションがない場合、`markup`
+は `text` と同じで、manifest
+は空になります。presentation
+を生成できるキーであればこのルートを呼び出せます。レート制限はそのルートと同じで、利用量の課金方法も同じです。このルートは
+Express サンプルサーバーではプロキシされません。
+
+```bash
+curl -X POST "$CONNECT_API_BASE/motion-suggestion" \
+  -H "X-Connect-Key: pxc_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gender": "female",
+    "heads_tall": 6,
+    "text": "Welcome to our hackathon demo!"
+  }'
+```
 
 ### ヘルスチェックと設定
 
@@ -187,8 +221,9 @@ POST/api/chat
 
 **完全なコントラクト：**上記は Express demo
 のプロキシ API です。Connect API
-を直接呼び出す場合の正確なフィールド形式とスキーマは、sample
-ディレクトリ内の OpenAPI spec `docs/openapi.yaml`
+を直接呼び出す場合の正確なフィールド形式とスキーマは、OpenAPI
+spec
+[`/openapi.yaml`](/openapi.yaml)
 を参照してください。TypeScript の presenter 型は
 `@perxona/presenter-types@latest`
 をインストールしてください。

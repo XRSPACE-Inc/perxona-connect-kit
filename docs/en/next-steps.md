@@ -20,18 +20,18 @@ Once either demo is running, here are natural paths forward:
   on `localhost`.
 - **Explore the full API contract.** See the
   OpenAPI spec for the underlying Connect API at
-  `docs/openapi.yaml` inside the sample directory,
-  and install `@perxona/presenter-types@latest` for
-  presenter type declarations.
+  [`/openapi.yaml`](/openapi.yaml), and install
+  `@perxona/presenter-types@latest` for presenter
+  type declarations.
 - **Build from Embed, not from Studio.**
-  `demos/embed/` is the template — 170 lines of
+  `demos/embed/` is the template — a minimal
   `app.js` and an `index.html` that is
   mostly filler copy. Copy it, replace the layout, keep the
-  widget. Studio is a tool rather than a starting point: 1 200
-  lines of catalog pickers, chatbot CRUD and a debug timeline
-  you would spend your first hour deleting. Use it to browse the
-  catalog and create a chatbot, pin what you chose with
-  `DEMO_FIXED_*`, then build from Embed.
+  widget. Studio is a tool rather than a starting point: a full
+  developer console of catalog pickers, chatbot CRUD and a debug
+  timeline you would spend your first hour deleting. Use it to
+  browse the catalog and create a chatbot, pin what you chose
+  with `DEMO_FIXED_*`, then build from Embed.
 - **Follow updates and contribute.** Star and watch
   the repository below to track new features and bugfixes.
 

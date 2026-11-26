@@ -11,8 +11,8 @@
 
 #### アバターカタログ
 
-リアル系・カートゥーン系・VRM
-キャラの厳選キャスト。カタログから選ぶだけで数分で画面に登場します。
+自分の VRM
+アバターをアップロードしてカタログから選ぶだけで、数分で画面に登場します。組み込みのアバターの提供時期は別途お知らせします。
 
 🎙️
 
@@ -51,9 +51,8 @@ Chrome・Safari・Edge
 #### 独自音声を使用
 
 `presenter.presentWithAudio()` に任意の TTS
-サービスや録音済み音声の
-`ArrayBuffer`
-を直接渡すだけ。アバターがリップシンクし、 Motion Director
+サービスや録音済み音声（完全な WAV または MP3 ファイルの
+`ArrayBuffer`）を渡すだけ。アバターがリップシンクし、 Motion Director
 がテキストから動きと表情を自動生成します——Perxona TTS
 は不要です。
 
@@ -62,8 +61,18 @@ Chrome・Safari・Edge
 #### 独自アバター（VRM 1.0）
 
 VRM 1.0
-キャラをアップロードして、ブランドや顧客に合ったアバターで話させることができます。現在アップロードは一時停止中です。詳しくは
-[VRM アップローダー](https://connect.perxona.ai/#vrm-uploader)をご覧ください。
+キャラをアップロードして、ブランドや顧客に合ったアバターで話させることができます。
+
+⚡
+
+#### パフォーマンスを自分で組み立てる
+
+`presenter.presentDirect()`
+は、渡した音声を指定したモーションで再生します。モーションは
+Connect API の
+`/motion-suggestion` や
+`/presentation`
+から取得しても、自分で生成してもかまいません。どう区切り、どう順番に並べるかはアプリ側で決められます。[例：Gemini Live との統合](https://connect.perxona.ai/#gemini-live-example)を参照してください。
 
 3 — プレゼンテーションエンジン
 

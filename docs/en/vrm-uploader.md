@@ -1,5 +1,7 @@
 ## VRM Uploader
 
+![Perxona Connect Kit: VRM 1.0 Character Upload Now Available](assets/images/connect-vrm-support.jpeg)
+
 Perxona Connect Kit lets you add your own
 **VRM** characters to the avatar catalog yourself,
 with one script and no extra infrastructure. This is the fastest
@@ -7,34 +9,12 @@ path from a `.vrm` file to a live, speaking avatar —
 whether it's a branded mascot, a digital presenter, or a
 personal project.
 
-⏸️
-
-**Uploading is on hold:** please do not upload a
-VRM yet. An uploaded VRM becomes a Three.js avatar, and
-Connect is not serving those yet: by default the avatar
-catalog does not return it, and
-`<sv-presenter>`'s Three.js renderer has not
-been released. The upload itself succeeds, but you cannot
-list, select or display the result. Until this notice is
-removed, run `upload-vrm.sh` with
-`--validate-only` only. The checks are unaffected,
-so you can still get your file ready. The rest of this section
-describes how uploading works once it opens again.
-
 🪆
 
 Uploaded avatars are scoped to your Perxona organization
 account. Any member of the same org can select them from the
 Connect Kit avatar dropdown immediately after upload — no
 redeploy needed.
-
-⚠️
-
-**Beta notice:** Connect Kit is currently in
-closed beta. VRM avatars uploaded today are expected to expire
-after one month and will no longer be maintained. Perxona
-reserves the right to remove them. We will maintain VRM files
-uploaded after a future Connect Kit release.
 
 ### Uploading Your VRM
 
@@ -63,13 +43,9 @@ secret key may upload an asset.
    without it still loads and plays motions.
 3. #### Upload it
 
-   **On hold for now** — see the notice at the
-   top of this section. Do not run this step until that
-   notice is removed.
-
    ```bash
    export PERXONA_CONNECT_SECRET_KEY=pxc_...
-   ./upload-vrm.sh --skeleton-type female my-avatar.vrm
+   ./upload-vrm.sh --gender female --heads-tall 8 my-avatar.vrm
    ```
 
    The script talks to
@@ -79,12 +55,14 @@ secret key may upload an asset.
    first — a key issued in one region is not accepted in
    another, and the refusal never mentions regions.
 
-   `--skeleton-type` picks the motion style your
-   avatar draws its gestures from: `male`,
-   `female`, `male_three_head` or
-   `female_three_head`. Clips are retargeted onto
-   your own rig, so the wrong choice gives you gestures in
-   the wrong style rather than a playback failure. Add
+   `--gender` (`male` or
+   `female`) and
+   `--heads-tall` (`3`,
+   `6` or `8`, the body's height in
+   heads) together pick the motion set your avatar draws its
+   gestures from. Clips are retargeted onto your own rig, so
+   the wrong choice gives you gestures in the wrong style
+   rather than a playback failure. Add
    `--avatar-name "My Avatar"` to set the display
    name; without it the file name is used.
 
@@ -158,22 +136,29 @@ will not lip-sync or emote. Provide at least one of:
   `oh`; emotions `happy`,
   `angry`, `sad`, `relaxed`,
   `surprised`; plus `neutral`, blink and
-  look-at presets.
+  look-at presets. To lip-sync with these presets, the model
+  needs all five mouth shapes.
 - **ARKit-52 blendshapes**: morph targets named
   with the standard ARKit names (such as `jawOpen`,
-  `eyeBlinkLeft`). Standard names are what to aim
-  for, but a decorated spelling such as
-  `Face.jawOpen` is recognised too — names are
-  matched without regard to case or surrounding whitespace, an
-  exact match first and a containing one second.
+  `eyeBlinkLeft`), all 52 of them — a partial set
+  does not count. Standard names are what to aim for, but a
+  decorated spelling such as `Face.jawOpen` is
+  recognised too — names are matched without regard to case or
+  surrounding whitespace, an exact match first and a containing
+  one second.
 
-🚧
+💡
 
-**Facial animation is not live yet.** The engine
-that renders Connect-uploaded models does not yet drive
-lip-sync or facial expressions. Prepare the expression data
-above so your model is ready the moment it ships; a model
-without it still loads and plays motions either way.
+**What each kind of data gives you.** With the
+five mouth-shape presets, the avatar lip-syncs while it
+speaks. With all 52 ARKit blendshapes, it lip-syncs and also
+plays the facial animation that comes with its motions. A
+model with only some of the ARKit names plays no facial
+animation. If it also lacks any of the five mouth shapes, it
+does not lip-sync. Whichever data it has, you can set any of
+its expressions yourself with `setExpressionWeight`
+(see
+[Presenter Component Reference](https://connect.perxona.ai/#sdk-set-expression-weight)).
 
 Want the full picture of the format itself? See the official
 [VRM 1.0 documentation](https://vrm.dev/en/vrm1/)
