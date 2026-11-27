@@ -60,7 +60,7 @@ npm ci --prefix .github/ci
 .github/ci/node_modules/.bin/tsc --noEmit --checkJs --allowJs \
   --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck \
   samples/express/public/demos/*/app.js
-node --test .github/ci/
+node --test .github/ci/*.test.mjs
 ! git grep -nIE '(dev|stage)\.perxona\.ai'
 ```
 

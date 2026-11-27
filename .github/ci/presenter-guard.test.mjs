@@ -5,7 +5,7 @@
 // guard accepts and refuses, and checks that server.mjs warns about the same
 // hosts the demos accept.
 //
-// Run from the repository root: node --test .github/ci/
+// Run from the repository root: node --test .github/ci/*.test.mjs
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";

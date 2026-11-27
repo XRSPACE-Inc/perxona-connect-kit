@@ -72,7 +72,7 @@ jobs:
       # can be copied out alone. The test keeps the copies identical and checks
       # what they accept and refuse.
       - name: Test the presenter host guard
-        run: node --test .github/ci/
+        run: node --test .github/ci/*.test.mjs
 
       # Tracked files may name production perxona.ai hosts only. A dev or stage
       # host gets in when a local test edit is committed, for example a
