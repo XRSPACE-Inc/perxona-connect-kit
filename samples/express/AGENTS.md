@@ -79,7 +79,9 @@ Chatbot CRUD routes let you create and manage Connect chatbots from the sample s
 | `DELETE /api/chatbots/:id/knowledge` | Remove the knowledge file                                                  |
 | `POST /api/chatbots/:id/chat`        | Chat with a chatbot (`{ messages: [...] }`) → `{ id, status, reply_text }` |
 
-On a deployment, every route in this table that is not a `GET` or `/chat` needs `ADMIN_TOKEN` (see Configuration).
+On Vercel, and wherever `ADMIN_TOKEN` is set, every route in this table that is not a `GET` or `/chat` needs it (see
+Configuration). One middleware in `server.mjs` enforces that for all of `/api/chatbots`, so a route you add there is covered
+without being listed.
 
 Create and update are forwarded as `multipart/form-data` — send plain JSON from the browser; the proxy handles re-encoding.
 Knowledge uploads accept `.txt`, `.pdf`, `.doc`, `.docx`, `.csv` files encoded as base64 in the JSON body. Processing is
@@ -198,9 +200,10 @@ Required (the server exits at startup if any is missing — both keys are needed
 
 On Vercel (the platform sets `VERCEL`), `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and
 `PRESENTER_URL` to the engine of that region, because the Deploy Button only asks for the two keys and `ADMIN_TOKEN`.
-There the routes that change data (create, edit or delete a chatbot, upload or remove a knowledge file) answer `403` unless
-the browser holds the cookie `POST /api/admin/session` sets for the right `ADMIN_TOKEN`; Studio asks for it when refused.
-Reads and chat stay public. Running locally nothing is checked. On Vercel `server.mjs` also only
+There, and anywhere `ADMIN_TOKEN` is set, the routes that change data (create, edit or delete a chatbot, upload or remove
+a knowledge file) answer `403` unless the browser holds the cookie `POST /api/admin/session` sets for the right
+`ADMIN_TOKEN` (at least 32 characters); Studio asks for it when refused. Reads and chat stay public. Running locally
+without `ADMIN_TOKEN` nothing is checked. On Vercel `server.mjs` also only
 exports `app` (no `app.listen`, no startup probes) and answers `/` itself, since Vercel serves `public/` from its CDN. See
 README "Deploy to Vercel".
 

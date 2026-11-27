@@ -46,7 +46,7 @@ function spawnSample(env) {
 }
 
 /** The environment a working local setup has, pointed at `upstreamUrl`. */
-export function sampleEnv(upstreamUrl, overrides = {}) {
+export function localEnv(upstreamUrl, overrides = {}) {
   return {
     PERXONA_API_BASE_URL: upstreamUrl,
     PERXONA_CONNECT_SECRET_KEY: SECRET_KEY,
@@ -59,7 +59,7 @@ export function sampleEnv(upstreamUrl, overrides = {}) {
 
 /** The same, as the platform runs it once deployed (see LISTEN_AS_DEPLOYED). */
 export function deployedEnv(upstreamUrl, overrides = {}) {
-  return sampleEnv(upstreamUrl, { VERCEL: "1", ...overrides });
+  return localEnv(upstreamUrl, { VERCEL: "1", ...overrides });
 }
 
 /**

@@ -74,7 +74,7 @@ property that only a specific element has, the way the existing demos do.
 
 `npm test` starts `server.mjs` against a fake Connect API on your machine
 ([`samples/express/tests/helpers/`](samples/express/tests/helpers/)), so it needs no key either. It
-covers who may change data, running locally and deployed.
+covers who may change data: running locally, deployed, and with `ADMIN_TOKEN` set elsewhere.
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.

@@ -165,12 +165,15 @@ function setAnswering(enabled) {
   chatInput.disabled = sendBtn.disabled = micBtn.disabled = !enabled;
 }
 
-/** What to tell the user when a call fails: out-of-credit codes get the subscription link. */
 // On a deployment only the owner may create the chatbot (see ensureChatbot).
 // Once it exists, every visitor reuses it.
 const NOT_SET_UP =
   "InterviewCoach isn't set up on this site yet. Its owner needs to enter the admin token in Studio, then open InterviewCoach once.";
 
+/**
+ * What to tell the user when a call fails: out-of-credit codes get the
+ * subscription link, and a refused chatbot creation gets NOT_SET_UP.
+ */
 function failMessage(err, fallback = UI[state.lang].retryPrompt) {
   const code = err.data?.code;
   if (code === "admin_token_required" || code === "admin_token_not_set")

@@ -373,13 +373,13 @@
       </main>
     </div>
 
-    <!-- Opened by request() when a deployment refuses a change without the
-         admin token. Never shown when running locally. -->
+    <!-- Opened by request() when the server refuses a change without the
+         admin token. Never shown running locally without ADMIN_TOKEN. -->
     <dialog id="admin-dialog" class="admin-dialog">
       <form method="dialog">
         <h2>Admin token</h2>
         <p>
-          On this deployment, changing chatbots needs the value of the
+          On this server, changing chatbots needs the value of the
           <code>ADMIN_TOKEN</code> environment variable. You enter it once per
           browser.
         </p>

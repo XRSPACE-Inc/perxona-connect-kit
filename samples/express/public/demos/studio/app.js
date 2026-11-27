@@ -345,20 +345,20 @@ let knowledgePolledFileName = null;
  * Thin fetch wrapper for JSON APIs. Throws a structured error on non-2xx.
  * 204 No Content resolves to null.
  *
- * On a deployment, a change refused for want of the admin token asks for it
- * once and then retries; see signInAsAdmin(). Running locally the server never
- * refuses, so this never shows.
+ * A change refused for want of the admin token asks for it once and then
+ * retries; see signInAsAdmin(). Running locally without ADMIN_TOKEN the server
+ * never refuses, so this never shows.
  * @param {string} path
  * @param {{ method?: string, body?: object }} [opts]
  * @returns {Promise<any>}
  */
 async function request(path, opts) {
   try {
-    return await sendRequest(path, opts);
+    return await requestOnce(path, opts);
   } catch (err) {
     if (err.data?.code !== "admin_token_required") throw err;
     if (!(await signInAsAdmin())) throw err;
-    return sendRequest(path, opts);
+    return requestOnce(path, opts);
   }
 }
 
@@ -390,7 +390,7 @@ function signInAsAdmin() {
       );
       if (adminDialog.returnValue !== "ok") return false;
       try {
-        await sendRequest("/api/admin/session", {
+        await requestOnce("/api/admin/session", {
           method: "POST",
           body: { token: adminTokenInput.value },
         });
@@ -408,12 +408,13 @@ function signInAsAdmin() {
 }
 
 /**
- * request() without the admin sign-in.
+ * One request, never followed by the admin sign-in: what request() wraps,
+ * and what the sign-in itself uses.
  * @param {string} path
  * @param {{ method?: string, body?: object }} [opts]
  * @returns {Promise<any>}
  */
-async function sendRequest(path, { method = "GET", body } = {}) {
+async function requestOnce(path, { method = "GET", body } = {}) {
   const res = await fetch(path, {
     method,
     headers: { "Content-Type": "application/json" },
