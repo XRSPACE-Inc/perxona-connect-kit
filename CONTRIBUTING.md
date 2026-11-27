@@ -37,8 +37,8 @@ rather than patching the copy here.
 3. Open a pull request against `main`. Say what behaviour changed, list the commands you ran, and
    attach a screenshot or recording for anything visible under `public/`.
 4. CI must be green before the pull request can merge. No approving review is required, with one
-   exception: a change to `.github/workflows/` or `.github/CODEOWNERS` needs an approval from a
-   code owner. A maintainer merges pull requests that come from a fork.
+   exception: a change to `.github/workflows/`, `.github/guards/` or `.github/CODEOWNERS` needs an
+   approval from a code owner. A maintainer merges pull requests that come from a fork.
 
 Use a conventional prefix in commit subjects (`feat:`, `fix:`, `docs:`, `chore:`) and refer to
 issues in this repository as `#N`.
@@ -52,8 +52,9 @@ pull request workflow that needs a credential.
 Express sample, from the repository root:
 
 ```bash
-npm ci --prefix .github/ci
-(cd samples/express && npm ci)
+(cd samples/express && npm ci --ignore-scripts)
+node --test .github/guards/*.test.mjs
+npm ci --ignore-scripts --prefix .github/ci
 
 (cd samples/express && for f in server.mjs scripts/*.mjs public/demos/*/app.js; do node --check "$f"; done)
 .github/ci/node_modules/.bin/eslint --config .github/ci/eslint.config.mjs samples
@@ -68,11 +69,34 @@ The `tsc` command checks every demo's calls into `<sv-presenter>` against
 command also type-checks the rest of each `app.js`, so annotate a DOM lookup when you use a
 property that only a specific element has, the way the existing demos do.
 
-`node --test` keeps the presenter host guard (`ALLOWED_PRESENTER_HOSTS`) identical in every demo's
+`node --test .github/ci/*.test.mjs` keeps the presenter host guard (`ALLOWED_PRESENTER_HOSTS`) identical in every demo's
 `app.js` and checks what it accepts; change the guard in all of them together.
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.
+
+### The secret key guard
+
+`node --test .github/guards/*.test.mjs` runs the guard in [`.github/guards/`](.github/guards/).
+It starts `server.mjs` with fake keys against a fake Connect API, a fake presenter host and a fake
+LLM host on your own machine, so it needs no key and no network. It checks four things:
+
+- the secret key never appears in a response body or header, including the responses to errors
+  from the Connect API;
+- `GET /api/connect-key` returns the publishable key;
+- the secret key is only sent to `PERXONA_API_BASE_URL`, never to `PRESENTER_URL` or the LLM host;
+- the server refuses to start without either key or without `PERXONA_API_BASE_URL`.
+
+It finds every route that `server.mjs` declares as `app.<method>("<path>")` and searches every
+response for the secret key. It does not check what a route answers otherwise, so a new route,
+or a route that answers an error to the guard's request, never fails it; such a route is named in
+the output as a diagnostic.
+
+When the guard fails, it names the route and the response, or the host the key was sent to. Fix
+`server.mjs`: return or log the key nowhere a browser can read it, and send it only in the
+`X-Connect-Key` header of calls to `PERXONA_API_BASE_URL`. Do not change the guard to make it pass;
+it is owned by the code owners, and a change to it needs their approval. If you think the guard
+is wrong, say so in the pull request.
 
 VRM uploader, from `tools/vrm-uploader/`:
 

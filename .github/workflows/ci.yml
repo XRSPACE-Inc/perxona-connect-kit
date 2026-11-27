@@ -40,16 +40,24 @@ jobs:
             samples/express/package-lock.json
             .github/ci/package-lock.json
 
-      # The sample ships no linter or type checker of its own, so that
-      # `npm install` stays small for someone who clones it. CI brings its own.
-      - name: Install CI tooling
-        run: npm ci --prefix .github/ci
-
       # Installs the version of @perxona/presenter-types pinned by the
       # lockfile, which is the presenter contract the type check below reads.
       - name: Install the sample
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: samples/express
+
+      # Checks where the secret key goes. It lives in .github/guards/, which
+      # only a code owner can change (see .github/CODEOWNERS), and runs before
+      # anything else from the pull request can: the install above skips
+      # install scripts, so nothing a pull request adds can rewrite the guard
+      # first. Everything after this step runs code the pull request may change.
+      - name: Guard the secret key
+        run: node --test .github/guards/*.test.mjs
+
+      # The sample ships no linter or type checker of its own, so that
+      # `npm install` stays small for someone who clones it. CI brings its own.
+      - name: Install CI tooling
+        run: npm ci --ignore-scripts --prefix .github/ci
 
       - name: Check syntax
         working-directory: samples/express
