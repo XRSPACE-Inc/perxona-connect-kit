@@ -20,20 +20,43 @@
 
 // ── Presenter engine bootstrap ───────────────────────────────────────────────
 
+// The engine runs with this page's full rights: Perxona's CDN over https, or
+// a build you serve locally. Your own CDN? Add its exact host to this list.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const ALLOWED_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...LOCAL_HOSTS]);
+
+/**
+ * The presenter URL, resolved; throws unless it may load the engine.
+ * @param {string} raw
+ * @returns {string}
+ */
+function requireTrustedPresenterUrl(raw) {
+  const url = new URL(raw, document.baseURI);
+  const { hostname, protocol } = url;
+  const refused = `Refusing the presenter engine from ${protocol}//${hostname}`;
+  if (!ALLOWED_PRESENTER_HOSTS.has(hostname))
+    throw new Error(
+      `${refused}: add its host to ALLOWED_PRESENTER_HOSTS in app.js`,
+    );
+  const local = LOCAL_HOSTS.has(hostname) && protocol === "http:";
+  if (protocol !== "https:" && !local)
+    throw new Error(`${refused}: it must load over https`);
+  return url.href;
+}
+
 /**
  * Dynamically inject the presenter engine <script>. Resolved from the server's
  * PRESENTER_URL env var (GET /api/config → presenterUrl) so the same static
- * build can target any CDN by changing the env var alone.
+ * build can target any CDN on ALLOWED_PRESENTER_HOSTS by changing the env var alone.
  * @param {string} presenterUrl
  * @returns {Promise<void>}
  */
 async function loadPresenterEngine(presenterUrl) {
-  // DEMO-ONLY: presenterUrl is trusted without host validation. A production
-  // integration should verify presenterUrl against a known CDN allowlist.
+  const src = requireTrustedPresenterUrl(presenterUrl);
   await new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.type = "module";
-    script.src = presenterUrl;
+    script.src = src;
     script.onload = resolve;
     script.onerror = () =>
       reject(new Error(`Failed to load presenter engine from ${presenterUrl}`));

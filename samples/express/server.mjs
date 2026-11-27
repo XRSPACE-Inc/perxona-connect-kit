@@ -183,6 +183,33 @@ async function callUpstreamFormData(path, method, form, credential) {
   });
 }
 
+// The rule each demo's requireTrustedPresenterUrl() applies in its app.js, with
+// the hosts its ALLOWED_PRESENTER_HOSTS ships with. The demos enforce it; the
+// server only warns at startup.
+const DEMO_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const DEMO_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...DEMO_LOCAL_HOSTS]);
+
+/** Whether the demos, as shipped, would load the engine from this URL. */
+function demosAccept(presenterUrl) {
+  if (!URL.canParse(presenterUrl)) return false;
+  const { hostname, protocol } = new URL(presenterUrl);
+  const local = DEMO_LOCAL_HOSTS.has(hostname) && protocol === "http:";
+  return DEMO_PRESENTER_HOSTS.has(hostname) && (protocol === "https:" || local);
+}
+
+/** Hints for the startup CDN line: why the demos may still not load the engine. */
+function presenterHints(presenterUrl, status) {
+  return [
+    status !== "reachable" &&
+      "set PRESENTER_URL to a reachable engine (see .env)",
+    !demosAccept(presenterUrl) &&
+      "the demos refuse it: https on a host in ALLOWED_PRESENTER_HOSTS in each app.js (localhost may use http)",
+  ]
+    .filter(Boolean)
+    .map((hint) => ` — ${hint}`)
+    .join("");
+}
+
 /**
  * Probe whether the presenter engine is reachable at PRESENTER_URL.
  * Non-fatal diagnostic only — a HEAD request with a short timeout so startup
@@ -412,6 +439,22 @@ if (USE_MOCK) {
   api = connectApi;
 }
 
+// ── Logging ─────────────────────────────────────────────────────────────────
+
+/**
+ * Text from an upstream reply or a request, ready for one console line:
+ * control characters (line breaks, carriage returns, terminal escapes) and
+ * Unicode line separators become spaces, so the value cannot start or
+ * overwrite a line that reads like the server's own; it is cut at 500
+ * characters.
+ * @param {unknown} value
+ */
+function formatLogText(value) {
+  return String(value)
+    .replace(/[\p{Cc}\u2028\u2029]+/gu, " ")
+    .slice(0, 500);
+}
+
 // ── Upstream identity ───────────────────────────────────────────────────────
 //
 // Every upstream call carries CONNECT_SECRET_KEY, shared by every browser that
@@ -482,15 +525,16 @@ async function resolveTarget() {
           "present() will fail — use presentWithAudio(), or set DEMO_FIXED_VOICE_ID.",
       );
     }
+    const voiceNote = voiceId ? `, voice ${formatLogText(voiceId)}` : "";
     console.log(
-      `Auto-selected presenter target: avatar ${avatarId}, scene ${sceneId}` +
-        `${voiceId ? `, voice ${voiceId}` : ""}. ` +
+      `Auto-selected presenter target: avatar ${formatLogText(avatarId)}, scene ${formatLogText(sceneId)}` +
+        `${voiceNote}. ` +
         "Set DEMO_FIXED_AVATAR_ID / DEMO_FIXED_SCENE_ID in .env to pin your own.",
     );
     return { avatarId, sceneId, ...(voiceId ? { voiceId } : {}) };
   } catch (err) {
     console.warn(
-      `WARNING: could not auto-select a presenter target: ${err.message}`,
+      `WARNING: could not auto-select a presenter target: ${formatLogText(err.message)}`,
     );
     return null;
   }
@@ -517,7 +561,7 @@ async function resolveChatbotId() {
     if (!chatbotId) {
       console.warn(
         (items.length
-          ? `None of the ${items.length} chatbot(s) in this account can be auto-selected — ` +
+          ? `None of the ${formatLogText(items.length)} chatbot(s) in this account can be auto-selected — ` +
             `Embed skips disabled ones and app-managed ones (named "${APP_MANAGED_CHATBOT_PREFIX}…").\n`
           : "No chatbots in this account yet, so the Embed demo has nothing to talk to.\n") +
           "Create one in the Studio demo (/demos/studio/) — it is picked up on the next page load,\n" +
@@ -526,11 +570,13 @@ async function resolveChatbotId() {
       return null;
     }
     console.log(
-      `Auto-selected chatbot ${chatbotId}. Set DEMO_FIXED_CHATBOT_ID in .env to pin your own.`,
+      `Auto-selected chatbot ${formatLogText(chatbotId)}. Set DEMO_FIXED_CHATBOT_ID in .env to pin your own.`,
     );
     return chatbotId;
   } catch (err) {
-    console.warn(`WARNING: could not auto-select a chatbot: ${err.message}`);
+    console.warn(
+      `WARNING: could not auto-select a chatbot: ${formatLogText(err.message)}`,
+    );
     return null;
   }
 }
@@ -608,7 +654,9 @@ function route(handler) {
         payload.details ??
         payload.error ??
         err.message;
-      console.error(`${req.method} ${req.path} → ${status}: ${reason}`);
+      console.error(
+        `${req.method} ${formatLogText(req.path)} → ${status}: ${formatLogText(reason)}`,
+      );
       res.status(status).json(payload);
     }
   };
@@ -1129,7 +1177,9 @@ app.post("/api/chat", async (req, res) => {
     // This route doesn't go through route() — it has its own try/catch
     // because requestLlmCompletion() isn't an upstreamJson() caller — so it
     // needs its own copy of the same server-console logging.
-    console.error(`POST /api/chat → ${err.status ?? 502}: ${err.message}`);
+    console.error(
+      `POST /api/chat → ${err.status ?? 502}: ${formatLogText(err.message)}`,
+    );
     res
       .status(err.status ?? 502)
       .json({ error: "LLM upstream unreachable", message: String(err) });
@@ -1163,10 +1213,8 @@ if (!ON_VERCEL)
     if (!USE_MOCK) resolveEmbedConfig();
     checkPresenter().then((status) => {
       const icon = CHECK_ICONS[status] ?? "✗";
-      const hint =
-        status === "reachable"
-          ? ""
-          : " — set PRESENTER_URL to a reachable engine (see .env)";
-      console.log(`  CDN  : ${icon} ${status}  ${PRESENTER_URL}${hint}`);
+      console.log(
+        `  CDN  : ${icon} ${status}  ${PRESENTER_URL}${presenterHints(PRESENTER_URL, status)}`,
+      );
     });
   });
