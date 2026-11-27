@@ -183,9 +183,10 @@ async function callUpstreamFormData(path, method, form, credential) {
   });
 }
 
-// The rule each demo's requireTrustedPresenterUrl() applies in its app.js, with
-// the hosts its ALLOWED_PRESENTER_HOSTS ships with. The demos enforce it; the
-// server only warns at startup.
+// The hosts each demo's ALLOWED_PRESENTER_HOSTS ships with, and the https rule
+// its requireTrustedPresenterUrl() applies, for an absolute PRESENTER_URL. The
+// demos enforce it; the server only warns at startup, and cannot see a host you
+// added to a demo's list yourself.
 const DEMO_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEMO_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...DEMO_LOCAL_HOSTS]);
 
@@ -203,7 +204,7 @@ function presenterHints(presenterUrl, status) {
     status !== "reachable" &&
       "set PRESENTER_URL to a reachable engine (see .env)",
     !demosAccept(presenterUrl) &&
-      "the demos refuse it: https on a host in ALLOWED_PRESENTER_HOSTS in each app.js (localhost may use http)",
+      "the demos as shipped refuse it: https on a host in ALLOWED_PRESENTER_HOSTS in each app.js (localhost may use http); ignore this if you added the host there",
   ]
     .filter(Boolean)
     .map((hint) => ` — ${hint}`)
@@ -561,7 +562,7 @@ async function resolveChatbotId() {
     if (!chatbotId) {
       console.warn(
         (items.length
-          ? `None of the ${formatLogText(items.length)} chatbot(s) in this account can be auto-selected — ` +
+          ? `None of the ${items.length} chatbot(s) in this account can be auto-selected — ` +
             `Embed skips disabled ones and app-managed ones (named "${APP_MANAGED_CHATBOT_PREFIX}…").\n`
           : "No chatbots in this account yet, so the Embed demo has nothing to talk to.\n") +
           "Create one in the Studio demo (/demos/studio/) — it is picked up on the next page load,\n" +

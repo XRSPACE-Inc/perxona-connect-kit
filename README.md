@@ -158,16 +158,15 @@ hands it the publishable key (the sample's `GET /api/config` and `GET /api/conne
   // Hosting the engine on your own CDN? Add its exact host.
   const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
   const ALLOWED_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...LOCAL_HOSTS]);
-  const { hostname, protocol } = new URL(presenterUrl);
+  const url = new URL(presenterUrl, document.baseURI);
+  const { hostname, protocol } = url;
+  const refused = `Refusing the presenter engine from ${protocol}//${hostname}`;
+  if (!ALLOWED_PRESENTER_HOSTS.has(hostname))
+    throw new Error(`${refused}: add its host to ALLOWED_PRESENTER_HOSTS`);
   const local = LOCAL_HOSTS.has(hostname) && protocol === "http:";
-  if (
-    !ALLOWED_PRESENTER_HOSTS.has(hostname) ||
-    (protocol !== "https:" && !local)
-  )
-    throw new Error(
-      `Refusing the presenter engine from ${protocol}//${hostname}: see ALLOWED_PRESENTER_HOSTS`,
-    );
-  await import(presenterUrl);
+  if (protocol !== "https:" && !local)
+    throw new Error(`${refused}: it must load over https`);
+  await import(url.href);
 
   const presenter = document.querySelector("sv-presenter");
 

@@ -89,6 +89,8 @@ function appendMessage(role, text) {
 
 // The engine runs with this page's full rights: Perxona's CDN over https, or
 // a build you serve locally. Your own CDN? Add its exact host to this list.
+// Going live? Drop ...LOCAL_HOSTS, so the page never runs code from a
+// visitor's own machine.
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const ALLOWED_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...LOCAL_HOSTS]);
 
