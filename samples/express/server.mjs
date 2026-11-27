@@ -183,6 +183,33 @@ async function callUpstreamFormData(path, method, form, credential) {
   });
 }
 
+// The rule each demo's requireTrustedPresenterUrl() applies in its app.js, with
+// the hosts its ALLOWED_PRESENTER_HOSTS ships with. The demos enforce it; the
+// server only warns at startup.
+const DEMO_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const DEMO_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...DEMO_LOCAL_HOSTS]);
+
+/** Whether the demos, as shipped, would load the engine from this URL. */
+function demosAccept(presenterUrl) {
+  if (!URL.canParse(presenterUrl)) return false;
+  const { hostname, protocol } = new URL(presenterUrl);
+  const local = DEMO_LOCAL_HOSTS.has(hostname) && protocol === "http:";
+  return DEMO_PRESENTER_HOSTS.has(hostname) && (protocol === "https:" || local);
+}
+
+/** Hints for the startup CDN line: why the demos may still not load the engine. */
+function presenterHints(presenterUrl, status) {
+  return [
+    status !== "reachable" &&
+      "set PRESENTER_URL to a reachable engine (see .env)",
+    !demosAccept(presenterUrl) &&
+      "the demos refuse it: https on a host in ALLOWED_PRESENTER_HOSTS in each app.js (localhost may use http)",
+  ]
+    .filter(Boolean)
+    .map((hint) => ` — ${hint}`)
+    .join("");
+}
+
 /**
  * Probe whether the presenter engine is reachable at PRESENTER_URL.
  * Non-fatal diagnostic only — a HEAD request with a short timeout so startup
@@ -1163,10 +1190,8 @@ if (!ON_VERCEL)
     if (!USE_MOCK) resolveEmbedConfig();
     checkPresenter().then((status) => {
       const icon = CHECK_ICONS[status] ?? "✗";
-      const hint =
-        status === "reachable"
-          ? ""
-          : " — set PRESENTER_URL to a reachable engine (see .env)";
-      console.log(`  CDN  : ${icon} ${status}  ${PRESENTER_URL}${hint}`);
+      console.log(
+        `  CDN  : ${icon} ${status}  ${PRESENTER_URL}${presenterHints(PRESENTER_URL, status)}`,
+      );
     });
   });
