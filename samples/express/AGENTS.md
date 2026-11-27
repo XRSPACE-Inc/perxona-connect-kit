@@ -79,6 +79,8 @@ Chatbot CRUD routes let you create and manage Connect chatbots from the sample s
 | `DELETE /api/chatbots/:id/knowledge` | Remove the knowledge file                                                  |
 | `POST /api/chatbots/:id/chat`        | Chat with a chatbot (`{ messages: [...] }`) → `{ id, status, reply_text }` |
 
+On a deployment, every route in this table that is not a `GET` or `/chat` needs `ADMIN_TOKEN` (see Configuration).
+
 Create and update are forwarded as `multipart/form-data` — send plain JSON from the browser; the proxy handles re-encoding.
 Knowledge uploads accept `.txt`, `.pdf`, `.doc`, `.docx`, `.csv` files encoded as base64 in the JSON body. Processing is
 asynchronous — the upload response's `knowledge.status` is typically still `processing`, and Studio polls
@@ -190,11 +192,15 @@ Required (the server exits at startup if any is missing — both keys are needed
   the catalog, generate presentations and mint speech tokens (the last two bill the organization); it cannot reach the
   chatbot routes, publish avatars, or read the organization's credit/billing usage (`GET /api/credit` is Secret-key only
   upstream). Note that this describes the _keys_, not this
-  server: the `/api/*` routes have no request-layer authorization, so anything the secret key can do is reachable by anyone
-  who can reach this server. Put your own authorization in front of them before running it anywhere but `localhost`.
+  server: apart from `ADMIN_TOKEN` below, the `/api/*` routes have no request-layer authorization, so anything else the
+  secret key can do is reachable by anyone who can reach this server. Put your own authorization in front of them before
+  running it anywhere but `localhost`.
 
 On Vercel (the platform sets `VERCEL`), `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and
-`PRESENTER_URL` to the engine of that region, because the Deploy Button only asks for the two keys. There `server.mjs` only
+`PRESENTER_URL` to the engine of that region, because the Deploy Button only asks for the two keys and `ADMIN_TOKEN`.
+There the routes that change data (create, edit or delete a chatbot, upload or remove a knowledge file) answer `403` unless
+the browser holds the cookie `POST /api/admin/session` sets for the right `ADMIN_TOKEN`; Studio asks for it when refused.
+Reads and chat stay public. Running locally nothing is checked. On Vercel `server.mjs` also only
 exports `app` (no `app.listen`, no startup probes) and answers `/` itself, since Vercel serves `public/` from its CDN. See
 README "Deploy to Vercel".
 

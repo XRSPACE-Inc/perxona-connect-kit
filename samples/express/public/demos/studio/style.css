@@ -1059,3 +1059,49 @@ details[open] summary::before {
     flex: 1 1 100%;
   }
 }
+
+/* ── Admin token dialog (deployments only) ─────────────────────────────── */
+
+.admin-dialog {
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.admin-dialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.admin-dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-dialog h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-dialog p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.admin-dialog .admin-dialog-error {
+  color: var(--danger);
+}
+
+.admin-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin-dialog-actions button {
+  width: auto;
+}

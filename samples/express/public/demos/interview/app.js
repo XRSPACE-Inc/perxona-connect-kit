@@ -166,8 +166,15 @@ function setAnswering(enabled) {
 }
 
 /** What to tell the user when a call fails: out-of-credit codes get the subscription link. */
+// On a deployment only the owner may create the chatbot (see ensureChatbot).
+// Once it exists, every visitor reuses it.
+const NOT_SET_UP =
+  "InterviewCoach isn't set up on this site yet. Its owner needs to enter the admin token in Studio, then open InterviewCoach once.";
+
 function failMessage(err, fallback = UI[state.lang].retryPrompt) {
   const code = err.data?.code;
+  if (code === "admin_token_required" || code === "admin_token_not_set")
+    return NOT_SET_UP;
   return code === 1003 || code === 14005
     ? `Credits are used up. ${config?.subscriptionUrl ?? ""}`
     : fallback;
@@ -231,6 +238,8 @@ async function ensureChatbot() {
     (c) => c.name === name && c.status !== "disabled",
   );
   if (existing) return existing.id;
+  // On a deployment this needs the owner's admin cookie, set in Studio; a
+  // visitor's 403 becomes NOT_SET_UP in failMessage().
   const created = await request("/api/chatbots", {
     name,
     custom_instructions: CUSTOM_INSTRUCTIONS,

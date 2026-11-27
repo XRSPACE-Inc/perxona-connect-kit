@@ -61,6 +61,7 @@ npm ci --prefix .github/ci
   --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck \
   samples/express/public/demos/*/app.js
 node --test .github/ci/*.test.mjs
+(cd samples/express && npm test)
 ```
 
 The `tsc` command checks every demo's calls into `<sv-presenter>` against
@@ -70,6 +71,10 @@ property that only a specific element has, the way the existing demos do.
 
 `node --test` keeps the presenter host guard (`ALLOWED_PRESENTER_HOSTS`) identical in every demo's
 `app.js` and checks what it accepts; change the guard in all of them together.
+
+`npm test` starts `server.mjs` against a fake Connect API on your machine
+([`samples/express/tests/helpers/`](samples/express/tests/helpers/)), so it needs no key either. It
+covers who may change data, running locally and deployed.
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.

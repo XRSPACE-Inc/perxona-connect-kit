@@ -27,7 +27,7 @@ They are not interchangeable — see ["Auth model"](#auth-model).
 
 Or skip the laptop and deploy this sample to Vercel (see [Deploy to Vercel](#deploy-to-vercel)):
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY%2CADMIN_TOKEN&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.%20ADMIN_TOKEN%20is%20a%20long%20random%20password%20of%20your%20own%3A%20you%20enter%20it%20in%20the%20deployed%20Studio%20to%20create%20and%20edit%20chatbots.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
 
 Pick a demo, choose an avatar / scene / voice, click its launch button — the avatar speaks. The server authenticates with its
 own key; there's no login screen.
@@ -158,11 +158,11 @@ one again fails the same way — so the upstream status reaches you unchanged, a
 rather than trying to renew anything.
 
 **What the two keys do and do not protect.** The table above describes the _keys_. It does not describe this server: the
-`/api/*` routes have **no request-layer authorization at all**, and every one of them sends the secret key upstream. Anyone
-who can reach this server can therefore create, edit, delete and talk to your chatbots, publish avatars into your
-organization, and read your organization's credit/billing usage (`GET /api/credit`, Secret-key only upstream because it is
-billing information) — through it, without ever holding the
-secret key. Splitting the credential stops the key from leaking into a browser; it does not stop the _capability_ from being
+`/api/*` routes have **no request-layer authorization** beyond one exception below, and every one of them sends the secret
+key upstream. Anyone who can reach this server can therefore talk to your chatbots and read your organization's
+credit/billing usage (`GET /api/credit`, Secret-key only upstream because it is billing information) — through it, without
+ever holding the secret key. Running locally they can also create, edit and delete your chatbots; on a deployment those
+routes need `ADMIN_TOKEN` (see [Deploy to Vercel](#deploy-to-vercel)). Splitting the credential stops the key from leaking into a browser; it does not stop the _capability_ from being
 reachable through the proxy. That is the demo trade this sample makes — every browser hitting it shares one upstream
 identity — and it is why this is not a multi-tenant, production-grade design. Put your own authorization in front of these
 routes before running it anywhere but `localhost`.
@@ -216,6 +216,7 @@ Then open `.env` and fill in the values:
 | `PERXONA_CONNECT_SECRET_KEY`      | ✅       | Secret Connect API key. Authenticates this server; never sent to a browser. Leave its allowed-domain list empty.                                                                                                                                                                                             |
 | `PERXONA_CONNECT_PUBLISHABLE_KEY` | ✅       | Publishable Connect API key. Served to the browser on `GET /api/connect-key` and passed to the presenter.                                                                                                                                                                                                    |
 | `PORT`                            | —        | Port the app serves on (default `8083`).                                                                                                                                                                                                                                                                     |
+| `ADMIN_TOKEN`                     | —        | Deployments only: the token that unlocks creating, editing and deleting chatbots and knowledge files (see [Deploy to Vercel](#deploy-to-vercel)). Ignored when running locally.                                                                                                                              |
 | `USE_MOCK`                        | `false`  | `true` serves a fake catalog so you can browse the UI without credentials. Cannot drive the presenter; chatbot routes return `501`.                                                                                                                                                                          |
 | `PRESENTER_URL`                   | —        | URL of the Perxona presenter engine on the CDN. **Region-specific, like `PERXONA_API_BASE_URL`** — keep the two regions matched. Omit it for the region-neutral production engine. Its host must be on `ALLOWED_PRESENTER_HOSTS` in each demo's `app.js`; the startup log's `CDN` line warns when it is not on the list the demos ship with (ignore it once you have added your own host). |
 | `DEMO_FIXED_AVATAR_ID`            | —        | Pins the avatar Embed uses, reported as `fixedTarget` on `GET /api/config`. Set together with `DEMO_FIXED_SCENE_ID`. Leave both blank and the server picks the first in your catalog.                                                                                                                        |
@@ -277,10 +278,10 @@ is the message you send. Mock mode supports catalog browsing only; it can drive 
 The sample runs unchanged as one Vercel Function: Vercel detects Express in `server.mjs` (which exports the app), serves
 `public/` from its CDN, and injects the environment variables you give it, so there is no `.env` file to manage.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit&root-directory=samples%2Fexpress&project-name=perxona-connect-kit&repository-name=perxona-connect-kit&env=PERXONA_CONNECT_SECRET_KEY%2CPERXONA_CONNECT_PUBLISHABLE_KEY%2CADMIN_TOKEN&envDescription=Two%20Connect%20API%20keys%20from%20the%20Perxona%20Console%3A%20open%20the%20avatar%20menu%20%28top%20right%29%2C%20then%20Management%2C%20Integration%2C%20Connect%20API%20keys.%20Leave%20the%20secret%20key%27s%20domain%20list%20empty.%20ADMIN_TOKEN%20is%20a%20long%20random%20password%20of%20your%20own%3A%20you%20enter%20it%20in%20the%20deployed%20Studio%20to%20create%20and%20edit%20chatbots.&envLink=https%3A%2F%2Fgithub.com%2FXRSPACE-Inc%2Fperxona-connect-kit%2Fblob%2Fmain%2Fsamples%2Fexpress%2FREADME.md%23getting-a-connect-account&demo-title=Perxona%20Connect%20Kit&demo-description=A%20talking%203D%20AI%20avatar%20with%20lip-sync%20in%20your%20web%20app%2C%20with%20the%20Studio%2C%20Embed%20and%20InterviewCoach%20demos.)
 
 The button clones this repository into your Git account with `samples/express` as the project root, asks for the two
-Connect API keys, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and
+Connect API keys and an `ADMIN_TOKEN`, and deploys. On Vercel, `PERXONA_API_BASE_URL` defaults to `https://console.perxona.ai/asia` and
 `PRESENTER_URL` to the engine of that region; set `PERXONA_API_BASE_URL` in the project's environment variables if your
 account is in another region. Every other optional value from
 `.env.example` (`DEMO_FIXED_*`, `LLM_*`, `PRESENTER_URL`) can be added there too; redeploy after changing any of them.
@@ -289,7 +290,7 @@ When the deploy finishes, open the project's own domain (`<project>.vercel.app`,
 per-deployment link with a hash in it: Vercel puts a sign-in wall on those by default, so visitors would only see
 "Protected by Vercel Authentication".
 
-Three things that differ from running locally:
+Four things that differ from running locally:
 
 - **The publishable key's domain list.** A key's allowed domains are set when it is created and cannot be edited later.
   Deploy first with an unrestricted publishable key, note the project domain Vercel gives you, then create a second
@@ -298,13 +299,27 @@ Three things that differ from running locally:
   secret key's list stays empty, as always.
 - **The URL is public and the publishable key is visible to anyone who opens it**, by design, so it spends your
   organization's credits. Watch usage in the console, or take the deployment down when you are done with it.
-- **Every `/api/*` route is public too, and each one sends the secret key upstream.** Anyone with the URL can create, edit and
-  delete your chatbots, talk to them on your credits, publish avatars and read your billing usage through it (see
-  ["Auth model"](#auth-model)). If you add `LLM_*`, `/api/chat` also spends your `LLM_API_KEY` for anyone who calls it,
-  with no rate limit. Treat the deployment as a short-lived demo, or put your own authorization in front of `/api/*`
-  before you share the address.
+- **Changing data needs `ADMIN_TOKEN`.** On a deployment, the routes that create, edit or delete a chatbot or its knowledge
+  file answer `403` unless the browser has entered the token. Pick a long random value (`openssl rand -hex 32`) and keep
+  it to yourself. The first time Studio is refused a change, it asks for the token; the server then sets an `HttpOnly`,
+  `Secure`, `SameSite=Strict` cookie for 30 days, holding a signature of the token rather than the token itself. Change
+  `ADMIN_TOKEN` and redeploy to sign every browser out.
 
-Already have the Vercel CLI? From this directory, `vercel deploy --temporary --env PERXONA_CONNECT_SECRET_KEY=... --env PERXONA_CONNECT_PUBLISHABLE_KEY=...`
+  | Who                            | Read (avatars, scenes, voices, credit) | Chat | Change data (chatbots, knowledge)          |
+  | ------------------------------ | -------------------------------------- | ---- | ------------------------------------------ |
+  | Running locally                | yes                                    | yes  | yes, no token                              |
+  | Deployed, owner with the token | yes                                    | yes  | yes                                        |
+  | Deployed, any other visitor    | yes                                    | yes  | `403`                                      |
+  | Deployed, no token configured  | yes                                    | yes  | `403`, with a message naming `ADMIN_TOKEN` |
+
+  InterviewCoach creates its chatbot on its first Start, so open it once yourself after entering the token in Studio;
+  visitors then reuse that chatbot. Until then they see a message asking the owner to do so.
+- **Reads and chat stay public, and each one sends the secret key upstream.** Anyone with the URL can talk to your
+  chatbots on your credits and read your billing usage through it (see ["Auth model"](#auth-model)). If you add `LLM_*`,
+  `/api/chat` also spends your `LLM_API_KEY` for anyone who calls it, with no rate limit. Use an organization with a
+  credit limit for a public demo, and take the deployment down when you are done with it.
+
+Already have the Vercel CLI? From this directory, `vercel deploy --temporary --env PERXONA_CONNECT_SECRET_KEY=... --env PERXONA_CONNECT_PUBLISHABLE_KEY=... --env ADMIN_TOKEN=...`
 gives a throwaway deployment, no account needed; it expires after a short time and the CLI prints when. The secret key on
 that command line lands in your shell history and is visible in `ps` while the deploy runs, so rotate it in the console
 when you are done, or use the Deploy button above instead.
@@ -329,7 +344,8 @@ the Connect API.
 | `GET /api/scenes` · `/api/scenes/:id`                                | List / detail.                                                                                                |
 | `GET /api/credit`                                                    | Studio's Credit Usage panel: used/total/remaining credit points and the current period's end.                 |
 | `POST /api/chat`                                                     | Opt-in LLM chat. Used by Studio's own-LLM source. Returns `501` until `LLM_API_KEY` is set.                   |
-| `/api/chatbots*`                                                     | Chatbot CRUD, knowledge upload, and multi-turn chat.                                                          |
+| `/api/chatbots*`                                                     | Chatbot CRUD, knowledge upload, and multi-turn chat. Deployed, the changes need `ADMIN_TOKEN`.                |
+| `POST /api/admin/session`                                            | Deployments only: `{ token }` → `204` and the cookie that unlocks changes, or `403`. Studio calls it.         |
 
 ### Direct Connect presentation API
 
