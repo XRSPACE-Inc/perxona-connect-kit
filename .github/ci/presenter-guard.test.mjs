@@ -63,7 +63,7 @@ describe("presenter host guard", () => {
     ["http://cdn.perxona.ai/presenter.js", /must load over https/],
     ["https://example.com/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
     ["https://cdn.perxona.ai.example.com/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
-    ["https://cdn.dev.perxona.ai/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
+    ["https://sub.cdn.perxona.ai/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
   ];
   for (const [url, reason] of refused)
     it(`refuses ${url}`, () => {
