@@ -2,6 +2,9 @@
 # purpose: a change to them, including one that relaxes a check, merges on
 # green CI like everything else.
 #
+# .github/guards/ is owned: its checks must hold whatever a pull request does
+# to the sample, so relaxing one needs an owner's approval.
+#
 # Owners must have write access to this repository, and the author of a pull
 # request cannot be the owner who approves it.
 /.github/workflows/ @XRSPACE-Inc/devops @ch-chiang

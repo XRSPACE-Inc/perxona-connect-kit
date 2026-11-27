@@ -75,7 +75,7 @@ property that only a specific element has, the way the existing demos do.
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.
 
-### The secret key guard
+### The secrets guard
 
 `node --test .github/guards/*.test.mjs` runs the guard in [`.github/guards/`](.github/guards/).
 It starts `server.mjs` with fake keys against a fake Connect API, a fake presenter host and a fake
@@ -90,14 +90,19 @@ LLM host on your own machine, so it needs no key and no network. It checks four 
 
 It finds every route that `server.mjs` declares as `app.<method>("<path>")` and searches every
 response for both secrets. It does not check what a route answers otherwise, so a new route,
-or a route that answers an error to the guard's request, never fails it; such a route is named in
-the output as a diagnostic.
+or a route that answers an error to the guard's request, does not fail those checks; such a route
+is named in the output as a diagnostic.
 
-When the guard fails, it names the route and the response, or the host the key was sent to. Fix
-`server.mjs`: return or log the key nowhere a browser can read it, and send it only in the
-`X-Connect-Key` header of calls to `PERXONA_API_BASE_URL`. Do not change the guard to make it pass;
-it is owned by the code owners, and a change to it needs their approval. If you think the guard
-is wrong, say so in the pull request.
+When the guard fails, it names the route and the response, or the host a secret was sent to. Fix
+`server.mjs`: return the secrets nowhere a browser can read them, send the secret key only in the
+`X-Connect-Key` header of calls to `PERXONA_API_BASE_URL`, and send `LLM_API_KEY` only to the LLM
+host. Do not change the guard to make it pass; it is owned by the code owners, and a change to it
+needs their approval. If you think the guard is wrong, say so in the pull request.
+
+One failure is not about a leak: "was never sent to the … host" means the guard no longer reaches
+that host through `server.mjs`, for example because `POST /api/chat` now refuses the guard's
+request or a setting the guard sets was renamed. Ask a code owner to update the guard in the same
+pull request.
 
 The guard catches a leak made by mistake, not a change written to get past it: `server.mjs` comes
 from the pull request and can tell that it is running under the guard. A green run does not

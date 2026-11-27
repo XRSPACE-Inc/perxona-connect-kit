@@ -259,7 +259,7 @@ const contains = (text, secret) => formsOf(secret).some((form) => text.includes(
 
 // ── Checks ──────────────────────────────────────────────────────────────────
 
-describe("Express sample secret key guard", () => {
+describe("Express sample secrets guard", () => {
   const currentRound = { value: "ok" };
   const hosts = {};
   let declared;
@@ -306,7 +306,11 @@ describe("Express sample secret key guard", () => {
   it("sees each secret reach its own host, so the checks below are not blind", () => {
     for (const { setting, value, sentOnlyTo } of SECRETS) {
       const seen = allRequests().filter((r) => sentOnlyTo.includes(r.host) && contains(JSON.stringify(r), value));
-      assert.ok(seen.length > 0, `${setting} was never sent to ${sentOnlyTo.join(" or ")}`);
+      assert.ok(
+        seen.length > 0,
+        `${setting} was never sent to the ${sentOnlyTo.join(" or ")} host. The guard's request or settings ` +
+          "no longer match server.mjs; ask a code owner to update .github/guards/ in this pull request.",
+      );
     }
   });
 

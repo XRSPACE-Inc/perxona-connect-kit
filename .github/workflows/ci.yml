@@ -46,13 +46,13 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: samples/express
 
-      # Checks where the secret key goes. It lives in .github/guards/, which
+      # Checks where the server's secrets go. It lives in .github/guards/, which
       # only a code owner can change (see .github/CODEOWNERS), and runs before
       # any other step that runs code from the pull request: the install above
       # skips install scripts, so none can rewrite the guard first. It catches
       # a leak made by mistake, not one written to get past it, so a green run
       # does not replace reading the change to server.mjs.
-      - name: Guard the secret key
+      - name: Guard the server's secrets
         run: node --test .github/guards/*.test.mjs
 
       # The sample ships no linter or type checker of its own, so that
