@@ -60,12 +60,16 @@ npm ci --prefix .github/ci
 .github/ci/node_modules/.bin/tsc --noEmit --checkJs --allowJs \
   --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck \
   samples/express/public/demos/*/app.js
+node --test .github/ci/*.test.mjs
 ```
 
-The last command checks every demo's calls into `<sv-presenter>` against
+The `tsc` command checks every demo's calls into `<sv-presenter>` against
 `@perxona/presenter-types`, and an event's payload where the handler names the event type. The
 command also type-checks the rest of each `app.js`, so annotate a DOM lookup when you use a
 property that only a specific element has, the way the existing demos do.
+
+`node --test` keeps the presenter host guard (`ALLOWED_PRESENTER_HOSTS`) identical in every demo's
+`app.js` and checks what it accepts; change the guard in all of them together.
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.

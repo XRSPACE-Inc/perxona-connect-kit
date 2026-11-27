@@ -68,6 +68,12 @@ jobs:
           --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck
           samples/express/public/demos/*/app.js
 
+      # Each demo carries its own copy of the presenter host guard, so that one
+      # can be copied out alone. The test keeps the copies identical and checks
+      # what they accept and refuse.
+      - name: Test the presenter host guard
+        run: node --test .github/ci/*.test.mjs
+
   vrm-uploader:
     # macOS is not redundant: the script is written to bash 3.2 because that is
     # what macOS ships, and only a macOS runner has that shell together with the

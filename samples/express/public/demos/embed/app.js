@@ -87,13 +87,38 @@ function appendMessage(role, text) {
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
+// The engine runs with this page's full rights: Perxona's CDN over https, or
+// a build you serve locally. Your own CDN? Add its exact host to this list.
+// Going live? Drop ...LOCAL_HOSTS, so the page never runs code from a
+// visitor's own machine.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const ALLOWED_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...LOCAL_HOSTS]);
+
+/**
+ * The presenter URL, resolved; throws unless it may load the engine.
+ * @param {string} raw
+ * @returns {string}
+ */
+function requireTrustedPresenterUrl(raw) {
+  const url = new URL(raw, document.baseURI);
+  const { hostname, protocol } = url;
+  const refused = `Refusing the presenter engine from ${protocol}//${hostname}`;
+  if (!ALLOWED_PRESENTER_HOSTS.has(hostname))
+    throw new Error(
+      `${refused}: add its host to ALLOWED_PRESENTER_HOSTS in app.js`,
+    );
+  const local = LOCAL_HOSTS.has(hostname) && protocol === "http:";
+  if (protocol !== "https:" && !local)
+    throw new Error(`${refused}: it must load over https`);
+  return url.href;
+}
+
 async function loadPresenterEngine(url) {
-  // DEMO-ONLY: url is trusted without host validation. A production
-  // integration should verify it against a known CDN allowlist.
+  const src = requireTrustedPresenterUrl(url);
   await new Promise((resolve, reject) => {
     const script = Object.assign(document.createElement("script"), {
       type: "module",
-      src: url,
+      src,
       onload: resolve,
       onerror: () => reject(new Error(`Presenter failed to load: ${url}`)),
     });

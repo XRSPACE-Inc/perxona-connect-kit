@@ -153,7 +153,20 @@ hands it the publishable key (the sample's `GET /api/config` and `GET /api/conne
   // Load the engine your server points at (PRESENTER_URL in the sample's .env),
   // so the page always matches your account's region.
   const { presenterUrl } = await fetch("/api/config").then((r) => r.json());
-  await import(presenterUrl);
+  // The engine runs with this page's full rights: load it only from a host
+  // listed here, over https. A build you serve on localhost may use http.
+  // Hosting the engine on your own CDN? Add its exact host.
+  const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+  const ALLOWED_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...LOCAL_HOSTS]);
+  const url = new URL(presenterUrl, document.baseURI);
+  const { hostname, protocol } = url;
+  const refused = `Refusing the presenter engine from ${protocol}//${hostname}`;
+  if (!ALLOWED_PRESENTER_HOSTS.has(hostname))
+    throw new Error(`${refused}: add its host to ALLOWED_PRESENTER_HOSTS`);
+  const local = LOCAL_HOSTS.has(hostname) && protocol === "http:";
+  if (protocol !== "https:" && !local)
+    throw new Error(`${refused}: it must load over https`);
+  await import(url.href);
 
   const presenter = document.querySelector("sv-presenter");
 
