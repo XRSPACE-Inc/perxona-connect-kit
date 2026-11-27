@@ -197,7 +197,7 @@ await presenter.present(reply);
 ```
 
 Because it is a web component, the same code runs in Electron, a Chrome extension or a kiosk browser. Start from
-[`demos/embed/`](samples/express/public/demos/embed/) (about 220 lines) and see the [SDK reference](docs/en/sdk-reference.md)
+[`demos/embed/`](samples/express/public/demos/embed/) (a few hundred lines) and see the [SDK reference](docs/en/sdk-reference.md)
 for motions, emotions and events.
 
 ## Built with Perxona Connect Kit

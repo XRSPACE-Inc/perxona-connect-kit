@@ -547,9 +547,9 @@ FAQs](../../README.md#presenter-sdk-integration-faqs) in the repo root README.
 
 Once the happy path runs, make it yours:
 
-- **Build from Embed, not from Studio.** `demos/embed/` is the template: 220 lines of `app.js` plus an `index.html` that is
-  mostly filler copy — copy it, replace the layout, keep the widget. Studio is a tool, not a starting point. It is 1 200
-  lines of catalog pickers, chatbot CRUD and a debug timeline, all of which you would spend your first hour deleting. Use it
+- **Build from Embed, not from Studio.** `demos/embed/` is the template: a few hundred lines of `app.js` plus an `index.html` that is
+  mostly filler copy — copy it, replace the layout, keep the widget. Studio is a tool, not a starting point. It is well over
+  a thousand lines of catalog pickers, chatbot CRUD and a debug timeline, all of which you would spend your first hour deleting. Use it
   to browse the catalog and create a chatbot, pin what you chose with `DEMO_FIXED_*`, then build from Embed.
 - **Get editor autocomplete.** `@perxona/presenter-types` is already installed — your IDE should pick up types and JSDoc on
   the presenter API automatically.

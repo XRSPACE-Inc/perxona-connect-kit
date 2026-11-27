@@ -16,7 +16,7 @@ interchangeable, and picking the wrong one costs an hour of deleting code:
 |            | `demos/embed/`                            | `demos/studio/`                                                                                                     |
 | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | What it is | the **template** — copy it                | a **tool**, and a reference                                                                                         |
-| `app.js`   | ~220 lines                                | ~1200 lines                                                                                                         |
+| `app.js`   | a few hundred lines                       | well over a thousand lines                                                                                          |
 | Contains   | a fixed target, a chat box, one presenter | catalog pickers, chatbot CRUD, knowledge-file upload, function-tool editor, a model-source switch, a debug timeline |
 | Use it to  | start a new application                   | browse the catalog, create a chatbot, then read it when you need to see how a specific API is called                |
 
@@ -95,7 +95,7 @@ CDN over https, and `localhost`) and refuses any other; to serve the engine from
 `public/index.html` is a landing page linking to each demo under `public/demos/`.
 
 Both demos hold a conversation. They split on **surface** — what the widget looks like live, versus the console you build
-it from. Build from Embed: it is ~220 lines and meant to be copied. Studio is ~1200 lines of pickers, CRUD and a debug
+it from. Build from Embed: it is a few hundred lines and meant to be copied. Studio is well over a thousand lines of pickers, CRUD and a debug
 timeline — a tool for browsing the catalog and creating a chatbot, not a starting point for your own app:
 
 - `demos/embed/` — a product page with an avatar answering questions on it. No catalog and no pickers, and nothing anywhere

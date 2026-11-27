@@ -32,9 +32,9 @@ https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/llms-full
 ## Pick the path
 
 1. **The user has a server or can run Node** (Claude Code in their repo): clone the kit, run
-   `samples/express`, and scaffold from `samples/express/public/demos/embed/` (about 170
+   `samples/express`, and scaffold from `samples/express/public/demos/embed/` (a few hundred
    lines). Read `samples/express/AGENTS.md` first. Do not fork `demos/studio/`: it is a tool
-   of about 1200 lines, not a template.
+   of well over a thousand lines, not a template.
 2. **No backend** (static page, Lovable, a hackathon prototype, a file the user downloads):
    use the publishable key directly in the page. Start from
    https://raw.githubusercontent.com/XRSPACE-Inc/perxona-connect-kit/main/integrations/starter/avatar.html
