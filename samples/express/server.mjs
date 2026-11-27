@@ -183,27 +183,29 @@ async function callUpstreamFormData(path, method, form, credential) {
   });
 }
 
-// The rule each demo's requireTrustedPresenterUrl() applies in its app.js, with
-// the hosts its ALLOWED_PRESENTER_HOSTS ships with. The demos enforce it; the
-// server only warns at startup.
+// The hosts each demo's ALLOWED_PRESENTER_HOSTS ships with. The demos enforce
+// their own lists, which a reader may have extended, so the server only hints:
+// a host missing here may still be on the list in every app.js.
 const DEMO_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
-const DEMO_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...DEMO_LOCAL_HOSTS]);
-
-/** Whether the demos, as shipped, would load the engine from this URL. */
-function demosAccept(presenterUrl) {
-  if (!URL.canParse(presenterUrl)) return false;
-  const { hostname, protocol } = new URL(presenterUrl);
-  const local = DEMO_LOCAL_HOSTS.has(hostname) && protocol === "http:";
-  return DEMO_PRESENTER_HOSTS.has(hostname) && (protocol === "https:" || local);
-}
+const DEMO_SHIPPED_PRESENTER_HOSTS = new Set([
+  "cdn.perxona.ai",
+  ...DEMO_LOCAL_HOSTS,
+]);
 
 /** Hints for the startup CDN line: why the demos may still not load the engine. */
 function presenterHints(presenterUrl, status) {
+  const url = URL.canParse(presenterUrl) ? new URL(presenterUrl) : null;
+  const isShippedHost = DEMO_SHIPPED_PRESENTER_HOSTS.has(url?.hostname ?? "");
+  const isLocalHttp =
+    DEMO_LOCAL_HOSTS.has(url?.hostname ?? "") && url?.protocol === "http:";
+  const isRefusedProtocol = url && url.protocol !== "https:" && !isLocalHttp;
   return [
     status !== "reachable" &&
       "set PRESENTER_URL to a reachable engine (see .env)",
-    !demosAccept(presenterUrl) &&
-      "the demos refuse it: https on a host in ALLOWED_PRESENTER_HOSTS in each app.js (localhost may use http)",
+    !isShippedHost &&
+      "not a host the demos ship with: unless you added it to ALLOWED_PRESENTER_HOSTS in each app.js, they refuse it",
+    isRefusedProtocol &&
+      "the demos refuse it over http (only localhost may use http)",
   ]
     .filter(Boolean)
     .map((hint) => ` — ${hint}`)
