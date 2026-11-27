@@ -29,7 +29,7 @@ const chatForm = $("#chat-form"),
   sendBtn = $("#send-btn"),
   micBtn = $("#mic-btn");
 const chatLog = $("#chat-log"),
-  mood = $("#mood");
+  emotionBadge = $("#emotion");
 
 const TOTAL_QUESTIONS = 5;
 // Created under the kit's app-managed prefix (GET /api/config →
@@ -55,22 +55,22 @@ const LANG_NAME = {
 };
 const UI = {
   en: {
-    q: (n) => `Question ${n} of ${TOTAL_QUESTIONS}`,
+    progressLabel: (n) => `Question ${n} of ${TOTAL_QUESTIONS}`,
     done: "Interview complete",
-    fail: "Sorry, I lost my train of thought. Could you say that again?",
-    place: "Type your answer… (Enter to send, Shift+Enter for a new line)",
+    retryPrompt: "Sorry, I lost my train of thought. Could you say that again?",
+    inputPlaceholder: "Type your answer… (Enter to send, Shift+Enter for a new line)",
   },
   ja: {
-    q: (n) => `質問 ${n} / ${TOTAL_QUESTIONS}`,
+    progressLabel: (n) => `質問 ${n} / ${TOTAL_QUESTIONS}`,
     done: "面接終了",
-    fail: "すみません、もう一度お願いできますか？",
-    place: "回答を入力…（Enterで送信、Shift+Enterで改行）",
+    retryPrompt: "すみません、もう一度お願いできますか？",
+    inputPlaceholder: "回答を入力…（Enterで送信、Shift+Enterで改行）",
   },
   zh: {
-    q: (n) => `第 ${n} 題，共 ${TOTAL_QUESTIONS} 題`,
+    progressLabel: (n) => `第 ${n} 題，共 ${TOTAL_QUESTIONS} 題`,
     done: "面試結束",
-    fail: "不好意思，可以再說一次嗎？",
-    place: "輸入你的回答…（Enter 送出，Shift+Enter 換行）",
+    retryPrompt: "不好意思，可以再說一次嗎？",
+    inputPlaceholder: "輸入你的回答…（Enter 送出，Shift+Enter 換行）",
   },
 };
 const SPEECH_LANG = { en: "en-US", ja: "ja-JP", zh: "zh-TW" };
@@ -101,7 +101,7 @@ Write feedback and question in the language named by lang (en=English, ja=Japane
 const state = {
   role: "",
   lang: "en",
-  q: 0,
+  questionNumber: 0,
   history: [],
   results: [],
   turns: [],
@@ -153,11 +153,11 @@ function appendMessage(role, text) {
 }
 
 function setProgress() {
-  const n = Math.min(state.q, TOTAL_QUESTIONS);
+  const n = Math.min(state.questionNumber, TOTAL_QUESTIONS);
   $("#progress-bar").style.width =
     `${(Math.max(n - 1, 0) / TOTAL_QUESTIONS) * 100}%`;
   $("#progress-text").textContent =
-    state.q > TOTAL_QUESTIONS ? UI[state.lang].done : UI[state.lang].q(n);
+    state.questionNumber > TOTAL_QUESTIONS ? UI[state.lang].done : UI[state.lang].progressLabel(n);
 }
 
 /** Answer controls: off while a reply is pending, so a second answer cannot race the first. */
@@ -166,16 +166,16 @@ function setAnswering(enabled) {
 }
 
 /** What to tell the user when a call fails: out-of-credit codes get the subscription link. */
-function failMessage(err, fallback = UI[state.lang].fail) {
+function failMessage(err, fallback = UI[state.lang].retryPrompt) {
   const code = err.data?.code;
   return code === 1003 || code === 14005
     ? `Credits are used up. ${config?.subscriptionUrl ?? ""}`
     : fallback;
 }
 
-function showMood({ emotion, intensity }) {
-  mood.textContent = `${emotion} · ${intensity}`;
-  mood.hidden = false;
+function showEmotion({ emotion, intensity }) {
+  emotionBadge.textContent = `${emotion} · ${intensity}`;
+  emotionBadge.hidden = false;
 }
 
 async function loadPresenterEngine(url) {
@@ -239,13 +239,12 @@ const toConnectMessages = (turns) =>
   turns.map(({ role, text }) => ({ role, parts: [{ type: "text", text }] }));
 
 async function askCoach(userText) {
-  const tag = `[role=${state.role} lang=${state.lang} question=${state.q}/${TOTAL_QUESTIONS}]`;
+  const tag = `[role=${state.role} lang=${state.lang} question=${state.questionNumber}/${TOTAL_QUESTIONS}]`;
   state.history.push({ role: "user", text: `${tag} ${userText}` });
   const turn = {
-    q: state.q,
+    questionNumber: state.questionNumber,
     tSend: performance.now(),
     tReply: 0,
-    tAccepted: 0,
     tVoice: 0,
   };
   pendingTurn = turn;
@@ -265,9 +264,8 @@ async function askCoach(userText) {
   appendMessage("assistant", spoken);
   if (parsed.score)
     appendMessage("score", `score ${parsed.score}/5 · ${tone.emotion}`);
-  showMood(tone);
+  showEmotion(tone);
   const result = await presenter.present(spoken, tone);
-  turn.tAccepted = performance.now();
   if (!result?.success)
     console.error(
       `InterviewCoach: present() failed (${result?.code}): ${result?.message ?? ""}`,
@@ -422,8 +420,8 @@ setupForm.addEventListener("submit", async (e) => {
     intro.hidden = true;
     room.hidden = false;
     $("#devstats").hidden = false;
-    chatInput.placeholder = UI[state.lang].place;
-    state.q = 0;
+    chatInput.placeholder = UI[state.lang].inputPlaceholder;
+    state.questionNumber = 0;
     state.history = [];
     state.results = [];
     state.turns = [];
@@ -431,7 +429,7 @@ setupForm.addEventListener("submit", async (e) => {
     chatLog.innerHTML = "";
     setProgress();
     const first = await askCoach("START");
-    state.q = 1;
+    state.questionNumber = 1;
     setProgress();
     state.results.push({
       question: first.question,
@@ -472,13 +470,13 @@ chatForm.addEventListener("submit", async (e) => {
     const r = await askCoach(text);
     current.feedback = r.feedback;
     current.score = r.score;
-    if (r.done || state.q >= TOTAL_QUESTIONS) {
-      state.q = TOTAL_QUESTIONS + 1;
+    if (r.done || state.questionNumber >= TOTAL_QUESTIONS) {
+      state.questionNumber = TOTAL_QUESTIONS + 1;
       setProgress();
       finish();
       return;
     }
-    state.q += 1;
+    state.questionNumber += 1;
     setProgress();
     state.results.push({
       question: r.question,
@@ -495,7 +493,7 @@ chatForm.addEventListener("submit", async (e) => {
     console.error(`InterviewCoach: ${err.message}`);
     appendMessage("error", failMessage(err));
   } finally {
-    if (state.q <= TOTAL_QUESTIONS) setAnswering(true);
+    if (state.questionNumber <= TOTAL_QUESTIONS) setAnswering(true);
     updateDevStats();
   }
 });
