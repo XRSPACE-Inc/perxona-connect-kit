@@ -76,43 +76,10 @@ property that only a specific element has, the way the existing demos do.
 `npm test` starts `server.mjs` against a fake Connect API on your machine
 ([`samples/express/tests/helpers/`](samples/express/tests/helpers/)), so it needs no key either. It
 covers who may change data: running locally, deployed, and with `ADMIN_TOKEN` set elsewhere.
+Where the server's secrets go is checked separately, by [the secrets guard](#the-secrets-guard).
 
 The linter and type checker settings live in [`.github/ci/`](.github/ci/), outside the sample, so
 that `npm install` in the sample stays small. Change them in a pull request like any other file.
-
-### The secrets guard
-
-`node --test .github/guards/*.test.mjs` runs the guard in [`.github/guards/`](.github/guards/).
-It starts `server.mjs` with fake keys against a fake Connect API, a fake presenter host and a fake
-LLM host on your own machine, so it needs no key and no network. It checks four things:
-
-- neither the secret key nor `LLM_API_KEY` appears in a response body or header, including the
-  responses to errors from the Connect API and the LLM host;
-- `GET /api/connect-key` returns the publishable key;
-- the secret key is only sent to `PERXONA_API_BASE_URL`, never to `PRESENTER_URL` or the LLM host,
-  and `LLM_API_KEY` is only sent to the LLM host;
-- the server refuses to start when `PERXONA_API_BASE_URL` or either key is unset or empty.
-
-It finds every route that `server.mjs` declares as `app.<method>("<path>")` and searches every
-response for both secrets. It does not check what a route answers otherwise, so a new route,
-or a route that answers an error to the guard's request, does not fail those checks; such a route
-is named in the output as a diagnostic.
-
-When the guard fails, it names the route and the response, or the host a secret was sent to. Fix
-`server.mjs`: return the secrets nowhere a browser can read them, send the secret key only in the
-`X-Connect-Key` header of calls to `PERXONA_API_BASE_URL`, and send `LLM_API_KEY` only to the LLM
-host. Do not change the guard to make it pass; it is owned by the code owners, and a change to it
-needs their approval. If you think the guard is wrong, say so in the pull request.
-
-One failure is not about a leak: "was never sent to the … host" means the guard no longer reaches
-that host through `server.mjs`, for example because `POST /api/chat` now refuses the guard's
-request or a setting the guard sets was renamed. Ask a code owner to update the guard in the same
-pull request.
-
-The guard catches a leak made by mistake, not a change written to get past it: `server.mjs` comes
-from the pull request and can tell that it is running under the guard. A green run does not
-replace reading the change. It also does not see a route declared another way, such as through
-`express.Router()`, or a file under `public/` that `server.mjs` writes.
 
 VRM uploader, from `tools/vrm-uploader/`:
 
@@ -126,6 +93,44 @@ pnpm exec vitest run
 
 Follow `samples/express/.editorconfig` (UTF-8, LF line endings, two-space indentation, a final
 newline) everywhere in the repository, and do not reformat lines your change does not touch.
+
+### The secrets guard
+
+`node --test .github/guards/*.test.mjs` runs the guard in [`.github/guards/`](.github/guards/).
+Unlike `npm test`, which any pull request may change, it is owned by the code owners and checks one
+thing on its own: where the server's secrets go. It starts `server.mjs` with fake keys against a
+fake Connect API, a fake presenter host and a fake LLM host on your own machine, so it needs no key
+and no network, once as it runs locally and once as it runs deployed on Vercel with `ADMIN_TOKEN`
+set, signed in as the owner and not. It checks four things:
+
+- neither the secret key, `LLM_API_KEY` nor `ADMIN_TOKEN` appears in a response body or header
+  (`Set-Cookie` included), including the responses to errors from the Connect API and the LLM host;
+- `GET /api/connect-key` returns the publishable key;
+- the secret key is only sent to `PERXONA_API_BASE_URL`, never to `PRESENTER_URL` or the LLM host,
+  `LLM_API_KEY` is only sent to the LLM host, and `ADMIN_TOKEN` to none of them;
+- the server refuses to start when `PERXONA_API_BASE_URL` or either key is unset or empty.
+
+It finds every route that `server.mjs` declares as `app.<method>("<path>")` and searches every
+response for every secret. It does not check what a route answers otherwise, so a new route,
+or a route that answers an error to the guard's request, does not fail those checks; such a route
+is named in the output as a diagnostic.
+
+When the guard fails, it names the route and the response, or the host a secret was sent to. Fix
+`server.mjs`: return the secrets nowhere a browser can read them, send the secret key only in the
+`X-Connect-Key` header of calls to `PERXONA_API_BASE_URL`, send `LLM_API_KEY` only to the LLM
+host, and never send `ADMIN_TOKEN` anywhere. Do not change the guard to make it pass; it is owned
+by the code owners, and a change to it needs their approval. If you think the guard is wrong, say
+so in the pull request.
+
+One failure is not about a leak: "was never sent to the … host" means the guard no longer reaches
+that host through `server.mjs`, for example because `POST /api/chat` now refuses the guard's
+request or a setting the guard sets was renamed. Ask a code owner to update the guard in the same
+pull request.
+
+The guard catches a leak made by mistake, not a change written to get past it: `server.mjs` comes
+from the pull request and can tell that it is running under the guard. A green run does not
+replace reading the change. It also does not see a route declared another way, such as through
+`express.Router()`, or a file under `public/` that `server.mjs` writes.
 
 ## Correcting a fact
 
