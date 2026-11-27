@@ -98,7 +98,17 @@ export async function startStubUpstream() {
 
     if (route === "GET /api/v1/connect/chatbots") return page([...bots.values()]);
     if (route === "POST /api/v1/connect/chatbots") {
-      const bot = { id: `bot-new-${++seq}`, name: "New", status: "active", tools: [] };
+      // Keeps the name sent, so an app that looks its chatbot up by name
+      // (InterviewCoach) finds the one it created.
+      const form = await new Request("http://stub/", {
+        method: "POST",
+        headers: { "Content-Type": req.headers["content-type"] ?? "" },
+        body,
+      })
+        .formData()
+        .catch(() => null);
+      const name = String(form?.get("name") ?? "New");
+      const bot = { id: `bot-new-${++seq}`, name, status: "active", tools: [] };
       bots.set(bot.id, bot);
       return json(201, bot);
     }

@@ -1063,6 +1063,8 @@ details[open] summary::before {
 /* ── Admin token dialog (deployments only) ─────────────────────────────── */
 
 .admin-dialog {
+  /* The reset at the top of this file zeroes the margin that centers a modal. */
+  margin: auto;
   width: min(26rem, calc(100vw - 2rem));
   padding: 1.25rem;
   background: var(--surface);
