@@ -194,7 +194,12 @@ const DEMO_SHIPPED_PRESENTER_HOSTS = new Set([
 
 /** Hints for the startup CDN line: why the demos may still not load the engine. */
 function presenterHints(presenterUrl, status) {
-  const url = URL.canParse(presenterUrl) ? new URL(presenterUrl) : null;
+  // The demos resolve a relative URL against their page, which this server
+  // serves on localhost; resolve it the same way.
+  const base = "http://localhost/";
+  const url = URL.canParse(presenterUrl, base)
+    ? new URL(presenterUrl, base)
+    : null;
   const isShippedHost = DEMO_SHIPPED_PRESENTER_HOSTS.has(url?.hostname ?? "");
   const isLocalHttp =
     DEMO_LOCAL_HOSTS.has(url?.hostname ?? "") && url?.protocol === "http:";
