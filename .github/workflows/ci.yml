@@ -40,16 +40,25 @@ jobs:
             samples/express/package-lock.json
             .github/ci/package-lock.json
 
-      # The sample ships no linter or type checker of its own, so that
-      # `npm install` stays small for someone who clones it. CI brings its own.
-      - name: Install CI tooling
-        run: npm ci --prefix .github/ci
-
       # Installs the version of @perxona/presenter-types pinned by the
       # lockfile, which is the presenter contract the type check below reads.
       - name: Install the sample
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: samples/express
+
+      # Checks where the server's secrets go. It lives in .github/guards/, which
+      # only a code owner can change (see .github/CODEOWNERS), and runs before
+      # any other step that runs code from the pull request: the install above
+      # skips install scripts, so none can rewrite the guard first. It catches
+      # a leak made by mistake, not one written to get past it, so a green run
+      # does not replace reading the change to server.mjs.
+      - name: Guard the server's secrets
+        run: node --test .github/guards/*.test.mjs
+
+      # The sample ships no linter or type checker of its own, so that
+      # `npm install` stays small for someone who clones it. CI brings its own.
+      - name: Install CI tooling
+        run: npm ci --ignore-scripts --prefix .github/ci
 
       - name: Check syntax
         working-directory: samples/express
@@ -73,6 +82,12 @@ jobs:
       # what they accept and refuse.
       - name: Test the presenter host guard
         run: node --test .github/ci/*.test.mjs
+
+      # Starts server.mjs against a fake Connect API on the runner, so it
+      # needs no key and no network.
+      - name: Run the sample's tests
+        working-directory: samples/express
+        run: npm test
 
   vrm-uploader:
     # macOS is not redundant: the script is written to bash 3.2 because that is

@@ -22,7 +22,9 @@ Open it at `http://localhost:8083/demos/interview/` after `npm run dev`.
   The app parses that, speaks the feedback and question, and keeps score itself.
   The chatbot lives in the same organization as Embed's, so its name starts with
   the kit's app-managed prefix (`appManagedChatbotPrefix` on `GET /api/config`),
-  which Embed's auto-pick skips and Studio marks `(app-managed)`.
+  which Embed's auto-pick skips and Studio marks `(app-managed)`. Where `ADMIN_TOKEN`
+  applies, creating it needs the token, so the owner opens InterviewCoach once after
+  entering the token in Studio; visitors then reuse that chatbot.
 - **Per-language voice retargeting.** The voice is chosen from the catalog for the
   selected language at Start, so the same avatar interviews in three languages.
 - **Motions on the closing turn.** A good interview ends with the celebration

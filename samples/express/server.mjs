@@ -1,12 +1,13 @@
 import express from "express";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 // ── Config ──────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 8083;
-// On Vercel the Deploy Button only asks for the two keys, so default the
-// region there; locally the explicit .env value (and its missing-value error
-// below) still apply unchanged.
+// On Vercel the Deploy Button only asks for the two keys and ADMIN_TOKEN, so
+// default the region there; locally the explicit .env value (and its
+// missing-value error below) still apply unchanged.
 const ON_VERCEL = Boolean(process.env.VERCEL);
 const PERXONA_API_BASE_URL =
   process.env.PERXONA_API_BASE_URL ||
@@ -72,6 +73,9 @@ const fixedPresenterTarget = hasCompletePresenterTarget
 // leaves this process, the publishable one is what the browser is given.
 const CONNECT_SECRET_KEY = process.env.PERXONA_CONNECT_SECRET_KEY;
 const CONNECT_PUBLISHABLE_KEY = process.env.PERXONA_CONNECT_PUBLISHABLE_KEY;
+// Unlocks the routes that change data (see "Admin token" below).
+// Never sent to a browser, not even in the cookie it unlocks.
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 // All blank is fine — resolveEmbedConfig() picks from the catalog. Half-filled
 // is not: it does nothing silently, so name what is missing.
@@ -607,13 +611,137 @@ app.get("/", (_req, res) => {
   res.sendFile(fileURLToPath(new URL("./public/index.html", import.meta.url)));
 });
 
+// ── Admin token ─────────────────────────────────────────────────────────────
+//
+// Requests that change data (anything under /api/chatbots but a GET or a
+// /chat) need ADMIN_TOKEN when the server is deployed on Vercel, or anywhere
+// ADMIN_TOKEN is set. Reads and chat stay public. Running locally without it,
+// nothing is checked.
+//
+// The owner enters the token once in Studio (POST /api/admin/session) and gets
+// a cookie: "<issued at>.<HMAC of that time, keyed with the token>". It proves
+// the token was entered without carrying it, expires on the server after
+// ADMIN_COOKIE_MAX_AGE_S like it does in the browser, and changing
+// ADMIN_TOKEN signs every browser out. Stateless, so it works across
+// serverless instances. The cookie is Secure, so it needs HTTPS (or
+// localhost).
+
+const ADMIN_TOKEN_REQUIRED = ON_VERCEL || Boolean(ADMIN_TOKEN);
+// A token anyone can guess unlocks everything, and the sign-in route has no
+// rate limit, so a short one counts as no token.
+const ADMIN_TOKEN_MIN_LENGTH = 32;
+const ADMIN_TOKEN_USABLE = (ADMIN_TOKEN?.length ?? 0) >= ADMIN_TOKEN_MIN_LENGTH;
+// __Host- makes the browser refuse the cookie unless it is Secure, has Path=/
+// and no Domain, so another subdomain cannot set or override it.
+const ADMIN_COOKIE = "__Host-admin_session";
+const ADMIN_COOKIE_MAX_AGE_S = 30 * 24 * 60 * 60;
+
+const ADMIN_TOKEN_NOT_SET = {
+  code: "admin_token_not_set",
+  error: ADMIN_TOKEN
+    ? `Changing chatbots is turned off because ADMIN_TOKEN is shorter than ${ADMIN_TOKEN_MIN_LENGTH} characters. ` +
+      "Set it to a long random value (openssl rand -hex 32), then redeploy or restart."
+    : "Changing chatbots is turned off on this deployment because ADMIN_TOKEN is not set. " +
+      "Add ADMIN_TOKEN to the project's environment variables and redeploy.",
+};
+if (ADMIN_TOKEN_REQUIRED && !ADMIN_TOKEN_USABLE)
+  console.warn(`WARNING: ${ADMIN_TOKEN_NOT_SET.error}`);
+
+const sha256 = (text) => createHash("sha256").update(text).digest();
+/** Constant-time string comparison; hashing first makes the lengths equal. */
+const sameSecret = (a, b) => timingSafeEqual(sha256(a), sha256(b));
+
+/** The admin cookie's value for a sign-in at `issuedAt` (Unix seconds). */
+function signAdminCookie(issuedAt) {
+  const mac = createHmac("sha256", ADMIN_TOKEN)
+    .update(String(issuedAt))
+    .digest("hex");
+  return `${issuedAt}.${mac}`;
+}
+
+/** Whether `value` is an admin cookie this server signed and has not expired. */
+function isValidAdminCookie(value) {
+  const issuedAt = Number(value?.split(".")[0]);
+  const age = Date.now() / 1000 - issuedAt;
+  return (
+    Number.isSafeInteger(issuedAt) &&
+    age >= 0 &&
+    age < ADMIN_COOKIE_MAX_AGE_S &&
+    sameSecret(value, signAdminCookie(issuedAt))
+  );
+}
+
+/** @param {express.Request} req */
+function readCookie(req, name) {
+  for (const part of (req.headers.cookie ?? "").split(";")) {
+    const eq = part.indexOf("=");
+    if (eq > 0 && part.slice(0, eq).trim() === name)
+      return part.slice(eq + 1).trim();
+  }
+  return null;
+}
+
+/** Refuse with 403 unless the request carries a valid admin cookie. */
+function requireAdmin(req, res, next) {
+  let refusal = ADMIN_TOKEN_NOT_SET;
+  if (ADMIN_TOKEN_USABLE) {
+    if (isValidAdminCookie(readCookie(req, ADMIN_COOKIE))) return next();
+    refusal = {
+      code: "admin_token_required",
+      error: "Changing chatbots here needs the admin token (ADMIN_TOKEN).",
+    };
+  }
+  console.error(
+    `${req.method} ${formatLogText(req.originalUrl)} → 403: ${refusal.code}`,
+  );
+  res.status(403).json(refusal);
+}
+
+// The one place the rule lives: a chatbot route added later is covered
+// without being listed. Mounted before every body parser, so a refused
+// visitor's upload is never buffered. Express matches paths
+// case-insensitively, so this does too.
+if (ADMIN_TOKEN_REQUIRED) {
+  app.use("/api/chatbots", (req, res, next) => {
+    const reads = req.method === "GET" || req.method === "HEAD";
+    const chats = /^\/[^/]+\/chat\/?$/i.test(req.path); // POST /:id/chat
+    if (reads || chats) return next();
+    requireAdmin(req, res, next);
+  });
+
+  // POST /api/admin/session  { token } → 204 and the admin cookie, or 403.
+  app.post("/api/admin/session", express.json(), (req, res) => {
+    res.set("Cache-Control", "no-store");
+    if (!ADMIN_TOKEN_USABLE) {
+      res.status(403).json(ADMIN_TOKEN_NOT_SET);
+      return;
+    }
+    const token = req.body?.token;
+    if (typeof token !== "string" || !sameSecret(token, ADMIN_TOKEN)) {
+      console.error("POST /api/admin/session → 403: admin_token_invalid");
+      res.status(403).json({
+        code: "admin_token_invalid",
+        error: "That is not the token set in ADMIN_TOKEN.",
+      });
+      return;
+    }
+    const cookie = signAdminCookie(Math.floor(Date.now() / 1000));
+    res.set(
+      "Set-Cookie",
+      `${ADMIN_COOKIE}=${cookie}; Path=/; Max-Age=${ADMIN_COOKIE_MAX_AGE_S}; HttpOnly; Secure; SameSite=Strict`,
+    );
+    res.status(204).end();
+  });
+}
+
 // The knowledge upload route needs a larger JSON body than the 100 KB default,
 // and body-parser is a no-op once a body has already been parsed, so its parser
 // must run before the global one. Mounting it by path lets Express match it the
 // same way it matches the route itself (trailing slash, case-insensitive).
 // base64 adds ~33% overhead, so a 1 MB file needs ~1.4 MB of JSON. The 5 MB
 // limit is deliberately looser: it bounds what this process will buffer, while
-// KNOWLEDGE_MAX_FILE_BYTES is the limit users are held to.
+// KNOWLEDGE_MAX_FILE_BYTES is the limit users are held to. The admin token
+// check above runs before it.
 app.use(
   "/api/chatbots/:id/knowledge",
   express.json({ limit: "5mb" }),
@@ -712,7 +840,8 @@ app.get(
 //          This is never PERXONA_CONNECT_SECRET_KEY. That keeps the secret key
 //          out of the browser — it does not put the chatbot routes out of
 //          reach, since the /api/* routes below have no request-layer
-//          authorization of their own. See README "Auth model".
+//          authorization of their own, apart from the admin token on the
+//          ones that change data. See README "Auth model".
 app.get(
   "/api/connect-key",
   route(async (_req, res) => {

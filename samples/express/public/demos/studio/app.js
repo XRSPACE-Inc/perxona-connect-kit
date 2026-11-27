@@ -344,11 +344,77 @@ let knowledgePolledFileName = null;
 /**
  * Thin fetch wrapper for JSON APIs. Throws a structured error on non-2xx.
  * 204 No Content resolves to null.
+ *
+ * A change refused for want of the admin token asks for it once and then
+ * retries; see signInAsAdmin(). Running locally without ADMIN_TOKEN the server
+ * never refuses, so this never shows.
  * @param {string} path
  * @param {{ method?: string, body?: object }} [opts]
  * @returns {Promise<any>}
  */
-async function request(path, { method = "GET", body } = {}) {
+async function request(path, opts) {
+  try {
+    return await requestOnce(path, opts);
+  } catch (err) {
+    if (err.data?.code !== "admin_token_required") throw err;
+    if (!(await signInAsAdmin())) throw err;
+    return requestOnce(path, opts);
+  }
+}
+
+const adminDialog = /** @type {HTMLDialogElement} */ (
+  document.getElementById("admin-dialog")
+);
+const adminTokenInput = /** @type {HTMLInputElement} */ (
+  document.getElementById("admin-token-input")
+);
+const adminTokenError = document.getElementById("admin-token-error");
+/** The sign-in in progress, shared by every request refused meanwhile. */
+let adminSignIn = null;
+
+/**
+ * Ask for ADMIN_TOKEN until the server accepts it or the user cancels. The
+ * server answers with an HttpOnly cookie, so the token is not kept here.
+ * @returns {Promise<boolean>} whether the browser now holds the admin cookie
+ */
+function signInAsAdmin() {
+  adminSignIn ??= (async () => {
+    adminTokenError.hidden = true;
+    for (;;) {
+      adminTokenInput.value = "";
+      // Escape closes without a button, leaving the previous returnValue.
+      adminDialog.returnValue = "";
+      adminDialog.showModal();
+      await new Promise((resolve) =>
+        adminDialog.addEventListener("close", resolve, { once: true }),
+      );
+      if (adminDialog.returnValue !== "ok") return false;
+      try {
+        await requestOnce("/api/admin/session", {
+          method: "POST",
+          body: { token: adminTokenInput.value },
+        });
+        return true;
+      } catch (err) {
+        adminTokenError.textContent = err.message;
+        adminTokenError.hidden = false;
+      }
+    }
+  })().finally(() => {
+    adminTokenInput.value = "";
+    adminSignIn = null;
+  });
+  return adminSignIn;
+}
+
+/**
+ * One request, never followed by the admin sign-in: what request() wraps,
+ * and what the sign-in itself uses.
+ * @param {string} path
+ * @param {{ method?: string, body?: object }} [opts]
+ * @returns {Promise<any>}
+ */
+async function requestOnce(path, { method = "GET", body } = {}) {
   const res = await fetch(path, {
     method,
     headers: { "Content-Type": "application/json" },

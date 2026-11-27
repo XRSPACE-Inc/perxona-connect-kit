@@ -373,6 +373,33 @@
       </main>
     </div>
 
+    <!-- Opened by request() when the server refuses a change without the
+         admin token. Never shown running locally without ADMIN_TOKEN. -->
+    <dialog id="admin-dialog" class="admin-dialog">
+      <form method="dialog">
+        <h2>Admin token</h2>
+        <p>
+          On this server, changing chatbots needs the value of the
+          <code>ADMIN_TOKEN</code> environment variable. You enter it once per
+          browser.
+        </p>
+        <input
+          id="admin-token-input"
+          type="password"
+          autocomplete="current-password"
+          aria-label="Admin token"
+          required
+        />
+        <p id="admin-token-error" class="admin-dialog-error" hidden></p>
+        <div class="admin-dialog-actions">
+          <button type="submit" value="cancel" class="btn-ghost" formnovalidate>
+            Cancel
+          </button>
+          <button type="submit" value="ok">Continue</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module" src="app.js"></script>
   </body>
 </html>
