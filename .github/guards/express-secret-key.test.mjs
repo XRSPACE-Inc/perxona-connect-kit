@@ -9,17 +9,23 @@
 //      Connect API refuses a call, fails, or cannot be reached;
 //   2. GET /api/connect-key returns the publishable key;
 //   3. each secret is only sent to the host it belongs to: the Connect secret
-//      key to PERXONA_API_BASE_URL, never to the presenter or LLM host;
+//      key to PERXONA_API_BASE_URL, never to the presenter or LLM host, and
+//      the LLM key to the LLM host;
 //   4. the server refuses to start when a required setting is missing.
 //
 // It does not check response shapes or behaviour. Every route server.mjs
 // declares as app.<method>("<path>") is found and called. Only the routes in
-// REQUESTS get a request that works; any other route is still searched for
+// REQUEST_BODIES get a request that works; any other route is still searched for
 // secrets, but whatever else it answers is reported as a diagnostic, never as
 // a failure, so adding a route does not block a pull request.
 //
+// It catches a change that leaks a secret by mistake, not one written to get
+// past it: server.mjs is code from the pull request and can tell that it is
+// running here. A green run does not replace reading the change to server.mjs.
+//
 // Not seen: a route declared another way (express.Router(), a computed path),
-// and a host written into server.mjs rather than read from its settings.
+// a file under public/ that server.mjs writes, and a host written into
+// server.mjs rather than read from its settings.
 //
 // Node built-ins only, and nothing imported from the sample, so a pull request
 // cannot change what is checked here without touching this file.
@@ -40,7 +46,6 @@ const SAMPLE_DIR = path.resolve(import.meta.dirname, "../../samples/express");
 // response finds them, and shaped like no provider's key so that secret
 // scanning does not flag this file.
 const PUBLISHABLE_KEY = "guard-fake-publishable-key-not-a-real-key";
-const LLM_API_KEY = "guard-fake-llm-key-not-a-real-key";
 
 // Every secret the server holds, the setting it is read from, and the fake
 // hosts it may be sent to. To guard another secret, add it here: checks 1 and
@@ -50,6 +55,11 @@ const SECRETS = [
     setting: "PERXONA_CONNECT_SECRET_KEY",
     value: "guard-fake-connect-secret-key-must-never-leak",
     sentOnlyTo: ["connect"],
+  },
+  {
+    setting: "LLM_API_KEY",
+    value: "guard-fake-llm-key-must-never-leak",
+    sentOnlyTo: ["llm"],
   },
 ];
 
@@ -62,20 +72,23 @@ const REQUIRED_SETTINGS = [
 
 const base64 = (text) => Buffer.from(text).toString("base64");
 
-// A request for each route that gets past the route's own validation, keyed
-// as server.mjs declares the route. Path parameters are filled with "item-1".
-// A route missing here is called with an empty body.
-const REQUESTS = {
+// The id every path parameter is filled with, and every fake item carries.
+const FAKE_ID = "item-1";
+
+// A request body for each route that gets past the route's own validation,
+// keyed as server.mjs declares the route. A route missing here is called with
+// an empty body.
+const REQUEST_BODIES = {
   "POST /api/chatbots": { name: "Guard bot", custom_instructions: "x", tools: [] },
   "PATCH /api/chatbots/:id": { name: "Renamed" },
   "POST /api/chatbots/:id/knowledge": { filename: "a.txt", content_base64: base64("hi"), mime_type: "text/plain" },
   "POST /api/chatbots/:id/chat": { messages: [{ role: "user", parts: [{ type: "text", text: "Hi" }] }] },
   "POST /api/chat": { messages: [{ role: "user", content: "Hi" }] },
 };
-// Routes whose empty-bodied request already works.
+// Routes that need no body.
 const NO_BODY_NEEDED = /^(GET|DELETE) /;
 
-// How the fake hosts answer, one round of requests each. The error rounds are
+// How the fake hosts answer in each round; every route is called once a round. The error rounds are
 // where a leak is most likely to hide: an error handler that dumps the request
 // it made, or the headers it sent.
 const ROUNDS = ["ok", 400, 401, 403, 500, "reset"];
@@ -84,9 +97,10 @@ const ROUNDS = ["ok", 400, 401, 403, 500, "reset"];
 
 /**
  * An HTTP server on 127.0.0.1 that records every request and answers with
- * respond(req, pathname) → [status, body], unless the shared mode says to fail.
+ * respond(req, pathname) → [status, body] in the "ok" round, and fails the
+ * way currentRound.value says in any other.
  */
-async function startFakeHost(name, respond, mode) {
+async function startFakeHost(name, respond, currentRound) {
   const requests = [];
   const server = createServer((req, res) => {
     const chunks = [];
@@ -100,9 +114,11 @@ async function startFakeHost(name, respond, mode) {
         headers: req.headers,
         body: Buffer.concat(chunks).toString("latin1"),
       });
-      if (mode.current === "reset") return req.socket.destroy();
+      if (currentRound.value === "reset") return req.socket.destroy();
       const [status, body] =
-        mode.current === "ok" ? respond(req, pathname) : [mode.current, { code: 1002, details: "refused by the guard" }];
+        currentRound.value === "ok"
+          ? respond(req, pathname)
+          : [currentRound.value, { code: 1002, details: "refused by the guard" }];
       res.writeHead(status, { "Content-Type": "application/json" });
       res.end(body === undefined ? undefined : JSON.stringify(body));
     });
@@ -119,7 +135,7 @@ function fakeConnectApi(req, pathname) {
   if (!pathname.includes("/api/v1/connect/")) return [200, { status: "ok" }];
   if (req.method === "DELETE") return [204];
   if (pathname.endsWith("/chat")) return [200, { id: "c", status: "success", reply_text: "hi" }];
-  const item = { id: "item-1", avatar_id: "item-1", scene_id: "item-1", name: "Item", status: "active" };
+  const item = { id: FAKE_ID, avatar_id: FAKE_ID, scene_id: FAKE_ID, name: "Item", status: "active" };
   if (req.method === "GET" && /\/(avatars|scenes|voices|chatbots|motions)$/.test(pathname))
     return [200, { items: [item], total: 1 }];
   return [200, item];
@@ -155,7 +171,6 @@ function sampleEnv(hosts) {
     ...Object.fromEntries(SECRETS.map(({ setting, value }) => [setting, value])),
     PRESENTER_URL: `${hosts.presenter}/presenter.js`,
     LLM_PROVIDER: "openai",
-    LLM_API_KEY,
     LLM_BASE_URL: `${hosts.llm}/v1`,
   };
 }
@@ -211,16 +226,16 @@ async function declaredRoutes() {
   return [...new Set([...found].map(([, method, route]) => `${method === "all" ? "GET" : method.toUpperCase()} ${route}`))];
 }
 
-const fill = (route) => route.replace(/:[A-Za-z_]+/g, "item-1");
+const fillPathParams = (route) => route.replace(/:[A-Za-z_]+/g, FAKE_ID);
 
 /** Call each route once and keep everything it sent back, headers included. */
 async function callRoutes(url, routes, round) {
   const results = [];
   for (const route of routes) {
     const [method, routePath] = route.split(" ");
-    const body = REQUESTS[route] ?? (NO_BODY_NEEDED.test(route) ? undefined : {});
+    const body = REQUEST_BODIES[route] ?? (NO_BODY_NEEDED.test(route) ? undefined : {});
     try {
-      const res = await fetch(`${url}${fill(routePath)}`, {
+      const res = await fetch(`${url}${fillPathParams(routePath)}`, {
         method,
         headers: { "Content-Type": "application/json" },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -245,7 +260,7 @@ const contains = (text, secret) => formsOf(secret).some((form) => text.includes(
 // ── Checks ──────────────────────────────────────────────────────────────────
 
 describe("Express sample secret key guard", () => {
-  const mode = { current: "ok" };
+  const currentRound = { value: "ok" };
   const hosts = {};
   let declared;
   let sample;
@@ -257,9 +272,9 @@ describe("Express sample secret key guard", () => {
     // Read before the sample starts, so that nothing it runs can change it.
     declared = await declaredRoutes();
 
-    hosts.connect = await startFakeHost("connect", fakeConnectApi, mode);
-    hosts.presenter = await startFakeHost("presenter", fakePresenter, mode);
-    hosts.llm = await startFakeHost("llm", fakeLlm, mode);
+    hosts.connect = await startFakeHost("connect", fakeConnectApi, currentRound);
+    hosts.presenter = await startFakeHost("presenter", fakePresenter, currentRound);
+    hosts.llm = await startFakeHost("llm", fakeLlm, currentRound);
     sample = await startSample(sampleEnv(Object.fromEntries(Object.entries(hosts).map(([k, h]) => [k, h.url]))));
 
     // The startup probe of the presenter host runs after the server listens.
@@ -267,10 +282,10 @@ describe("Express sample secret key guard", () => {
     for (let i = 0; i < 30 && hosts.presenter.requests.length === 0; i++) await sleep(100);
 
     for (const round of ROUNDS) {
-      mode.current = round;
+      currentRound.value = round;
       responses.push(...(await callRoutes(sample.url, declared, round)));
     }
-    mode.current = "ok";
+    currentRound.value = "ok";
   });
 
   after(async () => {
@@ -282,8 +297,8 @@ describe("Express sample secret key guard", () => {
     assert.ok(declared.length > 0, "no app.<method>(\"<path>\") found in server.mjs");
     // Diagnostics only: a route without a working request is still searched
     // for secrets, and must never block a pull request.
-    for (const route of Object.keys(REQUESTS).filter((r) => !declared.includes(r)))
-      t.diagnostic(`in REQUESTS but no longer in server.mjs: ${route}`);
+    for (const route of Object.keys(REQUEST_BODIES).filter((r) => !declared.includes(r)))
+      t.diagnostic(`in REQUEST_BODIES but no longer in server.mjs: ${route}`);
     for (const r of responses.filter((r) => r.round === "ok" && !(Number(r.status) < 400)))
       t.diagnostic(`answered ${r.status} with the fake hosts up (not a failure): ${r.route}`);
   });
@@ -305,10 +320,10 @@ describe("Express sample secret key guard", () => {
   });
 
   it("returns the publishable key on GET /api/connect-key", () => {
-    const ok = responses.find((r) => r.route === "GET /api/connect-key" && r.round === "ok");
-    assert.ok(ok, "GET /api/connect-key is no longer declared in server.mjs");
-    assert.equal(ok.status, 200);
-    assert.equal(JSON.parse(ok.text).connect_key, PUBLISHABLE_KEY);
+    const connectKeyResponse = responses.find((r) => r.route === "GET /api/connect-key" && r.round === "ok");
+    assert.ok(connectKeyResponse, "GET /api/connect-key is no longer declared in server.mjs");
+    assert.equal(connectKeyResponse.status, 200);
+    assert.equal(JSON.parse(connectKeyResponse.text).connect_key, PUBLISHABLE_KEY);
   });
 
   it("sends each secret only to the host it belongs to", () => {

@@ -81,14 +81,15 @@ that `npm install` in the sample stays small. Change them in a pull request like
 It starts `server.mjs` with fake keys against a fake Connect API, a fake presenter host and a fake
 LLM host on your own machine, so it needs no key and no network. It checks four things:
 
-- the secret key never appears in a response body or header, including the responses to errors
-  from the Connect API;
+- neither the secret key nor `LLM_API_KEY` appears in a response body or header, including the
+  responses to errors from the Connect API and the LLM host;
 - `GET /api/connect-key` returns the publishable key;
-- the secret key is only sent to `PERXONA_API_BASE_URL`, never to `PRESENTER_URL` or the LLM host;
-- the server refuses to start without either key or without `PERXONA_API_BASE_URL`.
+- the secret key is only sent to `PERXONA_API_BASE_URL`, never to `PRESENTER_URL` or the LLM host,
+  and `LLM_API_KEY` is only sent to the LLM host;
+- the server refuses to start when `PERXONA_API_BASE_URL` or either key is unset or empty.
 
 It finds every route that `server.mjs` declares as `app.<method>("<path>")` and searches every
-response for the secret key. It does not check what a route answers otherwise, so a new route,
+response for both secrets. It does not check what a route answers otherwise, so a new route,
 or a route that answers an error to the guard's request, never fails it; such a route is named in
 the output as a diagnostic.
 
@@ -97,6 +98,11 @@ When the guard fails, it names the route and the response, or the host the key w
 `X-Connect-Key` header of calls to `PERXONA_API_BASE_URL`. Do not change the guard to make it pass;
 it is owned by the code owners, and a change to it needs their approval. If you think the guard
 is wrong, say so in the pull request.
+
+The guard catches a leak made by mistake, not a change written to get past it: `server.mjs` comes
+from the pull request and can tell that it is running under the guard. A green run does not
+replace reading the change. It also does not see a route declared another way, such as through
+`express.Router()`, or a file under `public/` that `server.mjs` writes.
 
 VRM uploader, from `tools/vrm-uploader/`:
 
