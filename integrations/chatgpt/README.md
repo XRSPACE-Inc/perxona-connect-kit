@@ -1,10 +1,11 @@
 # Build with Perxona in ChatGPT
 
-Two ways to teach ChatGPT the kit, plus where a public listing stands.
+Two ways to teach ChatGPT the kit today, plus the plugin we submit to OpenAI's public Plugins
+directory.
 
 | Way | Who sets it up | Best for |
 | --- | --- | --- |
-| **Skill** (recommended) | Each user, or a workspace admin | Anyone on a plan with Skills. The same `perxona-connect` skill Claude uses. |
+| **Skill** (recommended) | Each user, or a workspace admin | Anyone on a plan with Skills. ChatGPT's copy of the `perxona-connect` skill Claude uses. |
 | **Project** | One organizer, shared with the team | Guided help for non-developers, including ready-to-paste Lovable prompts |
 
 > [!NOTE]
@@ -19,8 +20,9 @@ Build the uploads first:
 sh integrations/chatgpt/build-uploads.sh
 ```
 
-This writes `integrations/chatgpt/uploads/` (git-ignored): `perxona-connect.zip` for the skill, and
-`project/` with five files for a Project.
+This writes `integrations/chatgpt/uploads/` (git-ignored): `perxona-connect.zip` for the skill,
+`project/` with five files for a Project, and `perxona-connect-kit-plugin.zip` for the
+[public listing](#public-listing-in-the-plugins-directory).
 
 ## Option 1 · Skill (recommended)
 
@@ -29,8 +31,14 @@ This writes `integrations/chatgpt/uploads/` (git-ignored): `perxona-connect.zip`
 3. In any chat, ask for an avatar app. ChatGPT uses the skill when the request matches.
 
 Skills are available on Business, Enterprise and Edu plans. Enterprise and Edu admins may need to
-turn them on. The skill is the same file as Claude's
-([`SKILL.md`](../claude/plugin/skills/perxona-connect/SKILL.md)), so one edit updates both.
+turn them on.
+
+The skill ([`plugin/skills/perxona-connect/SKILL.md`](plugin/skills/perxona-connect/SKILL.md)) is
+a copy of Claude's ([`SKILL.md`](../claude/plugin/skills/perxona-connect/SKILL.md)). This copy
+has no Claude product names and never asks the user for a key. It also gives existing web
+apps, Lovable and a Perxona chatbot their own paths, and adds a "First-time setup" section that
+walks a new user from sign-up to each key's place. When you change one, make the same change in
+the other.
 
 ## Option 2 · Project
 
@@ -55,11 +63,32 @@ download and open in your browser.
 
 ## Public listing in the Plugins directory
 
-To appear in ChatGPT's Plugins directory next to services like Gmail and GitHub, Perxona needs a
-hosted **MCP server**, which is not built yet. Listing then takes OpenAI organization
-verification, domain verification, test cases and review
-([submission guide](https://developers.openai.com/apps-sdk/deploy/submission)). The same server
-can also be submitted to Claude's directory.
+[`plugin/`](plugin/) is the plugin we submit to the Plugins directory that ChatGPT and Codex
+share. It contains the skill only, with no MCP server: ChatGPT writes the code, and does not call
+Perxona itself. OpenAI accepts a skills-only plugin without test cases or a demo video
+([Submit your Claude Code plugin to OpenAI](https://developers.openai.com/plugins/guides/submit-claude-plugin)).
+
+| File | What it is |
+| --- | --- |
+| [`plugin/plugin.json`](plugin/plugin.json) | Package identity, plus the listing text, category, icon and starter prompts under `extensions.com.openai`. The portal fills in its form from these. |
+| [`plugin/skills/perxona-connect/SKILL.md`](plugin/skills/perxona-connect/SKILL.md) | The skill |
+| `plugin/assets/icon.png` | The listing and composer icon, the same image as the Claude plugin's |
+
+To submit it, or an update:
+
+1. For an update, raise `version` in `plugin/plugin.json` and rewrite
+   `publication.release_notes`.
+2. Run `build-uploads.sh`.
+3. In the [OpenAI plugin portal](https://platform.openai.com/plugins), choose the XRSPACE
+   organization, select **Upload new or existing plugin**, and upload
+   `uploads/perxona-connect-kit-plugin.zip`. You need to be an owner of that organization, or
+   have Apps Management write access, and the organization needs a completed business
+   verification.
+4. Fix any findings, then select **Submit for review**. After approval, select **Publish plugin**.
+
+See [Upload and submit your plugin](https://developers.openai.com/plugins/deploy/submission) for
+the full portal flow. A hosted MCP server would let ChatGPT show the avatar inside the chat; it is
+not built yet, and the listing does not need it.
 
 ## Codex
 

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "perxona-connect-kit",
+  "version": "1.0.0",
+  "description": "Give your AI agent a face: build talking 3D avatar apps with Perxona Connect Kit (<sv-presenter> and the Connect API).",
+  "author": {
+    "name": "XRSPACE",
+    "url": "https://perxona.ai"
+  },
+  "homepage": "https://connect.perxona.ai",
+  "repository": "https://github.com/XRSPACE-Inc/perxona-connect-kit",
+  "license": "Apache-2.0",
+  "keywords": ["avatar", "3d", "lip-sync", "tts", "web-component", "agent", "perxona"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Perxona Connect Kit",
+        "shortDescription": "Build talking 3D avatar apps",
+        "longDescription": "Perxona Connect Kit gives an AI agent a face: a 3D avatar that speaks any text with lip-sync, emotion and gestures. This plugin adds one skill that helps you build web apps with it, using the <sv-presenter> web component and the Perxona Connect API.\n\nAsk for a single HTML page where an avatar welcomes visitors, a React component that speaks each reply from your chat route, or the prompts for a Lovable app. The skill walks you through creating a Perxona account and the API keys your app needs, and where each key goes. It covers the order the avatar starts up in, unlocking sound from a click, connecting your own LLM or a Perxona chatbot, and the errors to handle.\n\nIt is for developers and hackathon builders adding a talking avatar to a website or an AI agent, and for people building with a no-code tool such as Lovable.\n\nLimitations: the plugin contains instructions only. It does not call Perxona services, store data or run code; the code it writes does that once you run it. You need a Perxona account and a Connect API key from console.perxona.ai. Chat previews usually cannot load the avatar engine, so for HTML you get a complete file to download and open in a browser. While helping you, the skill reads public files from the kit's GitHub repository so the code matches the kit.",
+        "developerName": "XRSPACE",
+        "category": "Developer Tools",
+        "websiteURL": "https://connect.perxona.ai",
+        "supportURL": "https://github.com/XRSPACE-Inc/perxona-connect-kit/issues",
+        "defaultPrompt": [
+          "Build an HTML page where a talking 3D avatar welcomes visitors to my bakery.",
+          "Add a Perxona avatar to my React app that speaks each reply from my chat API.",
+          "Write the Lovable prompts for a 3D interview coach that talks."
+        ],
+        "brandColor": "#004AFF",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/icon.png"
+      },
+      "publication": {
+        "release_notes": "First release: the perxona-connect skill for building web apps with a talking 3D avatar from Perxona Connect Kit."
+      }
+    }
+  }
+}
