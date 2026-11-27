@@ -184,16 +184,18 @@ async function callUpstreamFormData(path, method, form, credential) {
 }
 
 // The hosts each demo's ALLOWED_PRESENTER_HOSTS ships with, and the https rule
-// its requireTrustedPresenterUrl() applies, for an absolute PRESENTER_URL. The
-// demos enforce it; the server only warns at startup, and cannot see a host you
+// its requireTrustedPresenterUrl() applies. A relative PRESENTER_URL is resolved
+// against localhost, as the demos resolve it against their page. The demos
+// enforce it; the server only warns at startup, and cannot see a host you
 // added to a demo's list yourself.
 const DEMO_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEMO_PRESENTER_HOSTS = new Set(["cdn.perxona.ai", ...DEMO_LOCAL_HOSTS]);
 
 /** Whether the demos, as shipped, would load the engine from this URL. */
 function demosAccept(presenterUrl) {
-  if (!URL.canParse(presenterUrl)) return false;
-  const { hostname, protocol } = new URL(presenterUrl);
+  const base = "http://localhost/";
+  if (!URL.canParse(presenterUrl, base)) return false;
+  const { hostname, protocol } = new URL(presenterUrl, base);
   const local = DEMO_LOCAL_HOSTS.has(hostname) && protocol === "http:";
   return DEMO_PRESENTER_HOSTS.has(hostname) && (protocol === "https:" || local);
 }
