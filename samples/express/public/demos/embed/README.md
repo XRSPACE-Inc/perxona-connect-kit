@@ -93,9 +93,10 @@ const { reply_text } = await request(`/api/chatbots/${config.chatbotId}/chat`, {
 await presenter.present(reply_text);
 ```
 
-This is the shape, not a transcript — `app.js` is 171 lines because it also
+This is the shape, not a transcript — `app.js` is 225 lines because it also
 handles the states this leaves out: an unresolvable config, a presenter engine
-that will not load, a reply that never arrives. Read it top to bottom; nothing
+that will not load or sits on a host outside `ALLOWED_PRESENTER_HOSTS`, a reply that
+never arrives. Read it top to bottom; nothing
 in it is far from what is above.
 
 The stage shows a placeholder until `Ready` and the chat opens with a written

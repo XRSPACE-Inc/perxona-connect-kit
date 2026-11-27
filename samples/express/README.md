@@ -217,7 +217,7 @@ Then open `.env` and fill in the values:
 | `PERXONA_CONNECT_PUBLISHABLE_KEY` | ✅       | Publishable Connect API key. Served to the browser on `GET /api/connect-key` and passed to the presenter.                                                                             |
 | `PORT`                            | —        | Port the app serves on (default `8083`).                                                                                                                                              |
 | `USE_MOCK`                        | `false`  | `true` serves a fake catalog so you can browse the UI without credentials. Cannot drive the presenter; chatbot routes return `501`.                                                   |
-| `PRESENTER_URL`                   | —        | URL of the Perxona presenter engine on the CDN. **Region-specific, like `PERXONA_API_BASE_URL`** — keep the two regions matched. Omit it for the region-neutral production engine.    |
+| `PRESENTER_URL`                   | —        | URL of the Perxona presenter engine on the CDN. **Region-specific, like `PERXONA_API_BASE_URL`** — keep the two regions matched. Omit it for the region-neutral production engine. Its host must be on `ALLOWED_PRESENTER_HOSTS` in each demo's `app.js`; the startup log's `CDN` line warns when it is not. |
 | `DEMO_FIXED_AVATAR_ID`            | —        | Pins the avatar Embed uses, reported as `fixedTarget` on `GET /api/config`. Set together with `DEMO_FIXED_SCENE_ID`. Leave both blank and the server picks the first in your catalog. |
 | `DEMO_FIXED_SCENE_ID`             | —        | Pins the scene Embed uses. Takes effect only alongside `DEMO_FIXED_AVATAR_ID`.                                                                                                        |
 | `DEMO_FIXED_VOICE_ID`             | —        | Pins the voice. Blank alongside a pinned avatar/scene selects BYO-TTS (`presentWithAudio()`); the auto-pick always includes a voice.                                                  |
@@ -366,7 +366,11 @@ attached. Use `intensity`, not `intens`. Valid `intensity` values are `low`, `ne
 ### SDK: the `<sv-presenter>` Web Component
 
 The presenter is loaded from Perxona's CDN. `app.js` fetches `GET /api/config` on load, reads `presenterUrl`, and appends a
-`<script type="module">` for it — `index.html` itself only declares the element:
+`<script type="module">` for it. Before it does, `app.js` checks the URL's host against `ALLOWED_PRESENTER_HOSTS` (search that
+file for it) — Perxona's CDN over https, plus `localhost` for an engine you build yourself — and refuses any other, because the
+engine runs with the page's full rights. Serving the engine from your own CDN? Add its exact host there.
+
+`index.html` itself only declares the element:
 
 ```html
 <sv-presenter hidden></sv-presenter>
@@ -543,7 +547,7 @@ FAQs](../../README.md#presenter-sdk-integration-faqs) in the repo root README.
 
 Once the happy path runs, make it yours:
 
-- **Build from Embed, not from Studio.** `demos/embed/` is the template: 170 lines of `app.js` plus an `index.html` that is
+- **Build from Embed, not from Studio.** `demos/embed/` is the template: 220 lines of `app.js` plus an `index.html` that is
   mostly filler copy — copy it, replace the layout, keep the widget. Studio is a tool, not a starting point. It is 1 200
   lines of catalog pickers, chatbot CRUD and a debug timeline, all of which you would spend your first hour deleting. Use it
   to browse the catalog and create a chatbot, pin what you chose with `DEMO_FIXED_*`, then build from Embed.
