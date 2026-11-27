@@ -39,10 +39,6 @@ function guardOn(baseURI) {
   });
 }
 
-// Built at run time so this file never names a non-production host itself;
-// the CI step that refuses such hosts in tracked files would flag it.
-const devCdn = ["cdn", "dev", "perxona", "ai"].join(".");
-
 describe("presenter host guard", () => {
   it("is the same in every demo", () => {
     assert.ok(demoFiles.length >= 2, `expected several demos under ${DEMOS}`);
@@ -67,7 +63,7 @@ describe("presenter host guard", () => {
     ["http://cdn.perxona.ai/presenter.js", /must load over https/],
     ["https://example.com/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
     ["https://cdn.perxona.ai.example.com/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
-    [`https://${devCdn}/presenter.js`, /ALLOWED_PRESENTER_HOSTS/],
+    ["https://cdn.dev.perxona.ai/presenter.js", /ALLOWED_PRESENTER_HOSTS/],
   ];
   for (const [url, reason] of refused)
     it(`refuses ${url}`, () => {

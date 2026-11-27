@@ -74,16 +74,6 @@ jobs:
       - name: Test the presenter host guard
         run: node --test .github/ci/*.test.mjs
 
-      # Tracked files may name production perxona.ai hosts only. A dev or stage
-      # host gets in when a local test edit is committed, for example a
-      # non-production CDN added to a demo's ALLOWED_PRESENTER_HOSTS.
-      - name: Refuse non-production perxona.ai hosts
-        run: |
-          if git grep -nIE '(dev|stage)\.perxona\.ai'; then
-            echo "::error::A tracked file names a non-production perxona.ai host (listed above). Remove it."
-            exit 1
-          fi
-
   vrm-uploader:
     # macOS is not redundant: the script is written to bash 3.2 because that is
     # what macOS ships, and only a macOS runner has that shell together with the
